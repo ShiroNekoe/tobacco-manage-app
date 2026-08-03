@@ -1,3 +1,21 @@
+# ==========================================
+# 1. STAGE NODE: Build Aset Frontend (Vite / UI)
+# ==========================================
+FROM node:20 AS node_builder
+WORKDIR /app
+
+# Copy package.json dan file config vite/tailwind
+COPY package*.json vite.config.js tailwind.config.js postcss.config.js ./
+RUN npm install
+
+# Copy seluruh source code (termasuk folder resources/)
+COPY . .
+RUN npm run build
+
+
+# ==========================================
+# 2. STAGE PHP: Server Laravel & Apache
+# ==========================================
 # Gunakan image resmi PHP 8.2 dengan Apache
 FROM php:8.2-apache
 
@@ -30,6 +48,9 @@ WORKDIR /var/www/html
 
 # Copy seluruh file project ke dalam container
 COPY . .
+
+# COPY HASIL BUILD UI/FE dari stage node_builder ke dalam folder public/
+COPY --from=node_builder /app/public/build /var/www/html/public/build
 
 # Set hak akses folder
 RUN chown -R www-data:www-data /var/www/html \

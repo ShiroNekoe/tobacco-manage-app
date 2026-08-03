@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="id" class="dark h-full bg-zinc-950 text-zinc-100">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline Mode - Tobacco PWA</title>
+    <style>
+        body { font-family: sans-serif; background: #09090b; color: #f4f4f5; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; padding: 20px; }
+        .card { background: #18181b; border: 1px solid #27272a; padding: 40px; border-radius: 20px; max-width: 400px; }
+        h1 { color: #d97706; margin-bottom: 10px; }
+        p { color: #a1a1aa; font-size: 14px; line-height: 1.5; }
+        button { background: #d97706; color: white; border: none; padding: 12px 24px; font-weight: bold; border-radius: 12px; margin-top: 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Anda Sedang Offline</h1>
+        <p>Koneksi internet terputus. Sistem Manajemen Produksi Tembakau akan otomatis kembali sinkron saat jaringan pulih.</p>
+        <button onclick="window.location.reload()">Coba Muat Ulang</button>
+    </div>
+</body>
+</html>

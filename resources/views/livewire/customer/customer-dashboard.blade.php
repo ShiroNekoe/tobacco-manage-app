@@ -100,11 +100,11 @@
         <!-- Horizontally Scrollable Touch Wrapper for Mobile PWA -->
         <div class="relative w-full bg-zinc-950 p-2 sm:p-4 rounded-2xl border border-zinc-800/80 overflow-x-auto">
             @if(count($chartLabels) > 0)
-                <div class="min-w-[550px] md:min-w-full h-[320px] sm:h-[380px]">
+                <div class="min-w-[420px] sm:min-w-full h-[250px] sm:h-[380px]">
                     <canvas x-ref="canvas" class="w-full h-full"></canvas>
                 </div>
             @else
-                <div class="h-[250px] flex flex-col items-center justify-center text-zinc-500 text-xs">
+                <div class="h-[200px] flex flex-col items-center justify-center text-zinc-500 text-xs">
                     <svg class="w-10 h-10 mb-2 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                     Tidak ada data batch yang cocok dengan filter yang dipilih.
                 </div>
@@ -225,7 +225,9 @@
                     </h3>
                     <p class="text-xs text-zinc-400">Pratinjau dokumen Process Certificate PDF sebelum diunduh ke komputer / HP</p>
                 </div>
-                <button type="button" @click="showPreviewModal = false" class="text-zinc-400 hover:text-white text-2xl font-bold p-2 min-w-[44px] min-h-[44px]">&times;</button>
+                <button type="button" @click="showPreviewModal = false" class="p-2 text-zinc-400 hover:text-white rounded-xl bg-zinc-800">
+                    ✕
+                </button>
             </div>
 
             <!-- Iframe Live Preview Container -->
@@ -288,6 +290,8 @@
 
                         if (!chartData || !chartData.labels || chartData.labels.length === 0) return;
 
+                        const isMobile = window.innerWidth < 640;
+
                         chartInstance = new Chart(ctx, {
                             type: 'line',
                             data: {
@@ -298,9 +302,9 @@
                                         data: chartData.product,
                                         borderColor: '#10b981',
                                         backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                                        borderWidth: 3,
-                                        pointRadius: 5,
-                                        pointHoverRadius: 7,
+                                        borderWidth: isMobile ? 2 : 3,
+                                        pointRadius: isMobile ? 3 : 5,
+                                        pointHoverRadius: isMobile ? 5 : 7,
                                         tension: 0.3,
                                         fill: true
                                     },
@@ -309,8 +313,8 @@
                                         data: chartData.bitsStem,
                                         borderColor: '#f59e0b',
                                         backgroundColor: 'transparent',
-                                        borderWidth: 2.5,
-                                        pointRadius: 4,
+                                        borderWidth: isMobile ? 1.5 : 2.5,
+                                        pointRadius: isMobile ? 2.5 : 4,
                                         tension: 0.3
                                     },
                                     {
@@ -318,8 +322,8 @@
                                         data: chartData.dust,
                                         borderColor: '#64748b',
                                         backgroundColor: 'transparent',
-                                        borderWidth: 2.5,
-                                        pointRadius: 4,
+                                        borderWidth: isMobile ? 1.5 : 2.5,
+                                        pointRadius: isMobile ? 2.5 : 4,
                                         tension: 0.3
                                     },
                                     {
@@ -327,8 +331,8 @@
                                         data: chartData.waste,
                                         borderColor: '#ef4444',
                                         backgroundColor: 'transparent',
-                                        borderWidth: 2.5,
-                                        pointRadius: 4,
+                                        borderWidth: isMobile ? 1.5 : 2.5,
+                                        pointRadius: isMobile ? 2.5 : 4,
                                         tension: 0.3
                                     }
                                 ]
@@ -345,9 +349,11 @@
                                         position: 'top',
                                         labels: {
                                             color: '#e4e4e7',
-                                            font: { family: 'Inter', weight: 'bold', size: 11 },
+                                            font: { family: 'Inter', weight: 'bold', size: isMobile ? 9 : 11 },
                                             usePointStyle: true,
-                                            padding: 15
+                                            boxWidth: isMobile ? 8 : 12,
+                                            boxHeight: isMobile ? 8 : 12,
+                                            padding: isMobile ? 6 : 15
                                         }
                                     },
                                     tooltip: {
@@ -355,8 +361,11 @@
                                         titleColor: '#fbbf24',
                                         bodyColor: '#f4f4f5',
                                         borderColor: '#3f3f46',
-                                        borderWidth: 1.5,
-                                        padding: 12,
+                                        borderWidth: 1,
+                                        padding: isMobile ? 6 : 12,
+                                        boxPadding: isMobile ? 3 : 6,
+                                        titleFont: { family: 'Inter', size: isMobile ? 10 : 12, weight: 'bold' },
+                                        bodyFont: { family: 'Inter', size: isMobile ? 9 : 11 },
                                         displayColors: true,
                                         callbacks: {
                                             title: function(tooltipItems) {
@@ -380,18 +389,18 @@
                                     x: {
                                         ticks: {
                                             color: '#a1a1aa',
-                                            font: { size: 9 },
+                                            font: { size: isMobile ? 8 : 9 },
                                             maxRotation: 45,
                                             minRotation: 0,
                                             autoSkip: true,
-                                            maxTicksLimit: window.innerWidth < 640 ? 6 : 15,
+                                            maxTicksLimit: isMobile ? 5 : 15,
                                             callback: function(val, index) {
                                                 const fullLabel = this.getLabelForValue(val);
                                                 if (!fullLabel) return '';
                                                 if (window.innerWidth < 640) {
                                                     const match = fullLabel.match(/^(BCH-[^\s]+)/i);
                                                     if (match) return match[1];
-                                                    return fullLabel.length > 12 ? fullLabel.substring(0, 10) + '..' : fullLabel;
+                                                    return fullLabel.length > 10 ? fullLabel.substring(0, 8) + '..' : fullLabel;
                                                 }
                                                 return fullLabel;
                                             }
@@ -399,7 +408,7 @@
                                         grid: { color: 'rgba(255, 255, 255, 0.05)' }
                                     },
                                     y: {
-                                        ticks: { color: '#a1a1aa', font: { size: 10 } },
+                                        ticks: { color: '#a1a1aa', font: { size: isMobile ? 8 : 10 } },
                                         grid: { color: 'rgba(255, 255, 255, 0.05)' }
                                     }
                                 }

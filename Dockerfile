@@ -4,11 +4,11 @@
 FROM node:20 AS node_builder
 WORKDIR /app
 
-# Copy package.json dan file config vite/tailwind
-COPY package*.json vite.config.js tailwind.config.js postcss.config.js ./
+# COPY HANYA package.json, package-lock.json (jika ada), dan vite.config.js
+COPY package*.json vite.config.js ./
 RUN npm install
 
-# Copy seluruh source code (termasuk folder resources/)
+# Copy seluruh source code (termasuk config Tailwind/CSS & folder resources/)
 COPY . .
 RUN npm run build
 
@@ -18,6 +18,7 @@ RUN npm run build
 # ==========================================
 # Gunakan image resmi PHP 8.2 dengan Apache
 FROM php:8.2-apache
+
 
 # Install dependencies sistem & ekstensi PostgreSQL + Zip
 RUN apt-get update && apt-get install -y \

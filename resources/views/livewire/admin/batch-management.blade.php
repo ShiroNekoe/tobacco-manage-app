@@ -161,6 +161,7 @@
                     <div>
                         <label class="block text-xs font-bold uppercase text-zinc-300 mb-1">DN Total Gross Weight Surat Jalan (kg)</label>
                         <input type="number" step="0.01" wire:model.live.debounce.300ms="dn_gross_weight_input" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm outline-none focus:border-amber-500" placeholder="Opsional (Opsional untuk hitung selisih)">
+                         <span class="text-[10px] text-zinc-400 block mt-1">Pengisian angka setelah 0</span>
                     </div>
 
                     <div>

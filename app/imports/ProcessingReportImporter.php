@@ -105,14 +105,30 @@ class ProcessingReportImporter
                 $c1 = trim((string) $sheet->getCell([1, $r])->getCalculatedValue());
                 $c2 = trim((string) $sheet->getCell([2, $r])->getCalculatedValue());
 
-                // Detect new Material Desc Section e.g. "1. Material Desc." | ": Rajangan Kasturi"
-                if (preg_match('/Material\s*Desc/i', $c1)) {
+                // Detect new Material Desc Section.
+                // NOTE: The origin text can appear in TWO different layouts across sheets:
+                //   Layout A: A="1. Material Desc."      B=": KASTURI"          (origin in col B)
+                //   Layout B: A="1. Material Desc : LOMBOK P9"  B=""           (origin inline in col A)
+                // The old code only ever read $c2, so Layout B rows produced an
+                // empty $rawOrigin and silently fell back to 'TEMANGGUNG' for
+                // every section written in that format (Batches 5,6,7,11,13-25).
+                if (preg_match('/Material\s*Desc\.?\s*:?\s*(.*)$/i', $c1, $descMatch)) {
                     if ($currentSection && ! empty($currentSection['sacks'])) {
                         $parsedSections[] = $currentSection;
                     }
 
-                    $rawOrigin = preg_replace('/^:\s*Rajangan\s*/i', '', $c2);
+                    // Prefer text captured inline in column A (Layout B).
+                    // Fall back to column B when column A has nothing after
+                    // "Material Desc" (Layout A).
+                    $rawOrigin = trim($descMatch[1]);
+                    if ($rawOrigin === '') {
+                        $rawOrigin = $c2;
+                    }
+
+                    $rawOrigin = preg_replace('/^:\s*/', '', $rawOrigin);
+                    $rawOrigin = preg_replace('/^Rajangan\s*/i', '', $rawOrigin);
                     $rawOrigin = trim(str_replace(':', '', $rawOrigin));
+
                     if (empty($rawOrigin)) {
                         $rawOrigin = 'TEMANGGUNG';
                     }

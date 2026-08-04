@@ -90,7 +90,7 @@ class CustomerDashboard extends Component
         $approvedBatches = (clone $query)->paginate(10);
 
         // Fetch historical filtered data for Chart.js (up to 15 latest filtered approved batches)
-        $chartBatches = (clone $query)->oldest()->take(15)->get();
+        $chartBatches = (clone $query)->oldest()->get();
 
         $chartLabels = [];
         $seriesProduct = [];

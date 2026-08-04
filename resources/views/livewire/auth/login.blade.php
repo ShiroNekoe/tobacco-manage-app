@@ -2,10 +2,8 @@
     <div class="w-full max-w-md space-y-6">
         <!-- Logo & Header -->
         <div class="text-center space-y-2">
-            <div class="inline-flex w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-600 to-amber-800 items-center justify-center font-black text-white text-3xl shadow-xl shadow-amber-900/40">
-                T
-            </div>
-            <h1 class="text-2xl font-black tracking-wide text-amber-400">TOBACCO<span class="text-zinc-200 font-normal">MES v2.0</span></h1>
+            <img src="/images/icontobacco.jpeg" alt="Tobacco Logo" class="inline-block w-16 h-16 object-contain rounded-2xl shadow-xl shadow-amber-900/40 border border-amber-500/30 mb-2">
+            <h1 class="text-2xl font-black tracking-wide text-amber-400">Tobacco Production Management System</h1>
             <p class="text-xs text-zinc-400 font-medium">Sistem Production & Quality Control Timbangan Tembakau</p>
         </div>
 

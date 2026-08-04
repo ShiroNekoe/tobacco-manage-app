@@ -96,4 +96,27 @@ class WeighingLockingTest extends TestCase
         $batch->refresh();
         $this->assertEquals('draft', $batch->status);
     }
+
+    public function test_selecting_empty_batch_id_does_not_throw_type_error(): void
+    {
+        $karyawan = User::factory()->create(['role' => 'karyawan']);
+
+        Livewire::actingAs($karyawan)
+            ->test(WeighingSheet::class)
+            ->call('selectBatch', '')
+            ->assertSet('batchId', null)
+            ->call('selectBatch', null)
+            ->assertSet('batchId', null);
+    }
+
+    public function test_remnant_comma_decimal_input_does_not_throw_type_error(): void
+    {
+        $karyawan = User::factory()->create(['role' => 'karyawan']);
+
+        Livewire::actingAs($karyawan)
+            ->test(WeighingSheet::class)
+            ->set('separation_product_remnant_gross_kg', '51,5')
+            ->set('separation_product_remnant_tare_kg', '0,4')
+            ->assertSet('separation_product_remnant_kg', 51.1);
+    }
 }

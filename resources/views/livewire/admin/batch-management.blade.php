@@ -142,6 +142,12 @@
                 <!-- Header Info -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
+                        <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Kode Batch / No. Batch <span class="text-red-400">*</span> <span class="text-zinc-500 font-normal">(Isi Manual)</span></label>
+                        <input type="text" wire:model="batch_code" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-400 font-mono font-bold text-sm outline-none focus:border-amber-400" placeholder="BCH-20260804-001">
+                        @error('batch_code') <span class="text-red-400 font-bold block text-[11px] mt-1">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div>
                         <label class="block text-xs font-bold uppercase text-zinc-300 mb-1">Pelanggan (Customer) <span class="text-red-400">*</span></label>
                         <select wire:model="customer_id" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm outline-none focus:border-amber-500">
                             <option value="">-- Pilih Customer --</option>
@@ -187,6 +193,13 @@
                     </div>
 
                     <div>
+                        <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Kode Material / Material Code <span class="text-zinc-500 font-normal">(Isi Manual)</span></label>
+                        <input type="text" wire:model="material_code" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-mono text-sm outline-none focus:border-amber-400" placeholder="FN602 / MAT-001 / Custom Code">
+                        <span class="text-[10px] text-zinc-400 block mt-1">Kode material manual untuk dokumen PDF & tracking</span>
+                        @error('material_code') <span class="text-red-400 font-bold block text-[11px] mt-1">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div>
                         <label class="block text-xs font-bold uppercase text-zinc-300 mb-1">Jenis Kemasan (Pack Type) <span class="text-red-400">*</span></label>
                         <select wire:model="pack_type" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm outline-none focus:border-amber-500">
                             <option value="Bale">Bale</option>
@@ -196,10 +209,17 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Hitungan Per Sak Produk Jadi (kg/sak) <span class="text-red-400">*</span></label>
-                        <input type="number" step="0.01" wire:model="product_kg_per_sack" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-400 font-bold text-sm outline-none focus:border-amber-400" placeholder="20.00">
-                        <span class="text-[10px] text-zinc-400 block mt-1">Konversi otomatis saat karyawan mengisi Sak Produk Jadi</span>
+                        <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Berat Gross Per Sak Produk Jadi (kg/sak) <span class="text-red-400">*</span></label>
+                        <input type="number" step="0.01" wire:model="product_kg_per_sack" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-400 font-bold text-sm outline-none focus:border-amber-400" placeholder="25.20">
+                        <span class="text-[10px] text-zinc-400 block mt-1">Gross per sak untuk konversi Produk Jadi</span>
                         @error('product_kg_per_sack') <span class="text-red-400 font-bold block text-[11px] mt-1">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Tare Standar Produk Jadi (kg/sak) <span class="text-red-400">*</span></label>
+                        <input type="number" step="0.01" wire:model="product_tare_per_sack" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-400 font-bold text-sm outline-none focus:border-amber-400" placeholder="0.20">
+                        <span class="text-[10px] text-zinc-400 block mt-1">Tare standar awal per sak di Laporan Pemisahan</span>
+                        @error('product_tare_per_sack') <span class="text-red-400 font-bold block text-[11px] mt-1">{{ $message }}</span> @enderror
                     </div>
 
                     <div>

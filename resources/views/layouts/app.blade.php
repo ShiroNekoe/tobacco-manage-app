@@ -7,7 +7,9 @@
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
     
-    <title>{{ $title ?? 'Sistem MES Timbangan Tembakau PWA' }}</title>
+    <link rel="icon" type="image/jpeg" href="/images/icontobacco.jpeg">
+    <link rel="shortcut icon" href="/images/icontobacco.jpeg">
+    <title>{{ $title ?? 'TPMS' }}</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,8 +27,8 @@
         <!-- Mobile Header Bar -->
         <header class="md:hidden flex items-center justify-between px-4 py-3 bg-zinc-900 border-b border-zinc-800 sticky top-0 z-40">
             <div class="flex items-center space-x-2">
-                <span class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
-                <span class="font-black text-lg tracking-wider text-amber-500">TOBACCO<span class="text-zinc-300 font-normal">MES v2.0</span></span>
+                <img src="/images/icontobacco.jpeg" alt="Tobacco Logo" class="w-8 h-8 object-contain rounded-lg shadow">
+                <span class="font-black text-base tracking-wider text-amber-500">TPMS <span class="text-zinc-300 font-normal text-xs">PWA</span></span>
             </div>
             <button @click="sidebarOpen = !sidebarOpen" class="p-2 min-w-[48px] min-h-[48px] rounded-xl bg-zinc-800 text-zinc-300 hover:text-white focus:outline-none">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
@@ -37,11 +39,9 @@
         <aside :class="sidebarOpen ? 'block' : 'hidden md:block'" class="w-full md:w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col shrink-0">
             <!-- Brand Logo -->
             <div class="p-5 border-b border-zinc-800 hidden md:flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center font-black text-white text-2xl shadow-lg shadow-amber-900/30">
-                    T
-                </div>
+                <img src="/images/icontobacco.jpeg" alt="Tobacco Logo" class="w-10 h-10 object-contain rounded-xl shadow-lg shadow-amber-900/30 border border-amber-500/20">
                 <div>
-                    <h1 class="font-black text-base tracking-wide text-amber-400">TOBACCO<span class="text-zinc-200 font-normal">MES v2.0</span></h1>
+                    <h1 class="font-black text-base tracking-wide text-amber-400">Tobacco Production Management System</h1>
                     <p class="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Production & Quality PWA</p>
                 </div>
             </div>

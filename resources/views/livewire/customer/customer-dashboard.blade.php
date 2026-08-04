@@ -11,7 +11,7 @@
             <p class="text-xs text-zinc-400 mt-1">Grafik tren historis pemisahan tembakau & pratinjau / pengunduhan Sertifikat Produk resmi yang telah disetujui (ACC Supervisor)</p>
         </div>
 
-        @if($filter_product_type_id || $filter_origin_id || $search)
+        @if($filter_product_type_id || $filter_origin_id || $filter_base_origin || $search)
             <button wire:click="resetFilters" class="px-4 py-2.5 min-h-[44px] text-xs font-bold rounded-xl bg-zinc-800 text-amber-400 border border-zinc-700 hover:bg-zinc-700 flex items-center">
                 <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 Reset Filter Navigasi
@@ -27,28 +27,28 @@
         </div>
 
         <div>
-            <label class="block text-[11px] font-bold uppercase text-zinc-400 mb-1">Filter Jenis Produk</label>
+            <label class="block text-[11px] font-bold uppercase text-zinc-400 mb-1">Filter Kode Tembakau (Product Code)</label>
             <select wire:model.live="filter_product_type_id" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-emerald-500 outline-none">
-                <option value="">Semua Jenis Produk</option>
+                <option value="">Semua Kode Tembakau</option>
                 @foreach($productTypes as $pt)
-                    <option value="{{ $pt->id }}">{{ $pt->name }}</option>
+                    <option value="{{ $pt->id }}">{{ $pt->code ? ($pt->code . ' - ' . $pt->name) : $pt->name }}</option>
                 @endforeach
             </select>
         </div>
 
         <div>
-            <label class="block text-[11px] font-bold uppercase text-zinc-400 mb-1">Filter Asal Tembakau (Origin)</label>
-            <select wire:model.live="filter_origin_id" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-emerald-500 outline-none">
+            <label class="block text-[11px] font-bold uppercase text-zinc-400 mb-1">Filter Asal Tembakau (Base Origin)</label>
+            <select wire:model.live="filter_base_origin" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-amber-400 font-bold text-xs focus:border-emerald-500 outline-none">
                 <option value="">Semua Asal Tembakau</option>
-                @foreach($origins as $org)
-                    <option value="{{ $org->id }}">{{ $org->region_name }}</option>
+                @foreach($baseOrigins as $bOrg)
+                    <option value="{{ $bOrg }}">{{ $bOrg }}</option>
                 @endforeach
             </select>
         </div>
     </div>
 
-    <!-- 4-SERIES DYNAMIC FILTERED HISTORICAL TREND LINE CHART (BULLETPROOF ALPINE + REFS) -->
-    <div wire:key="chart-container-{{ $filter_product_type_id ?? 'all' }}-{{ $filter_origin_id ?? 'all' }}-{{ md5($search) }}"
+    <!-- 4-SERIES DYNAMIC FILTERED HISTORICAL TREND LINE CHART -->
+    <div wire:key="chart-container-{{ $filter_product_type_id ?? 'all' }}-{{ $filter_base_origin ?: ($filter_origin_id ?? 'all') }}-{{ md5($search) }}"
          x-data="customerTrendChartComponent({
              labels: @js($chartLabels),
              product: @js($seriesProduct),
@@ -69,9 +69,9 @@
                 </h3>
                 <p class="text-xs text-zinc-400 mt-0.5">
                     Perbandingan 4 Kategori (Product Qty, Bits Stem Qty, Dust Qty, Uncountable Waste Qty)
-                    @if($selectedProductType || $selectedOrigin)
+                    @if($selectedProductType || $filter_base_origin || $selectedOrigin)
                         <span class="text-emerald-300 font-bold ml-1">
-                            • Filter Aktif: {{ $selectedProductType ? $selectedProductType->name : 'Semua Produk' }} ({{ $selectedOrigin ? $selectedOrigin->region_name : 'Semua Asal' }})
+                            • Filter Aktif: {{ $selectedProductType ? $selectedProductType->name : 'Semua Produk' }} ({{ $filter_base_origin ?: ($selectedOrigin ? $selectedOrigin->region_name : 'Semua Asal') }})
                         </span>
                     @endif
                 </p>
@@ -288,9 +288,26 @@
                                         backgroundColor: '#18181b',
                                         titleColor: '#fbbf24',
                                         bodyColor: '#f4f4f5',
-                                        borderColor: '#27272a',
-                                        borderWidth: 1,
-                                        padding: 12
+                                        borderColor: '#3f3f46',
+                                        borderWidth: 1.5,
+                                        padding: 12,
+                                        displayColors: true,
+                                        callbacks: {
+                                            title: function(tooltipItems) {
+                                                if (!tooltipItems || !tooltipItems.length) return '';
+                                                return '📦 Batch & Kode Tembakau:\n' + tooltipItems[0].label;
+                                            },
+                                            label: function(context) {
+                                                let label = context.dataset.label || '';
+                                                if (label) {
+                                                    label += ': ';
+                                                }
+                                                if (context.parsed.y !== null) {
+                                                    label += new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(context.parsed.y) + ' kg';
+                                                }
+                                                return label;
+                                            }
+                                        }
                                     }
                                 },
                                 scales: {

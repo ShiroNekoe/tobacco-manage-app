@@ -17,30 +17,38 @@ class WeighingSheet extends Component
     public array $items = [];
 
     // Separation outputs for current session
-    public float $product_kg_per_sack = 20.00;
+    public $product_kg_per_sack = 20.00;
+    public $product_tare_per_sack = 2.00;
     public int $separation_product_sack = 0;
+    public $separation_product_gross_kg = 0;
+    public $separation_product_tare_kg = 0;
     public $separation_product_kg = 0;
-    public float $separation_bits_stem_gross_kg = 0;
-    public float $separation_bits_stem_tare_kg = 0;
-    public float $separation_bits_stem_netto_kg = 0;
+    public $separation_product_remnant_gross_kg = 0;
+    public $separation_product_remnant_tare_kg = 0;
+    public $separation_product_remnant_kg = 0;
+    public $separation_bits_stem_gross_kg = 0;
+    public $separation_bits_stem_tare_kg = 0;
+    public $separation_bits_stem_netto_kg = 0;
     public $separation_bits_stem_kg = 0;
-    public float $separation_dust_gross_kg = 0;
-    public float $separation_dust_tare_kg = 0;
-    public float $separation_dust_netto_kg = 0;
+    public array $bit_stem_items = [];
+    public $separation_dust_gross_kg = 0;
+    public $separation_dust_tare_kg = 0;
+    public $separation_dust_netto_kg = 0;
     public $separation_dust_kg = 0;
+    public array $dust_items = [];
     public $separation_waste_kg = 0;
 
     // Real-time dynamic totals
     public int $totalPack = 0;
-    public float $totalGrossKg = 0;
-    public float $totalTareKg = 0;
-    public float $totalNettoKg = 0;
+    public $totalGrossKg = 0;
+    public $totalTareKg = 0;
+    public $totalNettoKg = 0;
 
     // Yield Percentages
-    public float $yieldProductPct = 0;
-    public float $yieldBitsStemPct = 0;
-    public float $yieldDustPct = 0;
-    public float $yieldWastePct = 0;
+    public $yieldProductPct = 0;
+    public $yieldBitsStemPct = 0;
+    public $yieldDustPct = 0;
+    public $yieldWastePct = 0;
 
     public string $status = 'OPEN';
     public bool $showPauseModal = false;
@@ -59,9 +67,26 @@ class WeighingSheet extends Component
         }
     }
 
-    public function selectBatch(int $id)
+    public function selectBatch($id = null)
     {
-        $batch = Batch::with(['customer', 'deliveryNote', 'productType', 'origin', 'weighingItems'])->findOrFail($id);
+        if (empty($id)) {
+            $this->batchId = null;
+            $this->status = 'OPEN';
+            $this->items = [];
+            $this->recalculateTotals();
+            return;
+        }
+
+        $id = (int) $id;
+        $batch = Batch::with(['customer', 'deliveryNote', 'productType', 'origin', 'weighingItems'])->find($id);
+        if (! $batch) {
+            $this->batchId = null;
+            $this->status = 'OPEN';
+            $this->items = [];
+            $this->recalculateTotals();
+            return;
+        }
+
         $this->batchId = $batch->id;
         $this->status = $batch->status;
 
@@ -69,31 +94,41 @@ class WeighingSheet extends Component
         $currentUserId = $user ? $user->id : 0;
 
         // Reset separation form for current session if new user/resume
-        $this->product_kg_per_sack = (float) (($batch->product_kg_per_sack && (float)$batch->product_kg_per_sack > 0) ? $batch->product_kg_per_sack : 20.00);
+        $this->product_kg_per_sack = (float) (($batch->product_kg_per_sack && (float)$batch->product_kg_per_sack > 0) ? $batch->product_kg_per_sack : 25.20);
+        $this->product_tare_per_sack = (float) (isset($batch->product_tare_per_sack) ? $batch->product_tare_per_sack : 0.20);
         $this->separation_product_sack = (int) ($batch->separation_product_sack ?? 0);
+        $this->separation_product_gross_kg = (float) ($batch->separation_product_gross_kg ?? 0);
+        $this->separation_product_tare_kg = (float) ($batch->separation_product_tare_kg ?? 0);
         $this->separation_product_kg = (float) ($batch->separation_product_kg ?? 0);
+        $this->separation_product_remnant_gross_kg = (float) ($batch->separation_product_remnant_gross_kg ?? 0);
+        $this->separation_product_remnant_tare_kg = (float) ($batch->separation_product_remnant_tare_kg ?? 0);
+        $this->separation_product_remnant_kg = (float) ($batch->separation_product_remnant_kg ?? 0);
 
-        if ($this->separation_product_sack > 0 && $this->product_kg_per_sack > 0) {
-            $this->separation_product_kg = max(0, round($this->separation_product_sack * $this->product_kg_per_sack, 2));
-        } elseif ($this->separation_product_kg > 0 && $this->separation_product_sack == 0 && $this->product_kg_per_sack > 0) {
-            $this->separation_product_sack = (int) round($this->separation_product_kg / $this->product_kg_per_sack);
+        // Bit Stem items
+        if (! empty($batch->bit_stem_items) && is_array($batch->bit_stem_items)) {
+            $this->bit_stem_items = $batch->bit_stem_items;
+        } else {
+            $this->bit_stem_items = [
+                [
+                    'gross_kg' => (float) ($batch->separation_bits_stem_gross_kg ?? 0),
+                    'tare_kg' => (float) ($batch->separation_bits_stem_tare_kg ?? 0),
+                    'netto_kg' => (float) ($batch->separation_bits_stem_netto_kg ?? $batch->separation_bits_stem_kg ?? 0),
+                ]
+            ];
         }
 
-        $this->separation_bits_stem_gross_kg = (float) ($batch->separation_bits_stem_gross_kg ?? 0);
-        $this->separation_bits_stem_tare_kg = (float) ($batch->separation_bits_stem_tare_kg ?? 0);
-        $this->separation_bits_stem_netto_kg = (float) ($batch->separation_bits_stem_netto_kg ?? $batch->separation_bits_stem_kg ?? 0);
-        if ($this->separation_bits_stem_gross_kg == 0 && $this->separation_bits_stem_netto_kg > 0) {
-            $this->separation_bits_stem_gross_kg = $this->separation_bits_stem_netto_kg;
+        // Dust items
+        if (! empty($batch->dust_items) && is_array($batch->dust_items)) {
+            $this->dust_items = $batch->dust_items;
+        } else {
+            $this->dust_items = [
+                [
+                    'gross_kg' => (float) ($batch->separation_dust_gross_kg ?? 0),
+                    'tare_kg' => (float) ($batch->separation_dust_tare_kg ?? 0),
+                    'netto_kg' => (float) ($batch->separation_dust_netto_kg ?? $batch->separation_dust_kg ?? 0),
+                ]
+            ];
         }
-        $this->separation_bits_stem_kg = $this->separation_bits_stem_netto_kg;
-
-        $this->separation_dust_gross_kg = (float) ($batch->separation_dust_gross_kg ?? 0);
-        $this->separation_dust_tare_kg = (float) ($batch->separation_dust_tare_kg ?? 0);
-        $this->separation_dust_netto_kg = (float) ($batch->separation_dust_netto_kg ?? $batch->separation_dust_kg ?? 0);
-        if ($this->separation_dust_gross_kg == 0 && $this->separation_dust_netto_kg > 0) {
-            $this->separation_dust_gross_kg = $this->separation_dust_netto_kg;
-        }
-        $this->separation_dust_kg = $this->separation_dust_netto_kg;
 
         $this->separation_waste_kg = (float) ($batch->separation_waste_kg ?? 0);
 
@@ -193,32 +228,57 @@ class WeighingSheet extends Component
         $this->recalculateTotals();
     }
 
-    public function updatedSeparationBitsStemGrossKg()
+    public function updatedSeparationProductRemnantGrossKg()
     {
         $this->recalculateTotals();
     }
 
-    public function updatedSeparationBitsStemTareKg()
+    public function updatedSeparationProductRemnantTareKg()
     {
         $this->recalculateTotals();
     }
 
-    public function updatedSeparationBitsStemKg()
+    public function addBitStemRow()
+    {
+        $this->bit_stem_items[] = ['gross_kg' => 0, 'tare_kg' => 0, 'netto_kg' => 0];
+        $this->recalculateTotals();
+    }
+
+    public function removeBitStemRow(int $index)
+    {
+        if (count($this->bit_stem_items) > 1) {
+            unset($this->bit_stem_items[$index]);
+            $this->bit_stem_items = array_values($this->bit_stem_items);
+            $this->recalculateTotals();
+        }
+    }
+
+    public function addDustRow()
+    {
+        $this->dust_items[] = ['gross_kg' => 0, 'tare_kg' => 0, 'netto_kg' => 0];
+        $this->recalculateTotals();
+    }
+
+    public function removeDustRow(int $index)
+    {
+        if (count($this->dust_items) > 1) {
+            unset($this->dust_items[$index]);
+            $this->dust_items = array_values($this->dust_items);
+            $this->recalculateTotals();
+        }
+    }
+
+    public function updatedBitStemItems()
     {
         $this->recalculateTotals();
     }
 
-    public function updatedSeparationDustGrossKg()
+    public function updatedDustItems()
     {
         $this->recalculateTotals();
     }
 
-    public function updatedSeparationDustTareKg()
-    {
-        $this->recalculateTotals();
-    }
-
-    public function updatedSeparationDustKg()
+    public function updatedProductTarePerSack()
     {
         $this->recalculateTotals();
     }
@@ -258,35 +318,74 @@ class WeighingSheet extends Component
             }
         }
 
-        // 1. Produk Jadi conversion: Sack -> Kg
+        // 1. Produk Jadi calculation: Sack (Gross & Tare per Sack) + Remnant (Gross & Tare in Kg)
         $prodSack = (int) ($this->separation_product_sack ?? 0);
-        $kgPerSack = $this->parseFloat(($this->product_kg_per_sack && (float)$this->product_kg_per_sack > 0) ? $this->product_kg_per_sack : 20.00);
-        $prodKg = max(0, round($prodSack * $kgPerSack, 2));
-        $this->separation_product_kg = $prodKg;
+        $kgPerSack = $this->parseFloat(($this->product_kg_per_sack && (float)$this->product_kg_per_sack > 0) ? $this->product_kg_per_sack : 25.20);
+        $tarePerSack = $this->parseFloat((isset($this->product_tare_per_sack) && (float)$this->product_tare_per_sack >= 0) ? $this->product_tare_per_sack : 0.20);
+        
+        $prodSackGross = max(0, round($prodSack * $kgPerSack, 2));
+        $prodSackTare = max(0, round($prodSack * $tarePerSack, 2));
 
-        // 2. Bit Stem Netto calculation: Gross - Tare
-        $stemGross = $this->parseFloat($this->separation_bits_stem_gross_kg ?? 0);
-        $stemTare = $this->parseFloat($this->separation_bits_stem_tare_kg ?? 0);
-        $stemNetto = max(0, round($stemGross - $stemTare, 2));
-        $this->separation_bits_stem_netto_kg = $stemNetto;
-        $this->separation_bits_stem_kg = $stemNetto;
+        $remGross = $this->parseFloat($this->separation_product_remnant_gross_kg);
+        $remTare = $this->parseFloat($this->separation_product_remnant_tare_kg);
+        $remNetto = max(0, round($remGross - $remTare, 2));
+        $this->separation_product_remnant_kg = $remNetto;
 
-        // 3. Debu Netto calculation: Gross - Tare
-        $dustGross = $this->parseFloat($this->separation_dust_gross_kg ?? 0);
-        $dustTare = $this->parseFloat($this->separation_dust_tare_kg ?? 0);
-        $dustNetto = max(0, round($dustGross - $dustTare, 2));
-        $this->separation_dust_netto_kg = $dustNetto;
-        $this->separation_dust_kg = $dustNetto;
+        $totalProdGross = round($prodSackGross + $remGross, 2);
+        $totalProdTare = round($prodSackTare + $remTare, 2);
+        $prodNetto = max(0, round($totalProdGross - $totalProdTare, 2));
 
-        // 4. Uncountable Waste calculation: Total Netto - (Produk + Bit Stem + Debu)
-        $outputsSum = $prodKg + $stemNetto + $dustNetto;
+        $this->separation_product_gross_kg = $totalProdGross;
+        $this->separation_product_tare_kg = $totalProdTare;
+        $this->separation_product_kg = $prodNetto;
+
+        // 2. Bit Stem multi-row calculations
+        $stemGrossSum = 0;
+        $stemTareSum = 0;
+        $stemNettoSum = 0;
+
+        foreach ($this->bit_stem_items as &$item) {
+            $g = $this->parseFloat($item['gross_kg'] ?? 0);
+            $t = $this->parseFloat($item['tare_kg'] ?? 0);
+            $n = max(0, round($g - $t, 2));
+            $item['netto_kg'] = $n;
+            $stemGrossSum += $g;
+            $stemTareSum += $t;
+            $stemNettoSum += $n;
+        }
+        $this->separation_bits_stem_gross_kg = $stemGrossSum;
+        $this->separation_bits_stem_tare_kg = $stemTareSum;
+        $this->separation_bits_stem_netto_kg = $stemNettoSum;
+        $this->separation_bits_stem_kg = $stemNettoSum;
+
+        // 3. Debu multi-row calculations
+        $dustGrossSum = 0;
+        $dustTareSum = 0;
+        $dustNettoSum = 0;
+
+        foreach ($this->dust_items as &$item) {
+            $g = $this->parseFloat($item['gross_kg'] ?? 0);
+            $t = $this->parseFloat($item['tare_kg'] ?? 0);
+            $n = max(0, round($g - $t, 2));
+            $item['netto_kg'] = $n;
+            $dustGrossSum += $g;
+            $dustTareSum += $t;
+            $dustNettoSum += $n;
+        }
+        $this->separation_dust_gross_kg = $dustGrossSum;
+        $this->separation_dust_tare_kg = $dustTareSum;
+        $this->separation_dust_netto_kg = $dustNettoSum;
+        $this->separation_dust_kg = $dustNettoSum;
+
+        // 4. Uncountable Waste calculation: Total Netto Input - (Netto Produk + Netto Bit Stem + Netto Debu)
+        $outputsSum = $prodNetto + $stemNettoSum + $dustNettoSum;
 
         if ($this->totalNettoKg > 0) {
             $this->separation_waste_kg = max(0, round($this->totalNettoKg - $outputsSum, 2));
 
-            $this->yieldProductPct = round(($prodKg / $this->totalNettoKg) * 100, 2);
-            $this->yieldBitsStemPct = round(($stemNetto / $this->totalNettoKg) * 100, 2);
-            $this->yieldDustPct = round(($dustNetto / $this->totalNettoKg) * 100, 2);
+            $this->yieldProductPct = round(($prodNetto / $this->totalNettoKg) * 100, 2);
+            $this->yieldBitsStemPct = round(($stemNettoSum / $this->totalNettoKg) * 100, 2);
+            $this->yieldDustPct = round(($dustNettoSum / $this->totalNettoKg) * 100, 2);
             $this->yieldWastePct = max(0, round(100.00 - ($this->yieldProductPct + $this->yieldBitsStemPct + $this->yieldDustPct), 2));
         } else {
             $this->separation_waste_kg = 0;
@@ -320,15 +419,6 @@ class WeighingSheet extends Component
         $user = Auth::user();
         $batch = Batch::findOrFail($this->batchId);
 
-        // Require interim separation report numbers
-        $this->validate([
-            'separation_product_sack' => 'required|numeric|min:0',
-            'separation_bits_stem_gross_kg' => 'required|numeric|min:0',
-            'separation_bits_stem_tare_kg' => 'required|numeric|min:0',
-            'separation_dust_gross_kg' => 'required|numeric|min:0',
-            'separation_dust_tare_kg' => 'required|numeric|min:0',
-        ]);
-
         $this->recalculateTotals();
 
         // Log interim separation report for shift/group
@@ -337,16 +427,24 @@ class WeighingSheet extends Component
             'user_id' => Auth::id(),
             'shift' => $user->shift ?? 'Shift 1',
             'group' => $user->group ?? 'Group A',
+            'product_tare_per_sack' => $this->product_tare_per_sack,
             'separation_product_kg' => $this->separation_product_kg,
             'separation_product_sack' => $this->separation_product_sack,
+            'separation_product_gross_kg' => $this->separation_product_gross_kg,
+            'separation_product_tare_kg' => $this->separation_product_tare_kg,
+            'separation_product_remnant_gross_kg' => $this->separation_product_remnant_gross_kg,
+            'separation_product_remnant_tare_kg' => $this->separation_product_remnant_tare_kg,
+            'separation_product_remnant_kg' => $this->separation_product_remnant_kg,
             'separation_bits_stem_kg' => $this->separation_bits_stem_kg,
             'separation_bits_stem_gross_kg' => $this->separation_bits_stem_gross_kg,
             'separation_bits_stem_tare_kg' => $this->separation_bits_stem_tare_kg,
             'separation_bits_stem_netto_kg' => $this->separation_bits_stem_netto_kg,
+            'bit_stem_items' => $this->bit_stem_items,
             'separation_dust_kg' => $this->separation_dust_kg,
             'separation_dust_gross_kg' => $this->separation_dust_gross_kg,
             'separation_dust_tare_kg' => $this->separation_dust_tare_kg,
             'separation_dust_netto_kg' => $this->separation_dust_netto_kg,
+            'dust_items' => $this->dust_items,
             'separation_waste_kg' => $this->separation_waste_kg,
             'sacks_processed_count' => $this->totalPack,
             'notes' => $this->pause_notes ?: 'Jeda / Pause Shift Kerja',
@@ -389,6 +487,7 @@ class WeighingSheet extends Component
 
         $batch->update([
             'product_kg_per_sack' => $this->product_kg_per_sack,
+            'product_tare_per_sack' => $this->product_tare_per_sack,
             'mrl_total_pack' => $this->totalPack,
             'mrl_gross_weight' => $this->totalGrossKg,
             'mrl_tare_weight' => $this->totalTareKg,
@@ -396,14 +495,21 @@ class WeighingSheet extends Component
             'discrepancy_dn_vs_mrl_kg' => $discrepancy,
             'separation_product_kg' => $this->separation_product_kg,
             'separation_product_sack' => $this->separation_product_sack,
+            'separation_product_gross_kg' => $this->separation_product_gross_kg,
+            'separation_product_tare_kg' => $this->separation_product_tare_kg,
+            'separation_product_remnant_gross_kg' => $this->separation_product_remnant_gross_kg,
+            'separation_product_remnant_tare_kg' => $this->separation_product_remnant_tare_kg,
+            'separation_product_remnant_kg' => $this->separation_product_remnant_kg,
             'separation_bits_stem_kg' => $this->separation_bits_stem_kg,
             'separation_bits_stem_gross_kg' => $this->separation_bits_stem_gross_kg,
             'separation_bits_stem_tare_kg' => $this->separation_bits_stem_tare_kg,
             'separation_bits_stem_netto_kg' => $this->separation_bits_stem_netto_kg,
+            'bit_stem_items' => $this->bit_stem_items,
             'separation_dust_kg' => $this->separation_dust_kg,
             'separation_dust_gross_kg' => $this->separation_dust_gross_kg,
             'separation_dust_tare_kg' => $this->separation_dust_tare_kg,
             'separation_dust_netto_kg' => $this->separation_dust_netto_kg,
+            'dust_items' => $this->dust_items,
             'separation_waste_kg' => $this->separation_waste_kg,
             'yield_product_pct' => $this->yieldProductPct,
             'yield_bits_stem_pct' => $this->yieldBitsStemPct,

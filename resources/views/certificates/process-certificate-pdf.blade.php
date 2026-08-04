@@ -235,6 +235,9 @@
             @if(($batch->separation_dust_gross_kg ?? 0) > 0)
                 <li>Dust Weighing Detail: Gross {{ number_format($batch->separation_dust_gross_kg, 2, ',', '.') }} kg, Tare {{ number_format($batch->separation_dust_tare_kg, 2, ',', '.') }} kg, Netto {{ number_format($batch->separation_dust_netto_kg ?: $batch->separation_dust_kg, 2, ',', '.') }} kg.</li>
             @endif
+            @if(($batch->separation_product_remnant_kg ?? 0) > 0)
+                <li>Product Remnant Weighing Detail: Gross {{ number_format($batch->separation_product_remnant_gross_kg, 2, ',', '.') }} kg, Tare {{ number_format($batch->separation_product_remnant_tare_kg, 2, ',', '.') }} kg, Netto {{ number_format($batch->separation_product_remnant_kg, 2, ',', '.') }} kg.</li>
+            @endif
         </ol>
         @if(!empty($batch->custom_separation_remark))
             <div class="custom-remark-text">Catatan Khusus Pemisahan: {{ $batch->custom_separation_remark }}</div>

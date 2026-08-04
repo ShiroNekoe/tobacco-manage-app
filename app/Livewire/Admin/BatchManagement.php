@@ -23,13 +23,16 @@ class BatchManagement extends Component
 
     // Create Batch Form Fields
     public bool $showCreateModal = false;
+    public string $batch_code = '';
     public ?int $customer_id = null;
     public string $dn_number = '';
     public ?int $product_type_id = null;
     public ?int $origin_id = null;
+    public string $material_code = '';
     public array $selected_origins = [];
     public string $pack_type = 'Bale';
-    public float $product_kg_per_sack = 20.00;
+    public float $product_kg_per_sack = 25.20;
+    public float $product_tare_per_sack = 0.20;
     public string $date_of_receipt = '';
 
     // Header DN Weight Input
@@ -70,8 +73,11 @@ class BatchManagement extends Component
 
     public function openCreateModal()
     {
-        $this->reset(['customer_id', 'dn_number', 'product_type_id', 'origin_id', 'pack_type', 'selected_origins', 'dn_gross_weight_input']);
-        $this->product_kg_per_sack = 20.00;
+        $this->reset(['customer_id', 'dn_number', 'product_type_id', 'origin_id', 'material_code', 'pack_type', 'selected_origins', 'dn_gross_weight_input']);
+        $countToday = Batch::whereDate('created_at', Carbon::today())->count() + 1;
+        $this->batch_code = 'BCH-' . Carbon::today()->format('Ymd') . '-' . str_pad($countToday, 3, '0', STR_PAD_LEFT);
+        $this->product_kg_per_sack = 25.20;
+        $this->product_tare_per_sack = 0.20;
         $this->date_of_receipt = Carbon::now()->format('Y-m-d');
         $this->target_sack_count = 5;
         $this->generateMrlRowsFromTargetCount();
@@ -153,12 +159,15 @@ class BatchManagement extends Component
         }
 
         $this->validate([
+            'batch_code' => 'required|string',
             'customer_id' => 'required|exists:customers,id',
             'dn_number' => 'required|string',
             'product_type_id' => 'required|exists:product_types,id',
             'origin_id' => 'required|exists:origins,id',
+            'material_code' => 'nullable|string',
             'pack_type' => 'required|string',
             'product_kg_per_sack' => 'required|numeric|min:0.01',
+            'product_tare_per_sack' => 'required|numeric|min:0',
             'date_of_receipt' => 'required|date',
             'mrl_items' => 'required|array|min:1',
             'mrl_items.*.mrl_gross_weight' => 'required|numeric|min:0.01',
@@ -175,19 +184,18 @@ class BatchManagement extends Component
             ]
         );
 
-        $countToday = Batch::whereDate('created_at', Carbon::today())->count() + 1;
-        $batchCode = 'BCH-' . Carbon::today()->format('Ymd') . '-' . str_pad($countToday, 3, '0', STR_PAD_LEFT);
-
         $discrepancy = round($this->mrl_gross_weight - $this->dn_gross_weight, 2);
 
         $batch = Batch::create([
-            'batch_code' => $batchCode,
+            'batch_code' => trim($this->batch_code),
             'customer_id' => $this->customer_id,
             'delivery_note_id' => $dn->id,
             'product_type_id' => $this->product_type_id,
             'origin_id' => $this->origin_id,
+            'material_code' => trim($this->material_code),
             'pack_type' => $this->pack_type,
-            'product_kg_per_sack' => $this->product_kg_per_sack ?: 20.00,
+            'product_kg_per_sack' => $this->product_kg_per_sack ?: 25.20,
+            'product_tare_per_sack' => isset($this->product_tare_per_sack) ? $this->product_tare_per_sack : 0.20,
             'date_of_receipt' => $this->date_of_receipt,
             'dn_total_pack' => $this->dn_total_pack,
             'dn_gross_weight' => $this->dn_gross_weight,

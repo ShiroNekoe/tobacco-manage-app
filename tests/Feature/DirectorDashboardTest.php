@@ -33,4 +33,13 @@ class DirectorDashboardTest extends TestCase
 
         $this->actingAs($karyawan)->get('/customer/dashboard')->assertStatus(403);
     }
+
+    public function test_base_origin_extraction_helper(): void
+    {
+        $this->assertEquals('KASTURI', \App\Livewire\Customer\CustomerDashboard::extractBaseOrigin('KASTURI FN602'));
+        $this->assertEquals('LOMBOK', \App\Livewire\Customer\CustomerDashboard::extractBaseOrigin("LOMBOK '24"));
+        $this->assertEquals('LOMBOK', \App\Livewire\Customer\CustomerDashboard::extractBaseOrigin('LOMBOK P9K5'));
+        $this->assertEquals('MADURA', \App\Livewire\Customer\CustomerDashboard::extractBaseOrigin("MADURA'25"));
+        $this->assertEquals('PAITON', \App\Livewire\Customer\CustomerDashboard::extractBaseOrigin('PAITON P10-5'));
+    }
 }

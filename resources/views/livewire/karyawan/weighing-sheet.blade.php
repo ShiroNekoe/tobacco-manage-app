@@ -165,85 +165,196 @@
     </div>
 
     <!-- SEPARATION RESULTS REPORT INPUTS -->
-    <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-6 space-y-5 shadow-xl">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800 pb-3">
             <div>
                 <h3 class="text-base font-black text-amber-400 uppercase tracking-wide">
                     Laporan Hasil Pemisahan Sesi Kerja Ini (Separation Results)
                 </h3>
-                <p class="text-[11px] text-zinc-400 mt-0.5">Semua kalkulasi berat kotor, wadah, bersih (Netto), dan persentase yield dihitung secara otomatis.</p>
+                <p class="text-[11px] text-zinc-400 mt-0.5">Semua kalkulasi berat kotor, wadah (tare), bersih (Netto), dan persentase yield dihitung secara otomatis.</p>
             </div>
-            <span class="text-xs text-amber-400 font-bold bg-amber-950 px-3 py-1.5 rounded-xl border border-amber-800/80 shrink-0">
-                Hitungan Per Sak: {{ number_format($product_kg_per_sack, 2) }} kg/sak
-            </span>
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="text-xs text-amber-400 font-bold bg-amber-950 px-3 py-1.5 rounded-xl border border-amber-800/80">
+                    Gross Standard: {{ number_format($product_kg_per_sack, 2) }} kg/sak
+                </span>
+                <span class="text-xs text-emerald-400 font-bold bg-emerald-950 px-3 py-1.5 rounded-xl border border-emerald-800/80">
+                    Tare Standard: {{ number_format($product_tare_per_sack, 2) }} kg/sak
+                </span>
+            </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
-            <!-- 1. Produk Jadi (Persack) -->
-            <div class="bg-zinc-950 p-4 rounded-2xl border border-emerald-900/60 flex flex-col justify-between space-y-3">
-                <div>
-                    <label class="block text-xs font-bold uppercase text-emerald-400 mb-2">1. Produk Jadi (Sak/Karung) <span class="text-red-400">*</span></label>
-                    <input type="number" min="0" step="1" inputmode="numeric" wire:model.live.debounce.500ms="separation_product_sack" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-emerald-500/80 text-emerald-400 text-lg font-black outline-none focus:border-emerald-500" placeholder="0">
+        <div class="space-y-5">
+            <!-- 1. Dedicated Form Produk Jadi (Full Width Rectangle) -->
+            <div class="bg-zinc-950 p-5 rounded-2xl border border-emerald-900/60 space-y-4 shadow">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800/80 pb-2">
+                    <h4 class="text-xs font-black uppercase text-emerald-400 tracking-wider">1. Form Produk Jadi (Rajangan) <span class="text-red-400">*</span></h4>
+                    <span class="text-[10px] font-bold text-emerald-300 bg-emerald-950 px-2.5 py-1 rounded border border-emerald-800 shrink-0">Tare Pre-Launch Active</span>
                 </div>
-                <div class="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-xs font-bold">
-                    <span class="text-emerald-400 font-mono text-sm">= {{ number_format($separation_product_kg, 2) }} kg</span>
-                    <span class="px-2 py-0.5 rounded-lg bg-emerald-950 text-emerald-300 border border-emerald-800 text-[11px]">{{ number_format($yieldProductPct, 2) }}%</span>
-                </div>
-            </div>
 
-            <!-- 2. Bit Stem Gross & Tare -->
-            <div class="bg-zinc-950 p-4 rounded-2xl border border-amber-900/60 flex flex-col justify-between space-y-3">
-                <div>
-                    <label class="block text-xs font-bold uppercase text-amber-400 mb-2">2. Bit Stem / Gagang (Kg)</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <span class="block text-[10px] text-zinc-400 font-bold uppercase mb-1">Gross</span>
-                            <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="separation_bits_stem_gross_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-2.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-amber-400 font-bold text-sm outline-none focus:border-amber-500" placeholder="0.00">
-                        </div>
-                        <div>
-                            <span class="block text-[10px] text-zinc-400 font-bold uppercase mb-1">Tare</span>
-                            <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="separation_bits_stem_tare_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-2.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-amber-400 font-bold text-sm outline-none focus:border-amber-500" placeholder="0.00">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase text-zinc-300 mb-1">Jumlah Produk Jadi (Sak/Karung)</label>
+                        <input type="number" min="0" step="1" inputmode="numeric" wire:model.live.debounce.500ms="separation_product_sack" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-emerald-500/80 text-emerald-400 text-base font-black outline-none focus:border-emerald-500" placeholder="0">
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase text-amber-400 mb-1">Remnant Gross (kg) <span class="text-zinc-500 font-normal">(Sisa Produk per Kg)</span></label>
+                        <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="separation_product_remnant_gross_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-amber-500/80 text-amber-300 text-sm font-bold outline-none focus:border-amber-500" placeholder="0.00">
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase text-amber-400 mb-1">Remnant Tare (kg)</label>
+                        <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="separation_product_remnant_tare_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-amber-500/80 text-amber-300 text-sm font-bold outline-none focus:border-amber-500" placeholder="0.00">
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase text-zinc-300 mb-1">Tare Produk Per Sak (kg/sak) <span class="text-zinc-500 font-normal">(Pre-Launch)</span></label>
+                        <input type="text" value="{{ number_format($product_tare_per_sack, 2) }} kg/sak" readonly disabled class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900/80 border border-zinc-800 text-zinc-400 font-bold text-sm outline-none cursor-not-allowed" placeholder="2.00">
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase text-zinc-300 mb-1">Hasil Netto Produk (kg)</label>
+                        <input type="text" value="{{ number_format($separation_product_kg, 2) }} kg" readonly class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-emerald-800/60 text-emerald-400 font-mono text-sm font-bold outline-none cursor-not-allowed">
+                    </div>
+
+                    <div class="flex flex-col justify-end">
+                        <div class="bg-emerald-950 px-4 py-2.5 rounded-xl border border-emerald-800 flex items-center justify-between">
+                            <span class="text-xs font-bold text-emerald-400 uppercase">Yield Produk:</span>
+                            <span class="text-emerald-300 text-base font-black">{{ number_format($yieldProductPct, 2) }}%</span>
                         </div>
                     </div>
                 </div>
-                <div class="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-xs font-bold">
-                    <span class="text-amber-400 font-mono text-sm">Netto: {{ number_format($separation_bits_stem_netto_kg, 2) }} kg</span>
-                    <span class="px-2 py-0.5 rounded-lg bg-amber-950 text-amber-300 border border-amber-800 text-[11px]">{{ number_format($yieldBitsStemPct, 2) }}%</span>
+
+                <div class="pt-2 border-t border-zinc-800/60 flex flex-wrap items-center gap-4 text-xs font-bold text-zinc-400">
+                    <span>Total Gross: <strong class="text-zinc-200 font-mono">{{ number_format($separation_product_gross_kg, 2) }} kg</strong></span>
+                    <span>•</span>
+                    <span>Total Tare: <strong class="text-zinc-300 font-mono">{{ number_format($separation_product_tare_kg, 2) }} kg</strong></span>
+                    <span>•</span>
+                    <span>Remnant Netto: <strong class="text-amber-400 font-mono">{{ number_format($separation_product_remnant_kg, 2) }} kg</strong></span>
+                    <span>•</span>
+                    <span>Netto Produk Total: <strong class="text-emerald-400 font-mono">{{ number_format($separation_product_kg, 2) }} kg</strong></span>
                 </div>
             </div>
 
-            <!-- 3. Debu Gross & Tare -->
-            <div class="bg-zinc-950 p-4 rounded-2xl border border-orange-900/60 flex flex-col justify-between space-y-3">
-                <div>
-                    <label class="block text-xs font-bold uppercase text-orange-400 mb-2">3. Debu / Dust (Kg)</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <span class="block text-[10px] text-zinc-400 font-bold uppercase mb-1">Gross</span>
-                            <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="separation_dust_gross_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-2.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-orange-400 font-bold text-sm outline-none focus:border-orange-500" placeholder="0.00">
-                        </div>
-                        <div>
-                            <span class="block text-[10px] text-zinc-400 font-bold uppercase mb-1">Tare</span>
-                            <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="separation_dust_tare_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-2.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-orange-400 font-bold text-sm outline-none focus:border-orange-500" placeholder="0.00">
-                        </div>
-                    </div>
+            <!-- 2. Bit Stem Multi-Row Slot Table (Full Width Rectangle) -->
+            <div class="bg-zinc-950 p-5 rounded-2xl border border-amber-900/60 space-y-4 shadow">
+                <div class="flex items-center justify-between border-b border-zinc-800/80 pb-2">
+                    <h4 class="text-xs font-black uppercase text-amber-400 tracking-wider">2. Bit Stem / Gagang (Multi-Slot Wadah)</h4>
+                    @if(!in_array($status, ['CLOSED', 'locked']))
+                        <button type="button" wire:click="addBitStemRow" class="px-3.5 py-1.5 bg-amber-950 text-amber-300 border border-amber-800 hover:bg-amber-900 rounded-xl text-xs font-bold flex items-center gap-1 shadow">
+                            ➕ Tambah Slot Wadah
+                        </button>
+                    @endif
                 </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="text-[10px] text-zinc-400 font-bold uppercase border-b border-zinc-800">
+                                <th class="pb-2 w-12">No</th>
+                                <th class="pb-2">Gross (kg)</th>
+                                <th class="pb-2">Tare (kg)</th>
+                                <th class="pb-2">Netto (kg)</th>
+                                <th class="pb-2 w-24 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-zinc-900">
+                            @foreach($bit_stem_items as $idx => $bItem)
+                                <tr>
+                                    <td class="py-2 text-zinc-400 font-bold">{{ $idx + 1 }}</td>
+                                    <td class="py-2 pr-3">
+                                        <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="bit_stem_items.{{ $idx }}.gross_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-amber-400 font-bold text-xs outline-none focus:border-amber-500" placeholder="0.00">
+                                    </td>
+                                    <td class="py-2 pr-3">
+                                        <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="bit_stem_items.{{ $idx }}.tare_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-amber-400 font-bold text-xs outline-none focus:border-amber-500" placeholder="0.00">
+                                    </td>
+                                    <td class="py-2 font-mono text-amber-400 font-bold">
+                                        {{ number_format($bItem['netto_kg'] ?? 0, 2) }} kg
+                                    </td>
+                                    <td class="py-2 text-center">
+                                        @if(count($bit_stem_items) > 1 && !in_array($status, ['CLOSED', 'locked']))
+                                            <button type="button" wire:click="removeBitStemRow({{ $idx }})" class="px-2.5 py-1 bg-red-950 text-red-400 border border-red-800 hover:bg-red-900 rounded-lg text-xs font-bold">✕ Hapus</button>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
                 <div class="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-xs font-bold">
-                    <span class="text-orange-400 font-mono text-sm">Netto: {{ number_format($separation_dust_netto_kg, 2) }} kg</span>
-                    <span class="px-2 py-0.5 rounded-lg bg-orange-950 text-orange-300 border border-orange-800 text-[11px]">{{ number_format($yieldDustPct, 2) }}%</span>
+                    <span class="text-amber-400 font-mono text-sm">Total Bit Stem Netto: {{ number_format($separation_bits_stem_netto_kg, 2) }} kg</span>
+                    <span class="px-3 py-1 rounded-xl bg-amber-950 text-amber-300 border border-amber-800 text-xs font-black">{{ number_format($yieldBitsStemPct, 2) }}%</span>
                 </div>
             </div>
 
-            <!-- 4. Uncountable Waste -->
-            <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 flex flex-col justify-between space-y-3">
-                <div>
-                    <label class="block text-xs font-bold uppercase text-zinc-300 mb-2">4. Uncountable Waste (Kg)</label>
-                    <div class="mt-1">
-                        <input type="text" value="{{ number_format($separation_waste_kg, 2) }}" readonly class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 text-lg font-black outline-none cursor-not-allowed">
-                    </div>
+            <!-- 3. Debu / Dust Multi-Row Slot Table (Full Width Rectangle) -->
+            <div class="bg-zinc-950 p-5 rounded-2xl border border-orange-900/60 space-y-4 shadow">
+                <div class="flex items-center justify-between border-b border-zinc-800/80 pb-2">
+                    <h4 class="text-xs font-black uppercase text-orange-400 tracking-wider">3. Debu / Dust (Multi-Slot Wadah)</h4>
+                    @if(!in_array($status, ['CLOSED', 'locked']))
+                        <button type="button" wire:click="addDustRow" class="px-3.5 py-1.5 bg-orange-950 text-orange-300 border border-orange-800 hover:bg-orange-900 rounded-xl text-xs font-bold flex items-center gap-1 shadow">
+                            ➕ Tambah Slot Wadah
+                        </button>
+                    @endif
                 </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="text-[10px] text-zinc-400 font-bold uppercase border-b border-zinc-800">
+                                <th class="pb-2 w-12">No</th>
+                                <th class="pb-2">Gross (kg)</th>
+                                <th class="pb-2">Tare (kg)</th>
+                                <th class="pb-2">Netto (kg)</th>
+                                <th class="pb-2 w-24 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-zinc-900">
+                            @foreach($dust_items as $idx => $dItem)
+                                <tr>
+                                    <td class="py-2 text-zinc-400 font-bold">{{ $idx + 1 }}</td>
+                                    <td class="py-2 pr-3">
+                                        <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="dust_items.{{ $idx }}.gross_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-orange-400 font-bold text-xs outline-none focus:border-orange-500" placeholder="0.00">
+                                    </td>
+                                    <td class="py-2 pr-3">
+                                        <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="dust_items.{{ $idx }}.tare_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-orange-400 font-bold text-xs outline-none focus:border-orange-500" placeholder="0.00">
+                                    </td>
+                                    <td class="py-2 font-mono text-orange-400 font-bold">
+                                        {{ number_format($dItem['netto_kg'] ?? 0, 2) }} kg
+                                    </td>
+                                    <td class="py-2 text-center">
+                                        @if(count($dust_items) > 1 && !in_array($status, ['CLOSED', 'locked']))
+                                            <button type="button" wire:click="removeDustRow({{ $idx }})" class="px-2.5 py-1 bg-red-950 text-red-400 border border-red-800 hover:bg-red-900 rounded-lg text-xs font-bold">✕ Hapus</button>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
                 <div class="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-xs font-bold">
-                    <span class="text-zinc-400 font-mono text-sm">{{ number_format($separation_waste_kg, 2) }} kg</span>
-                    <span class="px-2 py-0.5 rounded-lg bg-zinc-900 text-zinc-300 border border-zinc-700 text-[11px]">{{ number_format($yieldWastePct, 2) }}%</span>
+                    <span class="text-orange-400 font-mono text-sm">Total Debu Netto: {{ number_format($separation_dust_netto_kg, 2) }} kg</span>
+                    <span class="px-3 py-1 rounded-xl bg-orange-950 text-orange-300 border border-orange-800 text-xs font-black">{{ number_format($yieldDustPct, 2) }}%</span>
+                </div>
+            </div>
+
+            <!-- 4. Uncountable Waste Summary Card (Full Width Rectangle at Bottom) -->
+            <div class="bg-zinc-950 p-5 rounded-2xl border border-zinc-800 space-y-3 shadow">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800/80 pb-2">
+                    <h4 class="text-xs font-black uppercase text-zinc-300 tracking-wider">4. Uncountable Waste (Sisa Tidak Terhitung)</h4>
+                    <span class="text-[10px] text-zinc-400 font-bold">Kalkulasi Otomatis Sisa Berat Pembagian (Input Netto - Total Output)</span>
+                </div>
+
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex-1">
+                        <input type="text" value="{{ number_format($separation_waste_kg, 2) }} kg" readonly class="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-200 text-xl font-black outline-none cursor-not-allowed">
+                    </div>
+                    <div class="bg-zinc-900 px-5 py-3 rounded-xl border border-zinc-700 flex items-center justify-between gap-4 shrink-0">
+                        <span class="text-xs font-bold text-zinc-400 uppercase">Yield Uncountable Waste:</span>
+                        <span class="text-zinc-200 text-base font-black font-mono">{{ number_format($yieldWastePct, 2) }}%</span>
+                    </div>
                 </div>
             </div>
         </div>

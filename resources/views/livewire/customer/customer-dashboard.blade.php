@@ -205,11 +205,67 @@
             @empty
                 <div class="p-6 text-center text-zinc-500 text-xs">Belum ada Sertifikat Produk terfilter.</div>
             @endforelse
-        </div>
-        <div class="pt-2">
+        <!-- High-Contrast Mobile PWA Pagination Container -->
+        <div class="pt-3 border-t border-zinc-800/80 pagination-white-theme">
             {{ $approvedBatches->links() }}
         </div>
     </div>
+
+    <!-- VIBRANT EMERALD GREEN & ORANGE MOBILE PAGINATION STYLES -->
+    <style>
+        .pagination-white-theme nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            width: 100%;
+        }
+        .pagination-white-theme button,
+        .pagination-white-theme a,
+        .pagination-white-theme span {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%) !important; /* Vibrant Emerald Green! */
+            color: #ffffff !important; /* High contrast crisp white text */
+            border: 1.5px solid #10b981 !important; /* Bright Emerald Border */
+            font-weight: 900 !important;
+            font-size: 0.875rem !important;
+            padding: 0.65rem 1.25rem !important;
+            min-height: 48px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 0.85rem !important;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35) !important;
+            transition: all 0.2s ease-in-out !important;
+        }
+        .pagination-white-theme a:hover,
+        .pagination-white-theme button:hover {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+            color: #fef3c7 !important; /* Bright warm gold text */
+            border-color: #34d399 !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.5) !important;
+        }
+        /* Active Page Number Pill (Vibrant Orange / Amber) */
+        .pagination-white-theme span[aria-current="page"] span {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important; /* Vibrant Orange/Amber! */
+            color: #000000 !important; /* Deep black text for ultimate pop */
+            border: 2px solid #fbbf24 !important;
+            font-weight: 900 !important;
+            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.5) !important;
+        }
+        /* Disabled State (Previous / Next when at first or last page) */
+        .pagination-white-theme span[aria-disabled="true"] span,
+        .pagination-white-theme button[disabled],
+        .pagination-white-theme span[aria-disabled="true"] {
+            background: #27272a !important; /* Dark Zinc fallback */
+            color: #71717a !important;
+            border-color: #3f3f46 !important;
+            opacity: 0.6 !important;
+            box-shadow: none !important;
+            cursor: not-allowed !important;
+        }
+    </style>
 
     <!-- LIVE PDF PREVIEW MODAL FOR CUSTOMER PORTAL -->
     <div x-show="showPreviewModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm">

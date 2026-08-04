@@ -29,6 +29,7 @@ class BatchManagement extends Component
     public ?int $origin_id = null;
     public array $selected_origins = [];
     public string $pack_type = 'Bale';
+    public float $product_kg_per_sack = 20.00;
     public string $date_of_receipt = '';
 
     // Header DN Weight Input
@@ -70,6 +71,7 @@ class BatchManagement extends Component
     public function openCreateModal()
     {
         $this->reset(['customer_id', 'dn_number', 'product_type_id', 'origin_id', 'pack_type', 'selected_origins', 'dn_gross_weight_input']);
+        $this->product_kg_per_sack = 20.00;
         $this->date_of_receipt = Carbon::now()->format('Y-m-d');
         $this->target_sack_count = 5;
         $this->generateMrlRowsFromTargetCount();
@@ -156,6 +158,7 @@ class BatchManagement extends Component
             'product_type_id' => 'required|exists:product_types,id',
             'origin_id' => 'required|exists:origins,id',
             'pack_type' => 'required|string',
+            'product_kg_per_sack' => 'required|numeric|min:0.01',
             'date_of_receipt' => 'required|date',
             'mrl_items' => 'required|array|min:1',
             'mrl_items.*.mrl_gross_weight' => 'required|numeric|min:0.01',
@@ -184,6 +187,7 @@ class BatchManagement extends Component
             'product_type_id' => $this->product_type_id,
             'origin_id' => $this->origin_id,
             'pack_type' => $this->pack_type,
+            'product_kg_per_sack' => $this->product_kg_per_sack ?: 20.00,
             'date_of_receipt' => $this->date_of_receipt,
             'dn_total_pack' => $this->dn_total_pack,
             'dn_gross_weight' => $this->dn_gross_weight,

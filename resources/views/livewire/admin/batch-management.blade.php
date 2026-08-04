@@ -195,6 +195,13 @@
                     </div>
 
                     <div>
+                        <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Hitungan Per Sak Produk Jadi (kg/sak) <span class="text-red-400">*</span></label>
+                        <input type="number" step="0.01" wire:model="product_kg_per_sack" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-400 font-bold text-sm outline-none focus:border-amber-400" placeholder="20.00">
+                        <span class="text-[10px] text-zinc-400 block mt-1">Konversi otomatis saat karyawan mengisi Sak Produk Jadi</span>
+                        @error('product_kg_per_sack') <span class="text-red-400 font-bold block text-[11px] mt-1">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div>
                         <label class="block text-xs font-bold uppercase text-zinc-300 mb-1">Tanggal Penerimaan <span class="text-red-400">*</span></label>
                         <input type="date" wire:model="date_of_receipt" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm outline-none focus:border-amber-500">
                     </div>

@@ -166,29 +166,85 @@
 
     <!-- SEPARATION RESULTS REPORT INPUTS -->
     <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl">
-        <h3 class="text-base font-black text-amber-400 uppercase tracking-wide border-b border-zinc-800 pb-3">
-            Laporan Hasil Pemisahan Sesi Kerja Ini (Separation Results)
-        </h3>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800 pb-3">
             <div>
-                <label class="block text-xs font-bold uppercase text-zinc-300 mb-2">Produk Jadi / Rajangan (Kg)</label>
-                <input type="number" step="0.01" inputmode="decimal" wire:model.live.debounce.300ms="separation_product_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-4 py-3.5 min-h-[48px] rounded-2xl bg-zinc-950 border border-zinc-800 text-emerald-400 text-xl font-black outline-none focus:border-emerald-500" placeholder="0.00">
+                <h3 class="text-base font-black text-amber-400 uppercase tracking-wide">
+                    Laporan Hasil Pemisahan Sesi Kerja Ini (Separation Results)
+                </h3>
+                <p class="text-[11px] text-zinc-400 mt-0.5">Semua kalkulasi berat kotor, wadah, bersih (Netto), dan persentase yield dihitung secara otomatis.</p>
+            </div>
+            <span class="text-xs text-amber-400 font-bold bg-amber-950 px-3 py-1.5 rounded-xl border border-amber-800/80 shrink-0">
+                Hitungan Per Sak: {{ number_format($product_kg_per_sack, 2) }} kg/sak
+            </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
+            <!-- 1. Produk Jadi (Persack) -->
+            <div class="bg-zinc-950 p-4 rounded-2xl border border-emerald-900/60 flex flex-col justify-between space-y-3">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-emerald-400 mb-2">1. Produk Jadi (Sak/Karung) <span class="text-red-400">*</span></label>
+                    <input type="number" min="0" step="1" inputmode="numeric" wire:model.live.debounce.500ms="separation_product_sack" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-emerald-500/80 text-emerald-400 text-lg font-black outline-none focus:border-emerald-500" placeholder="0">
+                </div>
+                <div class="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-xs font-bold">
+                    <span class="text-emerald-400 font-mono text-sm">= {{ number_format($separation_product_kg, 2) }} kg</span>
+                    <span class="px-2 py-0.5 rounded-lg bg-emerald-950 text-emerald-300 border border-emerald-800 text-[11px]">{{ number_format($yieldProductPct, 2) }}%</span>
+                </div>
             </div>
 
-            <div>
-                <label class="block text-xs font-bold uppercase text-zinc-300 mb-2">Bits Stem / Gagang (Kg)</label>
-                <input type="number" step="0.01" inputmode="decimal" wire:model.live.debounce.300ms="separation_bits_stem_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-4 py-3.5 min-h-[48px] rounded-2xl bg-zinc-950 border border-zinc-800 text-amber-400 text-lg font-bold outline-none focus:border-amber-500" placeholder="0.00">
+            <!-- 2. Bit Stem Gross & Tare -->
+            <div class="bg-zinc-950 p-4 rounded-2xl border border-amber-900/60 flex flex-col justify-between space-y-3">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-amber-400 mb-2">2. Bit Stem / Gagang (Kg)</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <span class="block text-[10px] text-zinc-400 font-bold uppercase mb-1">Gross</span>
+                            <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="separation_bits_stem_gross_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-2.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-amber-400 font-bold text-sm outline-none focus:border-amber-500" placeholder="0.00">
+                        </div>
+                        <div>
+                            <span class="block text-[10px] text-zinc-400 font-bold uppercase mb-1">Tare</span>
+                            <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="separation_bits_stem_tare_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-2.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-amber-400 font-bold text-sm outline-none focus:border-amber-500" placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+                <div class="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-xs font-bold">
+                    <span class="text-amber-400 font-mono text-sm">Netto: {{ number_format($separation_bits_stem_netto_kg, 2) }} kg</span>
+                    <span class="px-2 py-0.5 rounded-lg bg-amber-950 text-amber-300 border border-amber-800 text-[11px]">{{ number_format($yieldBitsStemPct, 2) }}%</span>
+                </div>
             </div>
 
-            <div>
-                <label class="block text-xs font-bold uppercase text-zinc-300 mb-2">Dust / Debu (Kg)</label>
-                <input type="number" step="0.01" inputmode="decimal" wire:model.live.debounce.300ms="separation_dust_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-4 py-3.5 min-h-[48px] rounded-2xl bg-zinc-950 border border-zinc-800 text-orange-400 text-lg font-bold outline-none focus:border-orange-500" placeholder="0.00">
+            <!-- 3. Debu Gross & Tare -->
+            <div class="bg-zinc-950 p-4 rounded-2xl border border-orange-900/60 flex flex-col justify-between space-y-3">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-orange-400 mb-2">3. Debu / Dust (Kg)</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <span class="block text-[10px] text-zinc-400 font-bold uppercase mb-1">Gross</span>
+                            <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="separation_dust_gross_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-2.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-orange-400 font-bold text-sm outline-none focus:border-orange-500" placeholder="0.00">
+                        </div>
+                        <div>
+                            <span class="block text-[10px] text-zinc-400 font-bold uppercase mb-1">Tare</span>
+                            <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="separation_dust_tare_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-2.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-orange-400 font-bold text-sm outline-none focus:border-orange-500" placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+                <div class="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-xs font-bold">
+                    <span class="text-orange-400 font-mono text-sm">Netto: {{ number_format($separation_dust_netto_kg, 2) }} kg</span>
+                    <span class="px-2 py-0.5 rounded-lg bg-orange-950 text-orange-300 border border-orange-800 text-[11px]">{{ number_format($yieldDustPct, 2) }}%</span>
+                </div>
             </div>
 
-            <div>
-                <label class="block text-xs font-bold uppercase text-zinc-300 mb-2">Uncountable Waste (Kg) <span class="text-amber-500">(Auto)</span></label>
-                <input type="number" step="0.01" value="{{ number_format($separation_waste_kg, 2) }}" readonly class="w-full px-4 py-3.5 min-h-[48px] rounded-2xl bg-zinc-950/80 border border-zinc-800 text-zinc-400 text-lg font-bold outline-none cursor-not-allowed">
+            <!-- 4. Uncountable Waste -->
+            <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 flex flex-col justify-between space-y-3">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-zinc-300 mb-2">4. Uncountable Waste (Kg)</label>
+                    <div class="mt-1">
+                        <input type="text" value="{{ number_format($separation_waste_kg, 2) }}" readonly class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 text-lg font-black outline-none cursor-not-allowed">
+                    </div>
+                </div>
+                <div class="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-xs font-bold">
+                    <span class="text-zinc-400 font-mono text-sm">{{ number_format($separation_waste_kg, 2) }} kg</span>
+                    <span class="px-2 py-0.5 rounded-lg bg-zinc-900 text-zinc-300 border border-zinc-700 text-[11px]">{{ number_format($yieldWastePct, 2) }}%</span>
+                </div>
             </div>
         </div>
     </div>
@@ -216,21 +272,39 @@
 
             <form wire:submit.prevent="submitPauseAndInterimReport" class="space-y-3 text-xs">
                 <div>
-                    <label class="block font-bold uppercase text-zinc-300 mb-1">Produk Jadi / Rajangan (Kg) <span class="text-red-400">*</span></label>
-                    <input type="number" step="0.01" inputmode="decimal" wire:model="separation_product_kg" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-emerald-400 font-black outline-none focus:border-emerald-500" placeholder="0.00">
+                    <label class="block font-bold uppercase text-zinc-300 mb-1">Produk Jadi / Rajangan (Sak/Karung) <span class="text-red-400">*</span></label>
+                    <input type="number" min="0" step="1" inputmode="numeric" wire:model="separation_product_sack" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-emerald-500/80 text-emerald-400 font-black outline-none focus:border-emerald-500" placeholder="0">
+                    <span class="text-xs font-bold text-emerald-400 mt-1 block">= {{ number_format($separation_product_kg, 2) }} kg (Standar: {{ number_format($product_kg_per_sack, 2) }} kg/sak)</span>
                 </div>
-                <div>
-                    <label class="block font-bold uppercase text-zinc-300 mb-1">Bits Stem / Gagang (Kg) <span class="text-red-400">*</span></label>
-                    <input type="number" step="0.01" inputmode="decimal" wire:model="separation_bits_stem_kg" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-amber-400 font-bold outline-none" placeholder="0.00">
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold uppercase text-zinc-300 mb-1">Bits Stem Gross (Kg) <span class="text-red-400">*</span></label>
+                        <input type="number" step="0.01" inputmode="decimal" wire:model="separation_bits_stem_gross_kg" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-amber-400 font-bold outline-none" placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="block font-bold uppercase text-zinc-300 mb-1">Bits Stem Tare (Kg) <span class="text-red-400">*</span></label>
+                        <input type="number" step="0.01" inputmode="decimal" wire:model="separation_bits_stem_tare_kg" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-amber-400 font-bold outline-none" placeholder="0.00">
+                    </div>
                 </div>
-                <div>
-                    <label class="block font-bold uppercase text-zinc-300 mb-1">Dust / Debu (Kg) <span class="text-red-400">*</span></label>
-                    <input type="number" step="0.01" inputmode="decimal" wire:model="separation_dust_kg" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-orange-400 font-bold outline-none" placeholder="0.00">
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold uppercase text-zinc-300 mb-1">Debu Gross (Kg) <span class="text-red-400">*</span></label>
+                        <input type="number" step="0.01" inputmode="decimal" wire:model="separation_dust_gross_kg" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-orange-400 font-bold outline-none" placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="block font-bold uppercase text-zinc-300 mb-1">Debu Tare (Kg) <span class="text-red-400">*</span></label>
+                        <input type="number" step="0.01" inputmode="decimal" wire:model="separation_dust_tare_kg" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-orange-400 font-bold outline-none" placeholder="0.00">
+                    </div>
                 </div>
+                <span class="text-xs font-bold text-orange-400 block">Debu Netto = {{ number_format($separation_dust_netto_kg, 2) }} kg (Masuk ke Uncountable Waste)</span>
+
                 <div>
                     <label class="block font-bold uppercase text-zinc-300 mb-1">Catatan Jeda Shift (Opsional)</label>
                     <textarea wire:model="pause_notes" rows="2" class="w-full px-4 py-3 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 outline-none" placeholder="Alasan jeda / pergantian shift..."></textarea>
                 </div>
+
                 <div class="flex justify-end space-x-3 pt-3 border-t border-zinc-800">
                     <button type="button" wire:click="$set('showPauseModal', false)" class="px-5 py-3 min-h-[48px] rounded-xl bg-zinc-800 text-zinc-300 font-bold">Batal</button>
                     <button type="submit" class="px-6 py-3 min-h-[48px] rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white font-black">Simpan Interim & Jeda Shift</button>

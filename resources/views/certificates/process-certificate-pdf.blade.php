@@ -205,7 +205,7 @@
                 <td>{{ $batch->origin->region_name ?? '-' }}</td>
                 <td>{{ $batch->pack_type }}</td>
                 <td class="text-right" style="font-weight:bold; color:#15803d;">{{ number_format($batch->separation_product_kg, 2, ',', '.') }}</td>
-                <td class="text-right">{{ number_format($batch->separation_bits_stem_kg, 2, ',', '.') }}</td>
+                <td class="text-right">{{ number_format($batch->separation_bits_stem_netto_kg ?: $batch->separation_bits_stem_kg, 2, ',', '.') }}</td>
                 <td class="text-right">{{ number_format($batch->separation_dust_kg, 2, ',', '.') }}</td>
                 <td class="text-right">{{ number_format($batch->separation_waste_kg, 2, ',', '.') }}</td>
                 <td class="text-right" style="font-weight:bold;">{{ number_format($batch->mrl_netto_weight, 2, ',', '.') }}</td>
@@ -229,6 +229,12 @@
             <li>Tare qty. based on actual weighing during the process.</li>
             <li>Uncountable waste qty. based on teoritical calculation.</li>
             <li>Percentage Yield based on total Nett. qty actual weighing.</li>
+            @if(($batch->separation_bits_stem_gross_kg ?? 0) > 0)
+                <li>Bits Stem Weighing Detail: Gross {{ number_format($batch->separation_bits_stem_gross_kg, 2, ',', '.') }} kg, Tare {{ number_format($batch->separation_bits_stem_tare_kg, 2, ',', '.') }} kg, Netto {{ number_format($batch->separation_bits_stem_netto_kg, 2, ',', '.') }} kg.</li>
+            @endif
+            @if(($batch->separation_dust_gross_kg ?? 0) > 0)
+                <li>Dust Weighing Detail: Gross {{ number_format($batch->separation_dust_gross_kg, 2, ',', '.') }} kg, Tare {{ number_format($batch->separation_dust_tare_kg, 2, ',', '.') }} kg, Netto {{ number_format($batch->separation_dust_netto_kg ?: $batch->separation_dust_kg, 2, ',', '.') }} kg.</li>
+            @endif
         </ol>
         @if(!empty($batch->custom_separation_remark))
             <div class="custom-remark-text">Catatan Khusus Pemisahan: {{ $batch->custom_separation_remark }}</div>

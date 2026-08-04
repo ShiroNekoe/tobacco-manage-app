@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Imports\ProcessingReportImporter;
+use App\imports\ProcessingReportImporter;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder

@@ -22,7 +22,7 @@ console_command = 'php /var/www/html/artisan tinker'
 
 [[mounts]]
   source = 'sqlite_data'
-  destination = '/var/www/html/database'
+  destination = '/data'
 
 [http_service]
   internal_port = 80

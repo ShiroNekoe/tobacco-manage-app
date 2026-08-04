@@ -60,5 +60,11 @@ RUN chown -R www-data:www-data /var/www/html \
 # Install dependencies Laravel (tanpa paket dev)
 RUN composer install --no-dev --optimize-autoloader
 
+# Buat file SQLite default dan atur permission
+RUN mkdir -p /var/www/html/database \
+    && touch /var/www/html/database/database.sqlite \
+    && chown -R www-data:www-data /var/www/html/database \
+    && chmod -R 775 /var/www/html/database
+
 # Expose port 80 untuk web server
 EXPOSE 80

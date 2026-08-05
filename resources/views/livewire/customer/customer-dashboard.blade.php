@@ -54,7 +54,15 @@
              product: @js($seriesProduct),
              bitsStem: @js($seriesBitsStem),
              dust: @js($seriesDust),
-             waste: @js($seriesWaste)
+             waste: @js($seriesWaste),
+             yieldProduct: @js($seriesYieldProduct),
+             yieldBitsStem: @js($seriesYieldBitsStem),
+             yieldDust: @js($seriesYieldDust),
+             yieldWaste: @js($seriesYieldWaste),
+             avgProductPct: @js($avgProductPct),
+             avgBitsStemPct: @js($avgBitsStemPct),
+             avgDustPct: @js($avgDustPct),
+             avgWastePct: @js($avgWastePct)
          })"
          x-init="initChart()"
          class="bg-zinc-900 border border-zinc-800 rounded-3xl p-4 sm:p-6 shadow-xl space-y-4">
@@ -77,30 +85,30 @@
                 </p>
             </div>
             
-            <!-- PWA Mobile Series Isolation Filter Toggles -->
+            <!-- PWA Mobile Series Isolation Filter Toggles with Percentage Badges -->
             <div class="flex flex-wrap items-center gap-1.5 shrink-0">
                 <button type="button" @click="toggleSeries('all')" :class="activeSeries === 'all' ? 'bg-amber-500 text-black font-black border-amber-400' : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-zinc-200'" class="px-2.5 py-1.5 min-h-[36px] text-[11px] rounded-xl border transition-all">
                     ⚡ Semua (4 Line)
                 </button>
                 <button type="button" @click="toggleSeries('product')" :class="activeSeries === 'product' ? 'bg-emerald-950 text-emerald-300 font-black border-emerald-700' : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-zinc-200'" class="px-2.5 py-1.5 min-h-[36px] text-[11px] rounded-xl border transition-all">
-                    🟢 Produk
+                    🟢 Produk <span class="font-mono text-[10px] text-emerald-400 ml-0.5">({{ number_format($avgProductPct, 2, ',', '.') }}%)</span>
                 </button>
                 <button type="button" @click="toggleSeries('bitsStem')" :class="activeSeries === 'bitsStem' ? 'bg-amber-950 text-amber-300 font-black border-amber-700' : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-zinc-200'" class="px-2.5 py-1.5 min-h-[36px] text-[11px] rounded-xl border transition-all">
-                    🟡 Bits Stem
+                    🟡 Bits Stem <span class="font-mono text-[10px] text-amber-400 ml-0.5">({{ number_format($avgBitsStemPct, 2, ',', '.') }}%)</span>
                 </button>
                 <button type="button" @click="toggleSeries('dust')" :class="activeSeries === 'dust' ? 'bg-slate-900 text-slate-300 font-black border-slate-700' : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-zinc-200'" class="px-2.5 py-1.5 min-h-[36px] text-[11px] rounded-xl border transition-all">
-                    ⚪ Debu
+                    ⚪ Debu <span class="font-mono text-[10px] text-slate-300 ml-0.5">({{ number_format($avgDustPct, 2, ',', '.') }}%)</span>
                 </button>
                 <button type="button" @click="toggleSeries('waste')" :class="activeSeries === 'waste' ? 'bg-red-950 text-red-300 font-black border-red-800' : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-zinc-200'" class="px-2.5 py-1.5 min-h-[36px] text-[11px] rounded-xl border transition-all">
-                    🔴 Waste
+                    🔴 Waste <span class="font-mono text-[10px] text-red-400 ml-0.5">({{ number_format($avgWastePct, 2, ',', '.') }}%)</span>
                 </button>
             </div>
         </div>
 
-        <!-- Horizontally Scrollable Touch Wrapper for Mobile PWA -->
+        <!-- Horizontally Scrollable Touch Wrapper for Responsive Dynamic Chart -->
         <div class="relative w-full bg-zinc-950 p-2 sm:p-4 rounded-2xl border border-zinc-800/80 overflow-x-auto">
             @if(count($chartLabels) > 0)
-                <div class="min-w-[420px] sm:min-w-full h-[250px] sm:h-[380px]">
+                <div class="h-[320px] sm:h-[450px] w-full" style="min-width: {{ max(100, count($chartLabels) * 55) }}px;">
                     <canvas x-ref="canvas" class="w-full h-full"></canvas>
                 </div>
             @else
@@ -308,7 +316,7 @@
         </div>
     </div>
 
-    <!-- BULLETPROOF ALPINE CHART COMPONENT -->
+    <!-- BULLETPROOF ALPINE CHART COMPONENT WITH SLEEK GRADIENTS -->
     <script>
         function customerTrendChartComponent(chartData) {
             let chartInstance = null; // Private non-reactive reference to prevent Alpine Proxy stack overflow
@@ -347,6 +355,31 @@
                         if (!chartData || !chartData.labels || chartData.labels.length === 0) return;
 
                         const isMobile = window.innerWidth < 640;
+                        const chartHeight = canvas.height || 350;
+
+                        // Sleek Linear Gradients for Area Fills under lines
+                        const prodGrad = ctx.createLinearGradient(0, 0, 0, chartHeight);
+                        prodGrad.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
+                        prodGrad.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+                        const bitsGrad = ctx.createLinearGradient(0, 0, 0, chartHeight);
+                        bitsGrad.addColorStop(0, 'rgba(245, 158, 11, 0.25)');
+                        bitsGrad.addColorStop(1, 'rgba(245, 158, 11, 0.0)');
+
+                        const dustGrad = ctx.createLinearGradient(0, 0, 0, chartHeight);
+                        dustGrad.addColorStop(0, 'rgba(6, 182, 212, 0.20)');
+                        dustGrad.addColorStop(1, 'rgba(6, 182, 212, 0.0)');
+
+                        const wasteGrad = ctx.createLinearGradient(0, 0, 0, chartHeight);
+                        wasteGrad.addColorStop(0, 'rgba(244, 63, 94, 0.20)');
+                        wasteGrad.addColorStop(1, 'rgba(244, 63, 94, 0.0)');
+
+                        const fmtPct = (num) => new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num || 0);
+
+                        const avgProd = chartData.avgProductPct !== undefined ? chartData.avgProductPct : 0;
+                        const avgBits = chartData.avgBitsStemPct !== undefined ? chartData.avgBitsStemPct : 0;
+                        const avgDust = chartData.avgDustPct !== undefined ? chartData.avgDustPct : 0;
+                        const avgWaste = chartData.avgWastePct !== undefined ? chartData.avgWastePct : 0;
 
                         chartInstance = new Chart(ctx, {
                             type: 'line',
@@ -354,42 +387,60 @@
                                 labels: chartData.labels,
                                 datasets: [
                                     {
-                                        label: 'Product Qty (Kg)',
+                                        label: `Produk Jadi (Kg) [Rata-rata: ${fmtPct(avgProd)}%]`,
                                         data: chartData.product,
                                         borderColor: '#10b981',
-                                        backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                                        backgroundColor: prodGrad,
                                         borderWidth: isMobile ? 2 : 3,
-                                        pointRadius: isMobile ? 3 : 5,
+                                        pointRadius: isMobile ? 3 : 4.5,
                                         pointHoverRadius: isMobile ? 5 : 7,
-                                        tension: 0.3,
+                                        pointBackgroundColor: '#10b981',
+                                        pointBorderColor: '#18181b',
+                                        pointBorderWidth: 2,
+                                        tension: 0.35,
                                         fill: true
                                     },
                                     {
-                                        label: 'Bits Stem Qty (Kg)',
+                                        label: `Bits Stem Qty (Kg) [Rata-rata: ${fmtPct(avgBits)}%]`,
                                         data: chartData.bitsStem,
                                         borderColor: '#f59e0b',
-                                        backgroundColor: 'transparent',
+                                        backgroundColor: bitsGrad,
                                         borderWidth: isMobile ? 1.5 : 2.5,
                                         pointRadius: isMobile ? 2.5 : 4,
-                                        tension: 0.3
+                                        pointHoverRadius: isMobile ? 4.5 : 6,
+                                        pointBackgroundColor: '#f59e0b',
+                                        pointBorderColor: '#18181b',
+                                        pointBorderWidth: 1.5,
+                                        tension: 0.35,
+                                        fill: true
                                     },
                                     {
-                                        label: 'Dust Qty (Kg)',
+                                        label: `Dust Qty (Kg) [Rata-rata: ${fmtPct(avgDust)}%]`,
                                         data: chartData.dust,
-                                        borderColor: '#64748b',
-                                        backgroundColor: 'transparent',
+                                        borderColor: '#06b6d4',
+                                        backgroundColor: dustGrad,
                                         borderWidth: isMobile ? 1.5 : 2.5,
                                         pointRadius: isMobile ? 2.5 : 4,
-                                        tension: 0.3
+                                        pointHoverRadius: isMobile ? 4.5 : 6,
+                                        pointBackgroundColor: '#06b6d4',
+                                        pointBorderColor: '#18181b',
+                                        pointBorderWidth: 1.5,
+                                        tension: 0.35,
+                                        fill: false
                                     },
                                     {
-                                        label: 'Uncountable Waste Qty (Kg)',
+                                        label: `Uncountable Waste Qty (Kg) [Rata-rata: ${fmtPct(avgWaste)}%]`,
                                         data: chartData.waste,
-                                        borderColor: '#ef4444',
-                                        backgroundColor: 'transparent',
+                                        borderColor: '#f43f5e',
+                                        backgroundColor: wasteGrad,
                                         borderWidth: isMobile ? 1.5 : 2.5,
                                         pointRadius: isMobile ? 2.5 : 4,
-                                        tension: 0.3
+                                        pointHoverRadius: isMobile ? 4.5 : 6,
+                                        pointBackgroundColor: '#f43f5e',
+                                        pointBorderColor: '#18181b',
+                                        pointBorderWidth: 1.5,
+                                        tension: 0.35,
+                                        fill: false
                                     }
                                 ]
                             },
@@ -405,38 +456,68 @@
                                         position: 'top',
                                         labels: {
                                             color: '#e4e4e7',
-                                            font: { family: 'Inter', weight: 'bold', size: isMobile ? 9 : 11 },
+                                            font: { family: 'Inter', weight: '700', size: isMobile ? 9 : 11 },
                                             usePointStyle: true,
-                                            boxWidth: isMobile ? 8 : 12,
-                                            boxHeight: isMobile ? 8 : 12,
-                                            padding: isMobile ? 6 : 15
+                                            pointStyle: 'circle',
+                                            boxWidth: isMobile ? 8 : 10,
+                                            boxHeight: isMobile ? 8 : 10,
+                                            padding: isMobile ? 8 : 16
                                         }
                                     },
                                     tooltip: {
-                                        backgroundColor: '#18181b',
+                                        backgroundColor: 'rgba(24, 24, 27, 0.95)',
                                         titleColor: '#fbbf24',
                                         bodyColor: '#f4f4f5',
                                         borderColor: '#3f3f46',
-                                        borderWidth: 1,
-                                        padding: isMobile ? 6 : 12,
-                                        boxPadding: isMobile ? 3 : 6,
+                                        borderWidth: 1.5,
+                                        borderRadius: 12,
+                                        padding: isMobile ? 8 : 12,
+                                        boxPadding: isMobile ? 4 : 6,
                                         titleFont: { family: 'Inter', size: isMobile ? 10 : 12, weight: 'bold' },
                                         bodyFont: { family: 'Inter', size: isMobile ? 9 : 11 },
                                         displayColors: true,
                                         callbacks: {
                                             title: function(tooltipItems) {
                                                 if (!tooltipItems || !tooltipItems.length) return '';
-                                                return '📦 Batch & Kode Tembakau:\n' + tooltipItems[0].label;
+                                                return '📦 Batch & Detail Asal:\n' + tooltipItems[0].label;
                                             },
                                             label: function(context) {
-                                                let label = context.dataset.label || '';
-                                                if (label) {
-                                                    label += ': ';
+                                                let fullLabel = context.dataset.label || '';
+                                                let titlePart = fullLabel.split(' [')[0];
+                                                if (titlePart) {
+                                                    titlePart += ': ';
                                                 }
+
                                                 if (context.parsed.y !== null) {
-                                                    label += new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(context.parsed.y) + ' kg';
+                                                    const val = context.parsed.y;
+                                                    const kgFormatted = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val) + ' kg';
+
+                                                    const dataIdx = context.dataIndex;
+                                                    const dsIdx = context.datasetIndex;
+
+                                                    const datasets = context.chart.data.datasets;
+                                                    let totalBatchKg = 0;
+                                                    datasets.forEach(ds => {
+                                                        totalBatchKg += (Number(ds.data[dataIdx]) || 0);
+                                                    });
+
+                                                    let pctVal = 0;
+                                                    if (dsIdx === 0 && chartData.yieldProduct && chartData.yieldProduct[dataIdx] !== undefined && chartData.yieldProduct[dataIdx] > 0) {
+                                                        pctVal = chartData.yieldProduct[dataIdx];
+                                                    } else if (dsIdx === 1 && chartData.yieldBitsStem && chartData.yieldBitsStem[dataIdx] !== undefined && chartData.yieldBitsStem[dataIdx] > 0) {
+                                                        pctVal = chartData.yieldBitsStem[dataIdx];
+                                                    } else if (dsIdx === 2 && chartData.yieldDust && chartData.yieldDust[dataIdx] !== undefined && chartData.yieldDust[dataIdx] > 0) {
+                                                        pctVal = chartData.yieldDust[dataIdx];
+                                                    } else if (dsIdx === 3 && chartData.yieldWaste && chartData.yieldWaste[dataIdx] !== undefined && chartData.yieldWaste[dataIdx] > 0) {
+                                                        pctVal = chartData.yieldWaste[dataIdx];
+                                                    } else if (totalBatchKg > 0) {
+                                                        pctVal = (val / totalBatchKg) * 100;
+                                                    }
+
+                                                    const pctFormatted = fmtPct(pctVal) + '%';
+                                                    return titlePart + kgFormatted + ' (' + pctFormatted + ')';
                                                 }
-                                                return label;
+                                                return fullLabel;
                                             }
                                         }
                                     }
@@ -445,27 +526,42 @@
                                     x: {
                                         ticks: {
                                             color: '#a1a1aa',
-                                            font: { size: isMobile ? 8 : 9 },
-                                            maxRotation: 45,
-                                            minRotation: 0,
-                                            autoSkip: true,
-                                            maxTicksLimit: isMobile ? 5 : 15,
+                                            font: { family: 'Inter', size: isMobile ? 8 : 10, weight: '600' },
+                                            maxRotation: 90,
+                                            minRotation: 90,
+                                            autoSkip: false,
+                                            padding: 8,
                                             callback: function(val, index) {
                                                 const fullLabel = this.getLabelForValue(val);
                                                 if (!fullLabel) return '';
                                                 if (window.innerWidth < 640) {
-                                                    const match = fullLabel.match(/^(BCH-[^\s]+)/i);
-                                                    if (match) return match[1];
-                                                    return fullLabel.length > 10 ? fullLabel.substring(0, 8) + '..' : fullLabel;
+                                                    const match = fullLabel.match(/^(BCH-\d{4}-(\d{4}))/i);
+                                                    const dateMatch = fullLabel.match(/\(([^)]+)\)$/);
+                                                    if (match && dateMatch) {
+                                                        return `BCH-${match[2]} (${dateMatch[1]})`;
+                                                    }
+                                                    return fullLabel.length > 15 ? fullLabel.substring(0, 14) + '..' : fullLabel;
                                                 }
                                                 return fullLabel;
                                             }
                                         },
-                                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                                        grid: {
+                                            color: 'rgba(255, 255, 255, 0.04)',
+                                            drawBorder: false
+                                        }
                                     },
                                     y: {
-                                        ticks: { color: '#a1a1aa', font: { size: isMobile ? 8 : 10 } },
-                                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                                        ticks: {
+                                            color: '#a1a1aa',
+                                            font: { family: 'Inter', size: isMobile ? 8 : 10 },
+                                            callback: function(val) {
+                                                return new Intl.NumberFormat('id-ID').format(val) + ' kg';
+                                            }
+                                        },
+                                        grid: {
+                                            color: 'rgba(255, 255, 255, 0.05)',
+                                            drawBorder: false
+                                        }
                                     }
                                 }
                             }

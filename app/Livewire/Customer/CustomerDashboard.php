@@ -122,19 +122,38 @@ class CustomerDashboard extends Component
         $seriesBitsStem = [];
         $seriesDust = [];
         $seriesWaste = [];
+        $seriesYieldProduct = [];
+        $seriesYieldBitsStem = [];
+        $seriesYieldDust = [];
+        $seriesYieldWaste = [];
 
         foreach ($chartBatches as $b) {
-            $productCode = $b->productType ? ($b->productType->code ?: $b->productType->name) : 'RAJANGAN';
             $fullOriginName = $b->origin ? $b->origin->region_name : '-';
             $dateStr = $b->locked_at ? $b->locked_at->format('d/m') : ($b->created_at ? $b->created_at->format('d/m') : date('d/m'));
 
-            // Explicit label format for Chart tooltip: BCH-2026-0001 [Kode: FN602 | Asal: KASTURI FN602] (04/08)
-            $chartLabels[] = $b->batch_code . ' [Kode: ' . $productCode . ' | Asal: ' . $fullOriginName . '] (' . $dateStr . ')';
+            // Clean & concise label format: BCH-2026-0001 [PAITON P10TS] (04/08)
+            $chartLabels[] = $b->batch_code . ' [' . $fullOriginName . '] (' . $dateStr . ')';
             $seriesProduct[] = (float) $b->separation_product_kg;
             $seriesBitsStem[] = (float) $b->separation_bits_stem_kg;
             $seriesDust[] = (float) $b->separation_dust_kg;
             $seriesWaste[] = (float) $b->separation_waste_kg;
+
+            $seriesYieldProduct[] = (float) ($b->yield_product_pct ?? 0);
+            $seriesYieldBitsStem[] = (float) ($b->yield_bits_stem_pct ?? 0);
+            $seriesYieldDust[] = (float) ($b->yield_dust_pct ?? 0);
+            $seriesYieldWaste[] = (float) ($b->yield_waste_pct ?? 0);
         }
+
+        $sumProduct = array_sum($seriesProduct);
+        $sumBitsStem = array_sum($seriesBitsStem);
+        $sumDust = array_sum($seriesDust);
+        $sumWaste = array_sum($seriesWaste);
+        $totalKgSum = $sumProduct + $sumBitsStem + $sumDust + $sumWaste;
+
+        $avgProductPct = $totalKgSum > 0 ? round(($sumProduct / $totalKgSum) * 100, 2) : 0;
+        $avgBitsStemPct = $totalKgSum > 0 ? round(($sumBitsStem / $totalKgSum) * 100, 2) : 0;
+        $avgDustPct = $totalKgSum > 0 ? round(($sumDust / $totalKgSum) * 100, 2) : 0;
+        $avgWastePct = $totalKgSum > 0 ? round(($sumWaste / $totalKgSum) * 100, 2) : 0;
 
         $productTypes = ProductType::orderBy('name')->get();
         $origins = Origin::orderBy('region_name')->get();
@@ -160,6 +179,14 @@ class CustomerDashboard extends Component
             'seriesBitsStem',
             'seriesDust',
             'seriesWaste',
+            'seriesYieldProduct',
+            'seriesYieldBitsStem',
+            'seriesYieldDust',
+            'seriesYieldWaste',
+            'avgProductPct',
+            'avgBitsStemPct',
+            'avgDustPct',
+            'avgWastePct',
             'productTypes',
             'origins',
             'baseOrigins',

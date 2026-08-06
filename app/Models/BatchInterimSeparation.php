@@ -33,6 +33,8 @@ class BatchInterimSeparation extends Model
         'separation_dust_tare_kg',
         'separation_dust_netto_kg',
         'dust_items',
+        'separation_p1_data',
+        'separation_p2_data',
         'separation_waste_kg',
         'sacks_processed_count',
         'notes',
@@ -54,6 +56,8 @@ class BatchInterimSeparation extends Model
         'separation_dust_tare_kg' => 'decimal:2',
         'separation_dust_netto_kg' => 'decimal:2',
         'dust_items' => 'array',
+        'separation_p1_data' => 'array',
+        'separation_p2_data' => 'array',
         'separation_waste_kg' => 'decimal:2',
         'sacks_processed_count' => 'integer',
     ];

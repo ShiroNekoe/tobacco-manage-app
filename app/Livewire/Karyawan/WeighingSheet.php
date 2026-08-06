@@ -52,7 +52,62 @@ class WeighingSheet extends Component
 
     public string $status = 'OPEN';
     public bool $showPauseModal = false;
+    public bool $showThankYouModal = false;
     public string $pause_notes = '';
+    public int $process_stage = 1;
+
+    // Process 1 Separation Data
+    public int $p1_product_sack = 0;
+    public $p1_remnant_gross_kg = 0;
+    public $p1_remnant_tare_kg = 0;
+    public $p1_remnant_netto_kg = 0;
+    public $p1_product_kg = 0;
+    public array $p1_dust_items = [];
+    public $p1_dust_netto_kg = 0;
+
+    // Process 2 Separation Data
+    public int $p2_product_sack = 0;
+    public $p2_remnant_gross_kg = 0;
+    public $p2_remnant_tare_kg = 0;
+    public $p2_remnant_netto_kg = 0;
+    public $p2_product_kg = 0;
+    public array $p2_dust_items = [];
+    public $p2_dust_netto_kg = 0;
+
+    public function setProcessStage(int $stage)
+    {
+        $this->process_stage = in_array($stage, [1, 2]) ? $stage : 1;
+    }
+
+    public function addP1DustRow()
+    {
+        $this->p1_dust_items[] = ['gross_kg' => 0, 'tare_kg' => 0, 'netto_kg' => 0];
+        $this->recalculateTotals();
+    }
+
+    public function removeP1DustRow($index)
+    {
+        if (isset($this->p1_dust_items[$index])) {
+            unset($this->p1_dust_items[$index]);
+            $this->p1_dust_items = array_values($this->p1_dust_items);
+        }
+        $this->recalculateTotals();
+    }
+
+    public function addP2DustRow()
+    {
+        $this->p2_dust_items[] = ['gross_kg' => 0, 'tare_kg' => 0, 'netto_kg' => 0];
+        $this->recalculateTotals();
+    }
+
+    public function removeP2DustRow($index)
+    {
+        if (isset($this->p2_dust_items[$index])) {
+            unset($this->p2_dust_items[$index]);
+            $this->p2_dust_items = array_values($this->p2_dust_items);
+        }
+        $this->recalculateTotals();
+    }
 
     public function mount(?int $batch_id = null)
     {
@@ -78,7 +133,7 @@ class WeighingSheet extends Component
         }
 
         $id = (int) $id;
-        $batch = Batch::with(['customer', 'deliveryNote', 'productType', 'origin', 'weighingItems'])->find($id);
+        $batch = Batch::with(['customer', 'deliveryNote', 'productType', 'origin', 'weighingItems.createdBy'])->find($id);
         if (! $batch) {
             $this->batchId = null;
             $this->status = 'OPEN';
@@ -93,16 +148,41 @@ class WeighingSheet extends Component
         $user = Auth::user();
         $currentUserId = $user ? $user->id : 0;
 
-        // Reset separation form for current session if new user/resume
-        $this->product_kg_per_sack = (float) (($batch->product_kg_per_sack && (float)$batch->product_kg_per_sack > 0) ? $batch->product_kg_per_sack : 25.20);
-        $this->product_tare_per_sack = (float) (isset($batch->product_tare_per_sack) ? $batch->product_tare_per_sack : 0.20);
-        $this->separation_product_sack = (int) ($batch->separation_product_sack ?? 0);
-        $this->separation_product_gross_kg = (float) ($batch->separation_product_gross_kg ?? 0);
-        $this->separation_product_tare_kg = (float) ($batch->separation_product_tare_kg ?? 0);
-        $this->separation_product_kg = (float) ($batch->separation_product_kg ?? 0);
-        $this->separation_product_remnant_gross_kg = (float) ($batch->separation_product_remnant_gross_kg ?? 0);
-        $this->separation_product_remnant_tare_kg = (float) ($batch->separation_product_remnant_tare_kg ?? 0);
-        $this->separation_product_remnant_kg = (float) ($batch->separation_product_remnant_kg ?? 0);
+        // Load Process 1 & Process 2 Separation Data
+        $p1Data = $batch->separation_p1_data ?? [];
+        $p2Data = $batch->separation_p2_data ?? [];
+
+        if (! empty($p1Data)) {
+            $this->p1_product_sack = (int) ($p1Data['product_sack'] ?? 0);
+            $this->p1_remnant_gross_kg = (float) ($p1Data['product_remnant_gross_kg'] ?? 0);
+            $this->p1_remnant_tare_kg = (float) ($p1Data['product_remnant_tare_kg'] ?? 0);
+            $this->p1_dust_items = ! empty($p1Data['dust_items']) && is_array($p1Data['dust_items']) ? $p1Data['dust_items'] : [];
+        } else {
+            $this->p1_product_sack = (int) ($batch->separation_product_sack ?? 0);
+            $this->p1_remnant_gross_kg = (float) ($batch->separation_product_remnant_gross_kg ?? 0);
+            $this->p1_remnant_tare_kg = (float) ($batch->separation_product_remnant_tare_kg ?? 0);
+            $this->p1_dust_items = (! empty($batch->dust_items) && is_array($batch->dust_items)) ? $batch->dust_items : [
+                ['gross_kg' => (float) ($batch->separation_dust_gross_kg ?? 0), 'tare_kg' => (float) ($batch->separation_dust_tare_kg ?? 0), 'netto_kg' => (float) ($batch->separation_dust_netto_kg ?? 0)]
+            ];
+        }
+
+        if (! empty($p2Data)) {
+            $this->p2_product_sack = (int) ($p2Data['product_sack'] ?? 0);
+            $this->p2_remnant_gross_kg = (float) ($p2Data['product_remnant_gross_kg'] ?? 0);
+            $this->p2_remnant_tare_kg = (float) ($p2Data['product_remnant_tare_kg'] ?? 0);
+            $this->p2_dust_items = ! empty($p2Data['dust_items']) && is_array($p2Data['dust_items']) ? $p2Data['dust_items'] : [];
+        } else {
+            $this->p2_product_sack = 0;
+            $this->p2_remnant_gross_kg = 0;
+            $this->p2_remnant_tare_kg = 0;
+            $this->p2_dust_items = [];
+        }
+
+        if (empty($this->p1_dust_items)) {
+            $this->p1_dust_items = [
+                ['gross_kg' => (float) ($batch->separation_dust_gross_kg ?? 0), 'tare_kg' => (float) ($batch->separation_dust_tare_kg ?? 0), 'netto_kg' => (float) ($batch->separation_dust_netto_kg ?? 0)]
+            ];
+        }
 
         // Bit Stem items
         if (! empty($batch->bit_stem_items) && is_array($batch->bit_stem_items)) {
@@ -117,27 +197,49 @@ class WeighingSheet extends Component
             ];
         }
 
-        // Dust items
-        if (! empty($batch->dust_items) && is_array($batch->dust_items)) {
-            $this->dust_items = $batch->dust_items;
-        } else {
-            $this->dust_items = [
-                [
-                    'gross_kg' => (float) ($batch->separation_dust_gross_kg ?? 0),
-                    'tare_kg' => (float) ($batch->separation_dust_tare_kg ?? 0),
-                    'netto_kg' => (float) ($batch->separation_dust_netto_kg ?? $batch->separation_dust_kg ?? 0),
-                ]
-            ];
-        }
-
         $this->separation_waste_kg = (float) ($batch->separation_waste_kg ?? 0);
 
+        // Auto detect process_stage: set to 2 if Bit Stem has non-zero values
+        $hasBitStemValues = false;
+        if (! empty($this->bit_stem_items)) {
+            foreach ($this->bit_stem_items as $bsi) {
+                if ((float)($bsi['gross_kg'] ?? 0) > 0 || (float)($bsi['netto_kg'] ?? 0) > 0) {
+                    $hasBitStemValues = true;
+                    break;
+                }
+            }
+        }
+        if ((float)($batch->separation_bits_stem_kg ?? 0) > 0 || $hasBitStemValues) {
+            $this->process_stage = 2;
+        } else {
+            $this->process_stage = 1;
+        }
+
         $this->items = [];
+        $isCurrentUserAdmin = $user && ($user->isAdmin() || $user->isSupervisor());
+
         if ($batch->weighingItems->count() > 0) {
             foreach ($batch->weighingItems->sortBy('sack_number') as $wItem) {
                 $createdById = $wItem->created_by_user_id;
-                // Row is locked for current user if created by a different predecessor worker
-                $isLockedForUser = ($createdById !== null && $createdById !== $currentUserId && (float)$wItem->gross_kg > 0);
+                $creator = $wItem->createdBy;
+                
+                $isCreatorAdmin = $creator && ($creator->isAdmin() || $creator->isSupervisor());
+                $isKaryawanCreator = $creator && $creator->isKaryawan();
+                $isPreLaunchRow = ($wItem->remark === 'MRL Pre-Launch');
+
+                // Row is locked ONLY if:
+                // 1. Current user is NOT Admin/Supervisor (Admin can view and edit everything)
+                // 2. The row was NOT created by Admin/Supervisor
+                // 3. The row is NOT marked 'MRL Pre-Launch'
+                // 4. The row was created by a DIFFERENT Karyawan worker
+                // 5. The row has a gross weight recorded (> 0)
+                $isLockedForUser = (! $isCurrentUserAdmin)
+                    && (! $isCreatorAdmin)
+                    && (! $isPreLaunchRow)
+                    && ($createdById !== null)
+                    && ($createdById !== $currentUserId)
+                    && $isKaryawanCreator
+                    && ((float) $wItem->gross_kg > 0);
 
                 $this->items[] = [
                     'id' => $wItem->id,
@@ -222,6 +324,7 @@ class WeighingSheet extends Component
 
     public function updatedSeparationProductSack()
     {
+        $this->p1_product_sack = (int) $this->separation_product_sack;
         $this->recalculateTotals();
     }
 
@@ -232,11 +335,13 @@ class WeighingSheet extends Component
 
     public function updatedSeparationProductRemnantGrossKg()
     {
+        $this->p1_remnant_gross_kg = $this->separation_product_remnant_gross_kg;
         $this->recalculateTotals();
     }
 
     public function updatedSeparationProductRemnantTareKg()
     {
+        $this->p1_remnant_tare_kg = $this->separation_product_remnant_tare_kg;
         $this->recalculateTotals();
     }
 
@@ -275,13 +380,23 @@ class WeighingSheet extends Component
         $this->recalculateTotals();
     }
 
-    public function updatedDustItems()
-    {
-        $this->recalculateTotals();
-    }
+    public function updatedP1ProductSack() { $this->recalculateTotals(); }
+    public function updatedP1RemnantGrossKg() { $this->recalculateTotals(); }
+    public function updatedP1RemnantTareKg() { $this->recalculateTotals(); }
+    public function updatedP1DustItems() { $this->recalculateTotals(); }
+    public function updatedP2ProductSack() { $this->recalculateTotals(); }
+    public function updatedP2RemnantGrossKg() { $this->recalculateTotals(); }
+    public function updatedP2RemnantTareKg() { $this->recalculateTotals(); }
+    public function updatedP2DustItems() { $this->recalculateTotals(); }
 
     public function updatedProductTarePerSack()
     {
+        $newTare = $this->parseFloat($this->product_tare_per_sack);
+        foreach ($this->items as &$item) {
+            if (empty($item['is_locked_for_user']) && (float)($item['gross_kg'] ?? 0) == 0) {
+                $item['tare_kg'] = $newTare;
+            }
+        }
         $this->recalculateTotals();
     }
 
@@ -320,28 +435,47 @@ class WeighingSheet extends Component
             }
         }
 
-        // 1. Produk Jadi calculation: Sack (Gross & Tare per Sack) + Remnant (Gross & Tare in Kg)
-        $prodSack = (int) ($this->separation_product_sack ?? 0);
         $kgPerSack = $this->parseFloat(($this->product_kg_per_sack && (float)$this->product_kg_per_sack > 0) ? $this->product_kg_per_sack : 25.20);
         $tarePerSack = $this->parseFloat((isset($this->product_tare_per_sack) && (float)$this->product_tare_per_sack >= 0) ? $this->product_tare_per_sack : 0.20);
-        
-        $prodSackGross = max(0, round($prodSack * $kgPerSack, 2));
-        $prodSackTare = max(0, round($prodSack * $tarePerSack, 2));
 
-        $remGross = $this->parseFloat($this->separation_product_remnant_gross_kg);
-        $remTare = $this->parseFloat($this->separation_product_remnant_tare_kg);
-        $remNetto = max(0, round($remGross - $remTare, 2));
-        $this->separation_product_remnant_kg = $remNetto;
+        // 1. P1 Produk Jadi calculation
+        $p1Sack = (int) ($this->p1_product_sack ?? 0);
+        $p1SackGross = max(0, round($p1Sack * $kgPerSack, 2));
+        $p1SackTare = max(0, round($p1Sack * $tarePerSack, 2));
 
-        $totalProdGross = round($prodSackGross + $remGross, 2);
-        $totalProdTare = round($prodSackTare + $remTare, 2);
-        $prodNetto = max(0, round($totalProdGross - $totalProdTare, 2));
+        $p1RemGross = $this->parseFloat($this->p1_remnant_gross_kg);
+        $p1RemTare = $this->parseFloat($this->p1_remnant_tare_kg);
+        $p1RemNetto = max(0, round($p1RemGross - $p1RemTare, 2));
+        $this->p1_remnant_netto_kg = $p1RemNetto;
 
-        $this->separation_product_gross_kg = $totalProdGross;
-        $this->separation_product_tare_kg = $totalProdTare;
-        $this->separation_product_kg = $prodNetto;
+        $p1TotalGross = round($p1SackGross + $p1RemGross, 2);
+        $p1TotalTare = round($p1SackTare + $p1RemTare, 2);
+        $this->p1_product_kg = max(0, round($p1TotalGross - $p1TotalTare, 2));
 
-        // 2. Bit Stem multi-row calculations
+        // 2. P2 Produk Jadi calculation
+        $p2Sack = (int) ($this->p2_product_sack ?? 0);
+        $p2SackGross = max(0, round($p2Sack * $kgPerSack, 2));
+        $p2SackTare = max(0, round($p2Sack * $tarePerSack, 2));
+
+        $p2RemGross = $this->parseFloat($this->p2_remnant_gross_kg);
+        $p2RemTare = $this->parseFloat($this->p2_remnant_tare_kg);
+        $p2RemNetto = max(0, round($p2RemGross - $p2RemTare, 2));
+        $this->p2_remnant_netto_kg = $p2RemNetto;
+
+        $p2TotalGross = round($p2SackGross + $p2RemGross, 2);
+        $p2TotalTare = round($p2SackTare + $p2RemTare, 2);
+        $this->p2_product_kg = max(0, round($p2TotalGross - $p2TotalTare, 2));
+
+        // Combined Produk Jadi
+        $this->separation_product_sack = $p1Sack + $p2Sack;
+        $this->separation_product_remnant_gross_kg = round($p1RemGross + $p2RemGross, 2);
+        $this->separation_product_remnant_tare_kg = round($p1RemTare + $p2RemTare, 2);
+        $this->separation_product_remnant_kg = round($p1RemNetto + $p2RemNetto, 2);
+        $this->separation_product_gross_kg = round($p1TotalGross + $p2TotalGross, 2);
+        $this->separation_product_tare_kg = round($p1TotalTare + $p2TotalTare, 2);
+        $this->separation_product_kg = round($this->p1_product_kg + $this->p2_product_kg, 2);
+
+        // 3. Bit Stem multi-row calculations (P2)
         $stemGrossSum = 0;
         $stemTareSum = 0;
         $stemNettoSum = 0;
@@ -360,34 +494,43 @@ class WeighingSheet extends Component
         $this->separation_bits_stem_netto_kg = $stemNettoSum;
         $this->separation_bits_stem_kg = $stemNettoSum;
 
-        // 3. Debu multi-row calculations
-        $dustGrossSum = 0;
-        $dustTareSum = 0;
-        $dustNettoSum = 0;
-
-        foreach ($this->dust_items as &$item) {
+        // 4. P1 Dust multi-row calculations
+        $p1DustGross = 0; $p1DustTare = 0; $p1DustNetto = 0;
+        foreach ($this->p1_dust_items as &$item) {
             $g = $this->parseFloat($item['gross_kg'] ?? 0);
             $t = $this->parseFloat($item['tare_kg'] ?? 0);
             $n = max(0, round($g - $t, 2));
             $item['netto_kg'] = $n;
-            $dustGrossSum += $g;
-            $dustTareSum += $t;
-            $dustNettoSum += $n;
+            $p1DustGross += $g; $p1DustTare += $t; $p1DustNetto += $n;
         }
-        $this->separation_dust_gross_kg = $dustGrossSum;
-        $this->separation_dust_tare_kg = $dustTareSum;
-        $this->separation_dust_netto_kg = $dustNettoSum;
-        $this->separation_dust_kg = $dustNettoSum;
+        $this->p1_dust_netto_kg = $p1DustNetto;
 
-        // 4. Uncountable Waste calculation: Total Netto Input - (Netto Produk + Netto Bit Stem + Netto Debu)
-        $outputsSum = $prodNetto + $stemNettoSum + $dustNettoSum;
+        // 5. P2 Dust multi-row calculations
+        $p2DustGross = 0; $p2DustTare = 0; $p2DustNetto = 0;
+        foreach ($this->p2_dust_items as &$item) {
+            $g = $this->parseFloat($item['gross_kg'] ?? 0);
+            $t = $this->parseFloat($item['tare_kg'] ?? 0);
+            $n = max(0, round($g - $t, 2));
+            $item['netto_kg'] = $n;
+            $p2DustGross += $g; $p2DustTare += $t; $p2DustNetto += $n;
+        }
+        $this->p2_dust_netto_kg = $p2DustNetto;
 
+        // Combined Dust
+        $this->dust_items = array_merge($this->p1_dust_items, $this->p2_dust_items);
+        $this->separation_dust_gross_kg = round($p1DustGross + $p2DustGross, 2);
+        $this->separation_dust_tare_kg = round($p1DustTare + $p2DustTare, 2);
+        $this->separation_dust_netto_kg = round($p1DustNetto + $p2DustNetto, 2);
+        $this->separation_dust_kg = $this->separation_dust_netto_kg;
+
+        // 6. Uncountable Waste calculation
+        $outputsSum = $this->separation_product_kg + $stemNettoSum + $this->separation_dust_netto_kg;
         if ($this->totalNettoKg > 0) {
             $this->separation_waste_kg = max(0, round($this->totalNettoKg - $outputsSum, 2));
 
-            $this->yieldProductPct = round(($prodNetto / $this->totalNettoKg) * 100, 2);
+            $this->yieldProductPct = round(($this->separation_product_kg / $this->totalNettoKg) * 100, 2);
             $this->yieldBitsStemPct = round(($stemNettoSum / $this->totalNettoKg) * 100, 2);
-            $this->yieldDustPct = round(($dustNettoSum / $this->totalNettoKg) * 100, 2);
+            $this->yieldDustPct = round(($this->separation_dust_netto_kg / $this->totalNettoKg) * 100, 2);
             $this->yieldWastePct = max(0, round(100.00 - ($this->yieldProductPct + $this->yieldBitsStemPct + $this->yieldDustPct), 2));
         } else {
             $this->separation_waste_kg = 0;
@@ -411,7 +554,7 @@ class WeighingSheet extends Component
 
     public function openPauseModal()
     {
-        $this->showPauseModal = true;
+        $this->submitPauseAndInterimReport();
     }
 
     public function submitPauseAndInterimReport()
@@ -423,7 +566,37 @@ class WeighingSheet extends Component
 
         $this->recalculateTotals();
 
-        // Log interim separation report for shift/group
+        // Validation: Karyawan MUST fill out Separation Results before finishing shift
+        if ($this->separation_product_sack <= 0 && (float) $this->separation_product_kg <= 0) {
+            $this->addError('separation_product_sack', 'Harap isi Form Laporan Hasil Pemisahan (Produk Jadi / Rajangan) terlebih dahulu sebelum menyelesaikan shift.');
+            session()->flash('error', '⚠️ Harap isi Form Laporan Hasil Pemisahan (Produk Jadi / Rajangan) terlebih dahulu sebelum menyelesaikan shift!');
+            $this->showPauseModal = false;
+            $this->dispatch('scroll-to-separation-form');
+            return;
+        }
+
+        $p1Payload = [
+            'product_sack' => $this->p1_product_sack,
+            'product_remnant_gross_kg' => $this->p1_remnant_gross_kg,
+            'product_remnant_tare_kg' => $this->p1_remnant_tare_kg,
+            'product_remnant_netto_kg' => $this->p1_remnant_netto_kg,
+            'product_kg' => $this->p1_product_kg,
+            'dust_items' => $this->p1_dust_items,
+            'dust_netto_kg' => $this->p1_dust_netto_kg,
+        ];
+
+        $p2Payload = [
+            'product_sack' => $this->p2_product_sack,
+            'product_remnant_gross_kg' => $this->p2_remnant_gross_kg,
+            'product_remnant_tare_kg' => $this->p2_remnant_tare_kg,
+            'product_remnant_netto_kg' => $this->p2_remnant_netto_kg,
+            'product_kg' => $this->p2_product_kg,
+            'bit_stem_items' => $this->bit_stem_items,
+            'dust_items' => $this->p2_dust_items,
+            'dust_netto_kg' => $this->p2_dust_netto_kg,
+        ];
+
+        // Log interim separation report for shift/group directly
         BatchInterimSeparation::create([
             'batch_id' => $batch->id,
             'user_id' => Auth::id(),
@@ -447,14 +620,17 @@ class WeighingSheet extends Component
             'separation_dust_tare_kg' => $this->separation_dust_tare_kg,
             'separation_dust_netto_kg' => $this->separation_dust_netto_kg,
             'dust_items' => $this->dust_items,
+            'separation_p1_data' => $p1Payload,
+            'separation_p2_data' => $p2Payload,
             'separation_waste_kg' => $this->separation_waste_kg,
             'sacks_processed_count' => $this->totalPack,
-            'notes' => $this->pause_notes ?: 'Jeda / Pause Shift Kerja',
+            'notes' => $this->pause_notes ?: 'Selesai Shift Kerja (Done Shift)',
         ]);
 
         $this->saveBatch('ACTIVE');
         $this->showPauseModal = false;
-        session()->flash('message', 'Laporan Pemisahan Interim berhasil dicatat & sesi kerja dihentikan sementara (Paused).');
+        $this->showThankYouModal = true;
+        session()->flash('message', '🛑 Laporan Selesai Shift berhasil dicatat & data terdeteksi di Live Tracking Admin!');
     }
 
     public function lockData()
@@ -475,17 +651,44 @@ class WeighingSheet extends Component
             return;
         }
 
-        $batch = Batch::findOrFail($this->batchId);
+        $batch = Batch::find($this->batchId);
+        if (! $batch) {
+            $this->addError('batchId', 'Batch tidak ditemukan.');
+            return;
+        }
+
         $user = Auth::user();
         $currentUserId = $user ? $user->id : null;
+        $isCurrentUserAdmin = $user && ($user->isAdmin() || $user->isSupervisor());
 
-        if ($batch->isLocked() && ! (Auth::user()->isAdmin() || Auth::user()->isSupervisor())) {
+        if ($batch->isLocked() && ! $isCurrentUserAdmin) {
             abort(403, 'Data telah dikunci.');
         }
 
         $this->recalculateTotals();
 
         $discrepancy = round(((float) $batch->dn_netto_weight) - $this->totalNettoKg, 2);
+
+        $p1Payload = [
+            'product_sack' => $this->p1_product_sack,
+            'product_remnant_gross_kg' => $this->p1_remnant_gross_kg,
+            'product_remnant_tare_kg' => $this->p1_remnant_tare_kg,
+            'product_remnant_netto_kg' => $this->p1_remnant_netto_kg,
+            'product_kg' => $this->p1_product_kg,
+            'dust_items' => $this->p1_dust_items,
+            'dust_netto_kg' => $this->p1_dust_netto_kg,
+        ];
+
+        $p2Payload = [
+            'product_sack' => $this->p2_product_sack,
+            'product_remnant_gross_kg' => $this->p2_remnant_gross_kg,
+            'product_remnant_tare_kg' => $this->p2_remnant_tare_kg,
+            'product_remnant_netto_kg' => $this->p2_remnant_netto_kg,
+            'product_kg' => $this->p2_product_kg,
+            'bit_stem_items' => $this->bit_stem_items,
+            'dust_items' => $this->p2_dust_items,
+            'dust_netto_kg' => $this->p2_dust_netto_kg,
+        ];
 
         $batch->update([
             'product_kg_per_sack' => $this->product_kg_per_sack,
@@ -512,6 +715,8 @@ class WeighingSheet extends Component
             'separation_dust_tare_kg' => $this->separation_dust_tare_kg,
             'separation_dust_netto_kg' => $this->separation_dust_netto_kg,
             'dust_items' => $this->dust_items,
+            'separation_p1_data' => $p1Payload,
+            'separation_p2_data' => $p2Payload,
             'separation_waste_kg' => $this->separation_waste_kg,
             'yield_product_pct' => $this->yieldProductPct,
             'yield_bits_stem_pct' => $this->yieldBitsStemPct,
@@ -528,18 +733,58 @@ class WeighingSheet extends Component
         foreach ($this->items as $it) {
             if ((float) ($it['gross_kg'] ?? 0) > 0) {
                 if (! empty($it['id'])) {
-                    $existing = WeighingItem::find($it['id']);
-                    // Predecessor lock check: reject backend edit if created by another user
-                    if ($existing && $existing->created_by_user_id && $existing->created_by_user_id !== $currentUserId) {
-                        continue; // Keep original predecessor data
+                    $existing = WeighingItem::with('createdBy')->find($it['id']);
+                    
+                    $isExistingCreatedByAdmin = $existing && $existing->createdBy && ($existing->createdBy->isAdmin() || $existing->createdBy->isSupervisor());
+                    $isExistingPreLaunch = $existing && $existing->remark === 'MRL Pre-Launch';
+
+                    // Reject backend edit ONLY if:
+                    // 1. Current user is NOT Admin/Supervisor
+                    // 2. Row was NOT created by Admin/Supervisor
+                    // 3. Row is NOT MRL Pre-Launch
+                    // 4. Row was created by a DIFFERENT Karyawan worker
+                    if (! $isCurrentUserAdmin 
+                        && $existing 
+                        && $existing->created_by_user_id 
+                        && $existing->created_by_user_id !== $currentUserId 
+                        && ! $isExistingCreatedByAdmin 
+                        && ! $isExistingPreLaunch 
+                        && $existing->createdBy 
+                        && $existing->createdBy->isKaryawan()
+                    ) {
+                        continue; // Keep original predecessor worker data
                     }
 
-                    $existing->update([
+                    $isRowModifiedByWorker = $existing && (
+                        abs((float)$it['gross_kg'] - (float)$existing->gross_kg) > 0.001 ||
+                        abs((float)$it['tare_kg'] - (float)$existing->tare_kg) > 0.001 ||
+                        ($it['remark'] !== 'MRL Pre-Launch' && $it['remark'] !== $existing->remark)
+                    );
+
+                    $targetRemark = $it['remark'] ?? 'Normal';
+                    if ($isExistingPreLaunch && ! $isRowModifiedByWorker) {
+                        $targetRemark = 'MRL Pre-Launch';
+                    } elseif ($targetRemark === 'MRL Pre-Launch' && $isRowModifiedByWorker) {
+                        $targetRemark = 'Normal';
+                    }
+
+                    $updateData = [
                         'gross_kg' => $it['gross_kg'],
                         'tare_kg' => $it['tare_kg'],
                         'netto_kg' => $it['netto_kg'],
-                        'remark' => $it['remark'] ?? 'Normal',
-                    ]);
+                        'remark' => $targetRemark,
+                    ];
+
+                    // Transfer ownership to active KARYAWAN worker ONLY IF row was actually modified by this worker
+                    if ($existing && ($isExistingCreatedByAdmin || $isExistingPreLaunch || ! $existing->createdBy || ! $existing->createdBy->isKaryawan())) {
+                        if ($user && $user->isKaryawan() && ($isRowModifiedByWorker || ! $isExistingPreLaunch)) {
+                            $updateData['created_by_user_id'] = $currentUserId;
+                            $updateData['shift'] = $user->shift ?? 'Shift 1';
+                            $updateData['group'] = $user->group ?? 'Group A';
+                        }
+                    }
+
+                    $existing->update($updateData);
                 } else {
                     WeighingItem::create([
                         'batch_id' => $batch->id,
@@ -547,10 +792,10 @@ class WeighingSheet extends Component
                         'gross_kg' => $it['gross_kg'],
                         'tare_kg' => $it['tare_kg'],
                         'netto_kg' => $it['netto_kg'],
-                        'remark' => $it['remark'] ?? 'Normal',
+                        'remark' => ($it['remark'] === 'MRL Pre-Launch') ? 'Normal' : ($it['remark'] ?? 'Normal'),
                         'created_by_user_id' => $currentUserId,
-                        'shift' => $user->shift ?? 'Shift 1',
-                        'group' => $user->group ?? 'Group A',
+                        'shift' => $user ? ($user->shift ?? 'Shift 1') : 'Shift 1',
+                        'group' => $user ? ($user->group ?? 'Group A') : 'Group A',
                     ]);
                 }
             }

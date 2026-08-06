@@ -47,7 +47,7 @@ class User extends Authenticatable
 
     public function isKaryawan(): bool
     {
-        return in_array($this->role, [self::ROLE_KARYAWAN, 'worker', 'operator']);
+        return in_array(strtolower($this->role ?? ''), [self::ROLE_KARYAWAN, 'worker', 'operator', 'karyawan']);
     }
 
     public function isWorker(): bool
@@ -57,16 +57,16 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return in_array($this->role, [self::ROLE_ADMIN, 'administrator']);
+        return in_array(strtolower($this->role ?? ''), [self::ROLE_ADMIN, 'administrator', 'admin']);
     }
 
     public function isSupervisor(): bool
     {
-        return $this->role === self::ROLE_SUPERVISOR;
+        return in_array(strtolower($this->role ?? ''), [self::ROLE_SUPERVISOR, 'supervisor']);
     }
 
     public function isCustomer(): bool
     {
-        return $this->role === self::ROLE_CUSTOMER;
+        return strtolower($this->role ?? '') === self::ROLE_CUSTOMER;
     }
 }

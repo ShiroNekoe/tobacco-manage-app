@@ -86,4 +86,196 @@ class PredecessorLockTest extends TestCase
             'created_by_user_id' => $workerShift1->id,
         ]);
     }
+
+    public function test_worker_can_fill_weights_on_admin_initialized_pre_launch_rows(): void
+    {
+        $admin = User::create(['name' => 'Admin Test', 'email' => 'adm@tobacco.com', 'password' => bcrypt('password'), 'role' => 'admin']);
+        $worker = User::create(['name' => 'Worker 1', 'email' => 'w1_test@tobacco.com', 'password' => bcrypt('password'), 'role' => 'karyawan', 'shift' => 'Shift 1', 'group' => 'Group A']);
+
+        $customer = Customer::create(['name' => 'PT Admin Row Test', 'code' => 'CUST-ADM']);
+        $prodType = ProductType::create(['code' => 'P-ADM', 'name' => 'PAITON ADM']);
+        $origin = Origin::create(['region_name' => 'PAITON ADM']);
+        $dn = DeliveryNote::create(['dn_number' => 'DN-ADM-01', 'customer_id' => $customer->id, 'delivery_date' => Carbon::now()]);
+
+        $batch = Batch::create([
+            'batch_code' => 'BCH-ADM-001',
+            'customer_id' => $customer->id,
+            'delivery_note_id' => $dn->id,
+            'product_type_id' => $prodType->id,
+            'origin_id' => $origin->id,
+            'pack_type' => 'Bale',
+            'date_of_receipt' => Carbon::now(),
+            'status' => 'OPEN',
+            'created_by_user_id' => $admin->id,
+        ]);
+
+        // Pre-launch row created by Admin (e.g. tare 0.20, gross 0)
+        $adminRow = WeighingItem::create([
+            'batch_id' => $batch->id,
+            'sack_number' => 1,
+            'gross_kg' => 0.00,
+            'tare_kg' => 0.20,
+            'netto_kg' => 0.00,
+            'remark' => 'Normal',
+            'created_by_user_id' => $admin->id,
+        ]);
+
+        // Worker opens sheet and fills gross weight 98.60
+        Livewire::actingAs($worker)
+            ->test(WeighingSheet::class, ['batch_id' => $batch->id])
+            ->assertSet('items.0.is_locked_for_user', false)
+            ->set('items.0.gross_kg', 98.60)
+            ->call('saveDraft');
+
+        $this->assertDatabaseHas('weighing_items', [
+            'id' => $adminRow->id,
+            'gross_kg' => 98.60,
+            'tare_kg' => 0.20,
+            'netto_kg' => 98.40,
+            'created_by_user_id' => $worker->id,
+        ]);
+    }
+
+    public function test_worker_can_fill_and_modify_batch_launched_pre_fill_rows(): void
+    {
+        $admin = User::create(['name' => 'Admin Launch', 'email' => 'adm_launch@tobacco.com', 'password' => bcrypt('password'), 'role' => 'admin']);
+        $worker = User::create(['name' => 'Worker 1', 'email' => 'w1_launch@tobacco.com', 'password' => bcrypt('password'), 'role' => 'karyawan', 'shift' => 'Shift 1', 'group' => 'Group A']);
+
+        $customer = Customer::create(['name' => 'PT Launch Test', 'code' => 'CUST-LCH']);
+        $prodType = ProductType::create(['code' => 'P-LCH', 'name' => 'PAITON LCH']);
+        $origin = Origin::create(['region_name' => 'PAITON LCH']);
+        $dn = DeliveryNote::create(['dn_number' => 'DN-LCH-01', 'customer_id' => $customer->id, 'delivery_date' => Carbon::now()]);
+
+        $batch = Batch::create([
+            'batch_code' => 'BCH-LCH-001',
+            'customer_id' => $customer->id,
+            'delivery_note_id' => $dn->id,
+            'product_type_id' => $prodType->id,
+            'origin_id' => $origin->id,
+            'pack_type' => 'Bale',
+            'date_of_receipt' => Carbon::now(),
+            'status' => 'OPEN',
+            'created_by_user_id' => $admin->id,
+        ]);
+
+        // Pre-launch row created during Batch Launch by Admin with gross 76.7
+        $preLaunchRow = WeighingItem::create([
+            'batch_id' => $batch->id,
+            'sack_number' => 1,
+            'gross_kg' => 76.70,
+            'tare_kg' => 0.20,
+            'netto_kg' => 76.50,
+            'remark' => 'MRL Pre-Launch',
+            'created_by_user_id' => $admin->id,
+        ]);
+
+        // Worker opens sheet
+        Livewire::actingAs($worker)
+            ->test(WeighingSheet::class, ['batch_id' => $batch->id])
+            ->assertSet('items.0.is_locked_for_user', false)
+            ->set('items.0.gross_kg', 77.00)
+            ->call('saveDraft');
+
+        $this->assertDatabaseHas('weighing_items', [
+            'id' => $preLaunchRow->id,
+            'gross_kg' => 77.00,
+            'created_by_user_id' => $worker->id,
+        ]);
+    }
+
+    public function test_admin_can_view_and_edit_rows_created_by_karyawan(): void
+    {
+        $admin = User::create(['name' => 'Admin Override', 'email' => 'adm_ovr@tobacco.com', 'password' => bcrypt('password'), 'role' => 'admin']);
+        $worker = User::create(['name' => 'Worker 1', 'email' => 'w1_ovr@tobacco.com', 'password' => bcrypt('password'), 'role' => 'karyawan', 'shift' => 'Shift 1', 'group' => 'Group A']);
+
+        $customer = Customer::create(['name' => 'PT Admin Ovr Test', 'code' => 'CUST-OVR']);
+        $prodType = ProductType::create(['code' => 'P-OVR', 'name' => 'PAITON OVR']);
+        $origin = Origin::create(['region_name' => 'PAITON OVR']);
+        $dn = DeliveryNote::create(['dn_number' => 'DN-OVR-01', 'customer_id' => $customer->id, 'delivery_date' => Carbon::now()]);
+
+        $batch = Batch::create([
+            'batch_code' => 'BCH-OVR-001',
+            'customer_id' => $customer->id,
+            'delivery_note_id' => $dn->id,
+            'product_type_id' => $prodType->id,
+            'origin_id' => $origin->id,
+            'pack_type' => 'Bale',
+            'date_of_receipt' => Carbon::now(),
+            'status' => 'OPEN',
+        ]);
+
+        $workerRow = WeighingItem::create([
+            'batch_id' => $batch->id,
+            'sack_number' => 1,
+            'gross_kg' => 89.20,
+            'tare_kg' => 0.20,
+            'netto_kg' => 89.00,
+            'remark' => 'Normal',
+            'created_by_user_id' => $worker->id,
+            'shift' => 'Shift 1',
+            'group' => 'Group A',
+        ]);
+
+        // Admin opens sheet -> row should NOT be locked for Admin
+        Livewire::actingAs($admin)
+            ->test(WeighingSheet::class, ['batch_id' => $batch->id])
+            ->assertSet('items.0.is_locked_for_user', false)
+            ->set('items.0.gross_kg', 90.00)
+            ->call('saveDraft');
+
+        $this->assertDatabaseHas('weighing_items', [
+            'id' => $workerRow->id,
+            'gross_kg' => 90.00,
+        ]);
+    }
+
+    public function test_shift_2_worker_can_edit_untouched_pre_launch_sack_5(): void
+    {
+        $admin = User::create(['name' => 'Admin Test', 'email' => 'adm_multi@tobacco.com', 'password' => bcrypt('password'), 'role' => 'admin']);
+        $workerShift1 = User::create(['name' => 'Worker 1', 'email' => 'w1_multi@tobacco.com', 'password' => bcrypt('password'), 'role' => 'karyawan', 'shift' => 'Shift 1', 'group' => 'Group A']);
+        $workerShift2 = User::create(['name' => 'Worker 2', 'email' => 'w2_multi@tobacco.com', 'password' => bcrypt('password'), 'role' => 'karyawan', 'shift' => 'Shift 2', 'group' => 'Group B']);
+
+        $customer = Customer::create(['name' => 'PT Multi Shift Test', 'code' => 'CUST-MULTI']);
+        $prodType = ProductType::create(['code' => 'P-MULTI', 'name' => 'PAITON MULTI']);
+        $origin = Origin::create(['region_name' => 'PAITON MULTI']);
+        $dn = DeliveryNote::create(['dn_number' => 'DN-MULTI-01', 'customer_id' => $customer->id, 'delivery_date' => Carbon::now()]);
+
+        $batch = Batch::create([
+            'batch_code' => 'BCH-MULTI-001',
+            'customer_id' => $customer->id,
+            'delivery_note_id' => $dn->id,
+            'product_type_id' => $prodType->id,
+            'origin_id' => $origin->id,
+            'pack_type' => 'Bale',
+            'date_of_receipt' => Carbon::now(),
+            'status' => 'OPEN',
+            'created_by_user_id' => $admin->id,
+        ]);
+
+        // Pre-launch rows created during launch (Sacks 1..5)
+        $row1 = WeighingItem::create(['batch_id' => $batch->id, 'sack_number' => 1, 'gross_kg' => 99.75, 'tare_kg' => 0.50, 'netto_kg' => 99.25, 'remark' => 'MRL Pre-Launch', 'created_by_user_id' => $admin->id]);
+        $row5 = WeighingItem::create(['batch_id' => $batch->id, 'sack_number' => 5, 'gross_kg' => 99.96, 'tare_kg' => 0.20, 'netto_kg' => 99.76, 'remark' => 'MRL Pre-Launch', 'created_by_user_id' => $admin->id]);
+
+        // Worker Shift 1 opens sheet and edits Row 1 (gross -> 99.80), but DOES NOT touch Row 5
+        Livewire::actingAs($workerShift1)
+            ->test(WeighingSheet::class, ['batch_id' => $batch->id])
+            ->set('items.0.gross_kg', 99.80)
+            ->call('saveDraft');
+
+        // Worker Shift 2 opens sheet
+        // Row 1 should be locked for Shift 2, but Row 5 MUST be unlocked for Shift 2!
+        Livewire::actingAs($workerShift2)
+            ->test(WeighingSheet::class, ['batch_id' => $batch->id])
+            ->assertSet('items.0.is_locked_for_user', true)
+            ->assertSet('items.1.is_locked_for_user', false)
+            ->set('items.1.gross_kg', 100.00)
+            ->call('saveDraft');
+
+        $this->assertDatabaseHas('weighing_items', [
+            'id' => $row5->id,
+            'gross_kg' => 100.00,
+            'created_by_user_id' => $workerShift2->id,
+        ]);
+    }
 }
+

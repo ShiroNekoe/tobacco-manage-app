@@ -17,8 +17,8 @@ class WeighingSheet extends Component
     public array $items = [];
 
     // Separation outputs for current session
-    public $product_kg_per_sack = 20.00;
-    public $product_tare_per_sack = 2.00;
+    public $product_kg_per_sack = 25.20;
+    public $product_tare_per_sack = 0.20;
     public int $separation_product_sack = 0;
     public $separation_product_gross_kg = 0;
     public $separation_product_tare_kg = 0;
@@ -161,12 +161,13 @@ class WeighingSheet extends Component
     public function generateDefaultSackRows(int $count = 10)
     {
         $startNum = count($this->items) + 1;
+        $defaultTare = (float) ($this->product_tare_per_sack ?? 0.20);
         for ($i = 0; $i < $count; $i++) {
             $this->items[] = [
                 'id' => null,
                 'sack_number' => $startNum + $i,
                 'gross_kg' => 0,
-                'tare_kg' => 2.0,
+                'tare_kg' => $defaultTare,
                 'netto_kg' => 0,
                 'remark' => 'Normal',
                 'created_by_user_id' => null,
@@ -178,11 +179,12 @@ class WeighingSheet extends Component
     public function addSackRow()
     {
         $nextNum = count($this->items) + 1;
+        $defaultTare = (float) ($this->product_tare_per_sack ?? 0.20);
         $this->items[] = [
             'id' => null,
             'sack_number' => $nextNum,
             'gross_kg' => 0,
-            'tare_kg' => 2.0,
+            'tare_kg' => $defaultTare,
             'netto_kg' => 0,
             'remark' => 'Normal',
             'created_by_user_id' => null,

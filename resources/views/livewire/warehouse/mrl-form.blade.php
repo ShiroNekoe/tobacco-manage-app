@@ -27,8 +27,8 @@
 
             <!-- Delivery Note (DN Number) -->
             <div>
-                <label class="block text-xs font-bold uppercase text-zinc-300 mb-2">Nomor Surat Jalan (Delivery Note / DN) <span class="text-red-400">*</span></label>
-                <input type="text" wire:model="dn_number" class="w-full px-4 py-3 min-h-[44px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm focus:border-amber-500 outline-none" placeholder="Contoh: DN-2026-0801">
+                <label class="block text-xs font-bold uppercase text-zinc-300 mb-2">Nomor Surat Jalan (Delivery Note / DN) <span class="text-zinc-500 font-normal">(Opsional)</span></label>
+                <input type="text" wire:model="dn_number" class="w-full px-4 py-3 min-h-[44px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm focus:border-amber-500 outline-none" placeholder="Contoh: DN-2026-0801 (Otomatis jika dikosongkan)">
                 @error('dn_number') <span class="text-red-400 text-xs mt-1 block">{{ $message }}</span> @enderror
             </div>
 

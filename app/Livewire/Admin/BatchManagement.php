@@ -31,24 +31,24 @@ class BatchManagement extends Component
     public string $material_code = '';
     public array $selected_origins = [];
     public string $pack_type = 'Bale';
-    public float $product_kg_per_sack = 25.20;
-    public float $product_tare_per_sack = 0.20;
+    public $product_kg_per_sack = 25.20;
+    public $product_tare_per_sack = 0.20;
     public string $date_of_receipt = '';
 
     // Header DN Weight Input
-    public float $dn_gross_weight_input = 0;
+    public $dn_gross_weight_input = '';
 
     // Target Sack Count Input & Dynamic Multi-Row MRL Pre-Launch Items (Only MRL Gross per Sack)
     public $target_sack_count = 5;
     public array $mrl_items = [];
 
     // Summary Totals
-    public int $dn_total_pack = 0;
-    public float $dn_gross_weight = 0;
-    public float $dn_tare_weight = 0;
-    public float $dn_netto_weight = 0;
-    public int $mrl_total_pack = 0;
-    public float $mrl_gross_weight = 0;
+    public $dn_total_pack = 0;
+    public $dn_gross_weight = 0;
+    public $dn_tare_weight = 0;
+    public $dn_netto_weight = 0;
+    public $mrl_total_pack = 0;
+    public $mrl_gross_weight = 0;
 
     // Discrepancy & Close Batch Fields
     public ?int $selectedBatchId = null;
@@ -90,6 +90,11 @@ class BatchManagement extends Component
     }
 
     public function updatedDnGrossWeightInput()
+    {
+        $this->recalculateMrlTotals();
+    }
+
+    public function updatedProductTarePerSack()
     {
         $this->recalculateMrlTotals();
     }
@@ -140,14 +145,17 @@ class BatchManagement extends Component
         $this->dn_total_pack = count($this->mrl_items);
         $this->mrl_total_pack = count($this->mrl_items);
         $this->mrl_gross_weight = 0;
-        $this->dn_tare_weight = count($this->mrl_items) * 2.0; // Standard 2.0 kg tare per sack
+        
+        $productTare = (float) ($this->product_tare_per_sack !== '' && $this->product_tare_per_sack !== null ? $this->product_tare_per_sack : 0.20);
+        $this->dn_tare_weight = round(count($this->mrl_items) * $productTare, 2);
 
         foreach ($this->mrl_items as $item) {
             $mrlGross = (float) ($item['mrl_gross_weight'] ?? 0);
             $this->mrl_gross_weight += $mrlGross;
         }
 
-        $this->dn_gross_weight = (float) $this->dn_gross_weight_input > 0 ? (float) $this->dn_gross_weight_input : $this->mrl_gross_weight;
+        $dnGrossInput = (float) ($this->dn_gross_weight_input ?? 0);
+        $this->dn_gross_weight = $dnGrossInput > 0 ? $dnGrossInput : $this->mrl_gross_weight;
         $this->dn_netto_weight = max(0, round($this->dn_gross_weight - $this->dn_tare_weight, 2));
     }
 
@@ -161,7 +169,7 @@ class BatchManagement extends Component
         $this->validate([
             'batch_code' => 'required|string',
             'customer_id' => 'required|exists:customers,id',
-            'dn_number' => 'required|string',
+            'dn_number' => 'nullable|string',
             'product_type_id' => 'required|exists:product_types,id',
             'origin_id' => 'required|exists:origins,id',
             'material_code' => 'nullable|string',
@@ -175,8 +183,13 @@ class BatchManagement extends Component
 
         $this->recalculateMrlTotals();
 
+        $dnNumber = trim($this->dn_number);
+        if ($dnNumber === '') {
+            $dnNumber = 'DN-' . trim($this->batch_code);
+        }
+
         $dn = DeliveryNote::firstOrCreate(
-            ['dn_number' => $this->dn_number],
+            ['dn_number' => $dnNumber],
             [
                 'customer_id' => $this->customer_id,
                 'delivery_date' => $this->date_of_receipt,
@@ -222,9 +235,9 @@ class BatchManagement extends Component
         }
 
         // Save pre-launch MRL items into weighing_items for factory floor
+        $dnTare = (float) ($this->product_tare_per_sack !== '' && $this->product_tare_per_sack !== null ? $this->product_tare_per_sack : 0.20);
         foreach ($this->mrl_items as $mItem) {
             $mrlGross = (float) ($mItem['mrl_gross_weight'] ?? 0);
-            $dnTare = 2.0; // Standard 2.0 kg tare per sack
             if ($mrlGross > 0) {
                 WeighingItem::create([
                     'batch_id' => $batch->id,
@@ -242,7 +255,21 @@ class BatchManagement extends Component
 
         $this->showCreateModal = false;
         $this->reset(['dn_number', 'dn_gross_weight', 'dn_tare_weight', 'dn_netto_weight', 'dn_total_pack', 'mrl_gross_weight', 'mrl_total_pack', 'selected_origins', 'dn_gross_weight_input']);
-        session()->flash('message', 'Batch ' . $batchCode . ' (' . count($this->mrl_items) . ' Sak/Bale MRL) berhasil dibuat & diverifikasi!');
+        session()->flash('message', 'Batch ' . $batch->batch_code . ' (' . count($this->mrl_items) . ' Sak/Bale MRL) berhasil dibuat & diverifikasi!');
+    }
+
+    public function deleteBatch(int $id)
+    {
+        $user = Auth::user();
+        if ($user && ! ($user->isAdmin() || $user->isSupervisor())) {
+            abort(403, 'Anda tidak memiliki hak akses untuk menghapus Batch.');
+        }
+
+        $batch = Batch::findOrFail($id);
+        $batchCode = $batch->batch_code;
+        $batch->delete();
+
+        session()->flash('message', 'Batch ' . $batchCode . ' berhasil dihapus dari sistem.');
     }
 
     public function unlockBatch(int $id)

@@ -17,6 +17,13 @@
     
     <!-- Chart.js for Historical Trend Line Chart -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .swal2-container {
+            z-index: 999999 !important;
+        }
+    </style>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
@@ -150,5 +157,46 @@
     </script>
 
     @livewireScripts
+    <script>
+        function triggerGlobalErrorModal(title, text) {
+            if (window.Swal) {
+                Swal.fire({
+                    icon: 'error',
+                    title: title || 'Terjadi Kendala Sistem',
+                    text: text || 'Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.',
+                    background: '#18181b',
+                    color: '#f4f4f5',
+                    confirmButtonColor: '#d97706',
+                    confirmButtonText: 'Tutup',
+                    heightAuto: false
+                });
+            } else {
+                alert((title || 'Terjadi Kendala Sistem') + '\n' + (text || 'Silakan coba lagi.'));
+            }
+        }
+
+        document.addEventListener('livewire:init', () => {
+            Livewire.hook('request', ({ fail }) => {
+                fail(({ status, content, preventDefault }) => {
+                    if (status >= 400) {
+                        preventDefault();
+                        
+                        let title = 'Terjadi Kendala Sistem (Status ' + status + ')';
+                        let text = 'Terjadi kesalahan internal pada server. Silakan coba beberapa saat lagi atau hubungi administrator.';
+
+                        if (status === 403) {
+                            title = 'Akses Ditolak';
+                            text = 'Anda tidak memiliki wewenang untuk melakukan aksi ini.';
+                        } else if (status === 404) {
+                            title = 'Data Tidak Ditemukan';
+                            text = 'Halaman atau data yang diminta tidak dapat ditemukan.';
+                        }
+
+                        triggerGlobalErrorModal(title, text);
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>

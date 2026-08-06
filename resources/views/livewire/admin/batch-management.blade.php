@@ -113,6 +113,33 @@
                                 <button wire:click="openPdfRemarksModal({{ $b->id }})" class="px-3 py-2 min-h-[44px] inline-flex items-center text-xs font-black rounded-xl bg-red-950 text-red-300 border border-red-800 hover:bg-red-900 shadow">
                                     👁️ Preview & Cetak PDF
                                 </button>
+
+                                <!-- Delete Batch Button -->
+                                @if(auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isSupervisor()))
+                                    <button type="button"
+                                        @click="
+                                            Swal.fire({
+                                                title: 'Konfirmasi Hapus Batch',
+                                                html: 'Apakah Anda yakin ingin menghapus <b>{{ $b->batch_code }}</b>?<br><span class=\'text-xs text-rose-400 mt-2 block\'>Seluruh data timbangan karung dan sertifikat terkait akan terhapus permanen.</span>',
+                                                icon: 'warning',
+                                                showCancelButton: true,
+                                                confirmButtonColor: '#e11d48',
+                                                cancelButtonColor: '#27272a',
+                                                confirmButtonText: 'Ya, Hapus!',
+                                                cancelButtonText: 'Batal',
+                                                background: '#18181b',
+                                                color: '#f4f4f5',
+                                                heightAuto: false
+                                            }).then((result) => {
+                                                if (result.isConfirmed) {
+                                                    $wire.deleteBatch({{ $b->id }});
+                                                }
+                                            })
+                                        "
+                                        class="px-3 py-2 min-h-[44px] inline-flex items-center text-xs font-black rounded-xl bg-rose-950 text-rose-300 border border-rose-800 hover:bg-rose-900 shadow transition-colors">
+                                        🗑️ Hapus
+                                    </button>
+                                @endif
                             </td>
                         </tr>
                     @empty
@@ -159,8 +186,8 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold uppercase text-zinc-300 mb-1">Nomor Surat Jalan (DN Number) <span class="text-red-400">*</span></label>
-                        <input type="text" wire:model="dn_number" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm outline-none focus:border-amber-500" placeholder="DN-2026-0801">
+                        <label class="block text-xs font-bold uppercase text-zinc-300 mb-1">Nomor Surat Jalan (DN Number) <span class="text-zinc-500 font-normal">(Opsional)</span></label>
+                        <input type="text" wire:model="dn_number" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm outline-none focus:border-amber-500" placeholder="DN-2026-0801 (Otmatis jika dikosongkan)">
                         @error('dn_number') <span class="text-red-400 font-bold block text-[11px] mt-1">{{ $message }}</span> @enderror
                     </div>
 

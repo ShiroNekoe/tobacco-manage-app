@@ -77,7 +77,7 @@ class MrlForm extends Component
 
         $this->validate([
             'supplier_id' => 'required|exists:suppliers,id',
-            'dn_number' => 'required_without:delivery_note_id|string',
+            'dn_number' => 'nullable|string',
             'origin_region' => 'required|string',
             'tobacco_grade' => 'required|string',
             'batch_number' => 'required|string',
@@ -93,10 +93,11 @@ class MrlForm extends Component
             return;
         }
 
-        // Create DN if new string typed
+        // Create DN if new string typed or generate auto DN
         if (! $this->delivery_note_id) {
+            $dnNum = trim($this->dn_number) ?: ('DN-MRL-' . ($this->batch_number ?: time()));
             $dn = DeliveryNote::create([
-                'dn_number' => $this->dn_number,
+                'dn_number' => $dnNum,
                 'supplier_id' => $this->supplier_id,
                 'origin_region' => $this->origin_region,
                 'tobacco_grade' => $this->tobacco_grade,

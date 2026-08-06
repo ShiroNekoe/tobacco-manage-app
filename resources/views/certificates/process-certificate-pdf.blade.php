@@ -4,38 +4,42 @@
     <meta charset="utf-8">
     <title>PROCESS CERTIFICATE - {{ $batch->batch_code }}</title>
     <style>
-        @page { size: A4 portrait; margin: 15mm 12mm 15mm 12mm; }
-        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #000; font-size: 9.5pt; line-height: 1.3; }
+        @page { size: A4 portrait; margin: 12mm 10mm 12mm 10mm; }
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #000; font-size: 8.5pt; line-height: 1.25; }
         
-        .header-title { font-size: 16pt; font-weight: bold; text-align: center; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px; }
+        .header-title { font-size: 15pt; font-weight: bold; text-align: center; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px; text-decoration: underline; }
         
-        .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
-        .meta-table td { padding: 3px 0; font-size: 9.5pt; }
-        .meta-table td.label { font-weight: bold; width: 150px; }
+        .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 9pt; }
+        .meta-table td { padding: 2px 0; }
+        .meta-table td.label { font-weight: bold; width: 100px; }
         
-        .section-header { font-size: 10pt; font-weight: bold; text-transform: uppercase; margin-top: 14px; margin-bottom: 6px; }
+        .section-header { font-size: 9.5pt; font-weight: bold; text-transform: uppercase; margin-top: 14px; margin-bottom: 4px; text-decoration: underline; }
+        .material-title { font-size: 9pt; font-weight: bold; margin-top: 10px; margin-bottom: 4px; text-decoration: underline; }
         
-        table.pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; font-size: 8.5pt; }
-        table.pdf-table th, table.pdf-table td { border: 1px solid #000; padding: 4px 5px; text-align: center; }
-        table.pdf-table th { background-color: #e4e4e7; font-weight: bold; text-transform: uppercase; }
+        table.pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 4px; font-size: 8pt; }
+        table.pdf-table th, table.pdf-table td { border: 1px solid #000; padding: 3px 4px; text-align: center; }
+        table.pdf-table th { background-color: #ffffff; font-weight: bold; text-transform: uppercase; font-size: 7.5pt; border-bottom: 2px solid #000; }
         table.pdf-table td.text-left { text-align: left; }
         table.pdf-table td.text-right { text-align: right; }
         
-        .remarks-box { font-size: 8pt; color: #18181b; margin-bottom: 14px; }
-        .remarks-box ol { margin: 2px 0 0 16px; padding: 0; }
-        .remarks-box li { margin-bottom: 1px; }
+        .remarks-box { font-size: 7.5pt; color: red; font-style: italic; margin-bottom: 12px; }
+        .remarks-box strong { color: red; font-style: normal; text-decoration: underline; }
+        .remarks-box ol { margin: 1px 0 0 14px; padding: 0; }
+        .remarks-box li { margin-bottom: 0px; }
 
-        .custom-remark-text { font-style: italic; margin-top: 3px; font-weight: bold; color: #15803d; }
-
-        .material-desc { font-weight: bold; font-size: 9pt; margin-top: 10px; margin-bottom: 4px; }
-        .grand-total-row td { font-weight: bold; background-color: #f4f4f5; }
+        .custom-remark-text { font-style: italic; margin-top: 2px; font-weight: bold; color: #15803d; }
+        .grand-total-row td { font-weight: bold; background-color: #ffffff; border-top: 2px solid #000; border-bottom: 2px solid #000; }
         
-        .sig-container { width: 100%; margin-top: 30px; }
-        .sig-box { float: right; width: 220px; text-align: center; font-size: 9pt; }
-        .sig-space { height: 55px; }
+        .sig-container { width: 100%; margin-top: 25px; page-break-inside: avoid; }
+        .sig-box { float: right; width: 220px; text-align: center; font-size: 8.5pt; }
+        .sig-space { height: 45px; }
     </style>
 </head>
 <body>
+
+    @php
+        $batches = isset($relatedBatches) && count($relatedBatches) > 0 ? $relatedBatches : collect([$batch]);
+    @endphp
 
     <!-- Document Header -->
     <div class="header-title">PROCESS CERTIFICATE</div>
@@ -43,7 +47,7 @@
     <!-- Header Metadata -->
     <table class="meta-table">
         <tr>
-            <td class="label">Customer Name</td>
+            <td class="label">Customer</td>
             <td>: {{ $batch->customer->name ?? '-' }}</td>
             <td class="label" style="text-align: right;">Issued Date :</td>
             <td style="width: 120px; text-align: right;">{{ $batch->locked_at ? $batch->locked_at->format('d/m/Y') : date('d/m/Y') }}</td>
@@ -51,7 +55,7 @@
     </table>
 
     <!-- SECTION 1: DELIVERY NOTE (DN) -->
-    <div class="section-header">1. DELIVERY NOTE (DN)</div>
+    <div class="section-header">DELIVERY NOTE (DN) :</div>
     <table class="pdf-table">
         <thead>
             <tr>
@@ -67,32 +71,39 @@
             </tr>
         </thead>
         <tbody>
-            <tr>
-                <td class="text-left">{{ $batch->productType->name ?? '-' }}</td>
-                <td>{{ $batch->origin->region_name ?? '-' }}</td>
-                <td>{{ $batch->dn_total_pack }}</td>
-                <td>{{ $batch->pack_type }}</td>
-                <td class="text-right">{{ number_format($batch->dn_gross_weight, 2, ',', '.') }}</td>
-                <td class="text-right">{{ number_format($batch->dn_tare_weight, 2, ',', '.') }}</td>
-                <td class="text-right" style="font-weight:bold;">{{ number_format($batch->dn_netto_weight, 2, ',', '.') }}</td>
-                <td>{{ $batch->date_of_receipt ? $batch->date_of_receipt->format('d/m/Y') : '-' }}</td>
-                <td>{{ $batch->deliveryNote->dn_number ?? '-' }}</td>
-            </tr>
+            @foreach($batches as $b)
+                @php
+                    $originDisplay = trim(($b->origin->region_name ?? '') . ' ' . ($b->material_code ?? ''));
+                @endphp
+                <tr>
+                    <td class="text-left">{{ $b->productType->name ?? '-' }}</td>
+                    <td>{{ $originDisplay ?: '-' }}</td>
+                    <td>{{ $b->dn_total_pack }}</td>
+                    <td>{{ $b->pack_type }}</td>
+                    <td class="text-right">{{ number_format($b->dn_gross_weight, 2, ',', '.') }}</td>
+                    <td class="text-right">{{ number_format($b->dn_tare_weight, 2, ',', '.') }}</td>
+                    <td class="text-right" style="font-weight:bold;">{{ number_format($b->dn_netto_weight, 2, ',', '.') }}</td>
+                    <td>{{ $b->date_of_receipt ? $b->date_of_receipt->format('d/m/Y') : '-' }}</td>
+                    <td>{{ $b->deliveryNote->dn_number ?? '-' }}</td>
+                </tr>
+            @endforeach
         </tbody>
     </table>
     <div class="remarks-box">
-        <strong>Remarks :</strong>
+        <strong>Remark :</strong>
         <ol>
             <li>Gross qty. Based on Delivery Note.</li>
             <li>Tare qty. Based on actual weighing during the process.</li>
         </ol>
-        @if(!empty($batch->custom_dn_remark))
-            <div class="custom-remark-text">Catatan Khusus DN: {{ $batch->custom_dn_remark }}</div>
-        @endif
+        @foreach($batches as $b)
+            @if(!empty($b->custom_dn_remark))
+                <div class="custom-remark-text">Catatan Khusus DN ({{ $b->batch_code }}): {{ $b->custom_dn_remark }}</div>
+            @endif
+        @endforeach
     </div>
 
     <!-- SECTION 2: MATERIAL RECEIPT LIST (MRL) -->
-    <div class="section-header">2. MATERIAL RECEIPT LIST (MRL)</div>
+    <div class="section-header">MATERIAL RECEIPT LIST (MRL) :</div>
     <table class="pdf-table">
         <thead>
             <tr>
@@ -108,141 +119,167 @@
             </tr>
         </thead>
         <tbody>
-            <tr>
-                <td class="text-left">{{ $batch->productType->name ?? '-' }}</td>
-                <td>{{ $batch->origin->region_name ?? '-' }}</td>
-                <td>{{ $batch->mrl_total_pack }}</td>
-                <td>{{ $batch->pack_type }}</td>
-                <td class="text-right">{{ number_format($batch->mrl_gross_weight, 2, ',', '.') }}</td>
-                <td class="text-right">{{ number_format($batch->mrl_tare_weight, 2, ',', '.') }}</td>
-                <td class="text-right" style="font-weight:bold;">{{ number_format($batch->mrl_netto_weight, 2, ',', '.') }}</td>
-                <td>{{ $batch->date_of_receipt ? $batch->date_of_receipt->format('d/m/Y') : '-' }}</td>
-                <td class="text-right" style="font-weight:bold; color: {{ $batch->discrepancy_dn_vs_mrl_kg != 0 ? '#b91c1c' : '#000' }};">
-                    {{ number_format($batch->discrepancy_dn_vs_mrl_kg, 2, ',', '.') }}
-                </td>
-            </tr>
+            @foreach($batches as $b)
+                @php
+                    $originDisplay = trim(($b->origin->region_name ?? '') . ' ' . ($b->material_code ?? ''));
+                @endphp
+                <tr>
+                    <td class="text-left">{{ $b->productType->name ?? '-' }}</td>
+                    <td>{{ $originDisplay ?: '-' }}</td>
+                    <td>{{ $b->mrl_total_pack }}</td>
+                    <td>{{ $b->pack_type }}</td>
+                    <td class="text-right">{{ number_format($b->mrl_gross_weight, 2, ',', '.') }}</td>
+                    <td class="text-right">{{ number_format($b->mrl_tare_weight, 2, ',', '.') }}</td>
+                    <td class="text-right" style="font-weight:bold;">{{ number_format($b->mrl_netto_weight, 2, ',', '.') }}</td>
+                    <td>{{ $b->date_of_receipt ? $b->date_of_receipt->format('d/m/Y') : '-' }}</td>
+                    <td class="text-right" style="font-weight:bold;">
+                        {{ number_format($b->discrepancy_dn_vs_mrl_kg, 2, ',', '.') }}
+                    </td>
+                </tr>
+            @endforeach
         </tbody>
     </table>
     <div class="remarks-box">
-        <strong>Remarks :</strong>
+        <strong>Remark :</strong>
         <ol>
             <li>Gross qty. Based on Material receipt list.</li>
             <li>Tare qty. Based on actual weighing during the process.</li>
-            <li><strong>Penjelasan Selisih:</strong> {{ $batch->discrepancy_explanation }}</li>
+            @foreach($batches as $b)
+                @if(!empty($b->discrepancy_explanation))
+                    <li>Penjelasan Selisih ({{ $b->batch_code }}): {{ $b->discrepancy_explanation }}</li>
+                @endif
+            @endforeach
         </ol>
-        @if(!empty($batch->custom_mrl_remark))
-            <div class="custom-remark-text">Catatan Khusus MRL: {{ $batch->custom_mrl_remark }}</div>
-        @endif
+        @foreach($batches as $b)
+            @if(!empty($b->custom_mrl_remark))
+                <div class="custom-remark-text">Catatan Khusus MRL ({{ $b->batch_code }}): {{ $b->custom_mrl_remark }}</div>
+            @endif
+        @endforeach
     </div>
 
     <!-- SECTION 3: SEPARATION RESULTS REPORT -->
-    <div class="section-header">3. SEPARATION RESULTS REPORT</div>
+    <div class="section-header">SEPARATION RESULTS REPORT :</div>
     
-    <div class="material-desc">1. Material Desc: {{ $batch->productType->name ?? '-' }}</div>
-    
-    <!-- Itemized Sack Weighing Grid Table (UNMERGED INDIVIDUAL ROWS AS PER SOP) -->
-    <table class="pdf-table">
-        <thead>
-            <tr>
-                <th>Product Type</th>
-                <th>Origin</th>
-                <th>Pack Type</th>
-                <th style="width: 35px;">No</th>
-                <th>Gross (Kg)</th>
-                <th>Tare (Kg)</th>
-                <th>Netto (Kg)</th>
-                <th>Remark</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($batch->weighingItems->sortBy('sack_number') as $item)
+    @foreach($batches as $index => $b)
+        @php
+            $matDesc = trim(($b->origin->region_name ?? '') . ' ' . ($b->material_code ?? ''));
+            $mrlNetto = (float) $b->mrl_netto_weight;
+            $prodKg = (float) $b->separation_product_kg;
+            $bitsStemKg = (float) ($b->separation_bits_stem_netto_kg ?: $b->separation_bits_stem_kg);
+            $dustKg = (float) $b->separation_dust_kg;
+            $wasteKg = (float) $b->separation_waste_kg;
+
+            $yProd = $mrlNetto > 0 ? round(($prodKg / $mrlNetto) * 100, 2) : (float) $b->yield_product_pct;
+            $yBits = $mrlNetto > 0 ? round(($bitsStemKg / $mrlNetto) * 100, 2) : (float) $b->yield_bits_stem_pct;
+            $yDust = $mrlNetto > 0 ? round(($dustKg / $mrlNetto) * 100, 2) : (float) $b->yield_dust_pct;
+            $yWaste = $mrlNetto > 0 ? round(($wasteKg / $mrlNetto) * 100, 2) : (float) $b->yield_waste_pct;
+        @endphp
+
+        <div class="material-title">{{ $index + 1 }}. Material Desc : {{ $matDesc ?: ($b->productType->name ?? 'Material') }}</div>
+
+        <!-- Sack Weighing Grid Table -->
+        <table class="pdf-table">
+            <thead>
                 <tr>
-                    <td class="text-left">{{ $batch->productType->name ?? '-' }}</td>
-                    <td>{{ $batch->origin->region_name ?? '-' }}</td>
-                    <td>{{ $batch->pack_type }}</td>
-                    <td>{{ $item->sack_number }}</td>
-                    <td class="text-right">{{ number_format($item->gross_kg, 2, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($item->tare_kg, 2, ',', '.') }}</td>
-                    <td class="text-right" style="font-weight:bold;">{{ number_format($item->netto_kg, 2, ',', '.') }}</td>
-                    <td>{{ $item->remark ?? '-' }}</td>
+                    <th>Product Type</th>
+                    <th>Origin</th>
+                    <th>Pack Type</th>
+                    <th style="width: 30px;">No</th>
+                    <th>Gross (Kg)</th>
+                    <th>Tare (Kg)</th>
+                    <th>Netto (Kg)</th>
+                    <th>Remark</th>
                 </tr>
-            @empty
+            </thead>
+            <tbody>
+                @forelse($b->weighingItems->sortBy('sack_number') as $item)
+                    <tr>
+                        <td class="text-left">{{ $b->productType->name ?? '-' }}</td>
+                        <td>{{ $b->origin->region_name ?? '-' }}</td>
+                        <td>{{ $b->pack_type }}</td>
+                        <td>{{ $item->sack_number }}</td>
+                        <td class="text-right">{{ number_format($item->gross_kg, 2, ',', '.') }}</td>
+                        <td class="text-right">{{ number_format($item->tare_kg, 2, ',', '.') }}</td>
+                        <td class="text-right" style="font-weight:bold;">{{ number_format($item->netto_kg, 2, ',', '.') }}</td>
+                        <td>{{ $item->remark ?? '-' }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="8">No sack weighing item recorded.</td>
+                    </tr>
+                @endforelse
+
+                <!-- GRAND TOTAL ROW FOR THIS MATERIAL -->
+                <tr class="grand-total-row">
+                    <td colspan="3" class="text-right">GRAND TOTAL</td>
+                    <td>{{ $b->weighingItems->count() }}</td>
+                    <td class="text-right">{{ number_format($b->mrl_gross_weight, 2, ',', '.') }}</td>
+                    <td class="text-right">{{ number_format($b->mrl_tare_weight, 2, ',', '.') }}</td>
+                    <td class="text-right">{{ number_format($b->mrl_netto_weight, 2, ',', '.') }}</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- SEPARATION RESULT TABLE FOR THIS MATERIAL -->
+        <div style="font-size: 8.5pt; font-weight: bold; margin-top: 6px; margin-bottom: 2px; text-decoration: underline;">Separation Result :</div>
+        <table class="pdf-table">
+            <thead>
                 <tr>
-                    <td colspan="8">No sack weighing item recorded.</td>
+                    <th>Product Type</th>
+                    <th>Origin</th>
+                    <th>Pack Type</th>
+                    <th>Product Qty (Kg)</th>
+                    <th>Bits Stem Qty (Kg)</th>
+                    <th>Dust Qty (Kg)</th>
+                    <th>Uncountable Waste Qty (Kg)</th>
+                    <th>TOTAL Qty (Kg)</th>
                 </tr>
-            @endforelse
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="text-left">{{ $b->productType->name ?? '-' }}</td>
+                    <td>{{ $b->origin->region_name ?? '-' }}</td>
+                    <td>{{ $b->pack_type }}</td>
+                    <td class="text-right" style="font-weight:bold;">{{ number_format($prodKg, 2, ',', '.') }}</td>
+                    <td class="text-right">{{ number_format($bitsStemKg, 2, ',', '.') }}</td>
+                    <td class="text-right">{{ number_format($dustKg, 2, ',', '.') }}</td>
+                    <td class="text-right">{{ number_format($wasteKg, 2, ',', '.') }}</td>
+                    <td class="text-right" style="font-weight:bold;">{{ number_format($mrlNetto, 2, ',', '.') }}</td>
+                </tr>
+                <tr style="font-weight:bold; background-color:#ffffff; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000;">
+                    <td colspan="3" class="text-right">PERCENTAGE (YIELD)</td>
+                    <td class="text-right">{{ number_format($yProd, 2, ',', '.') }}%</td>
+                    <td class="text-right">{{ number_format($yBits, 2, ',', '.') }}%</td>
+                    <td class="text-right">{{ number_format($yDust, 2, ',', '.') }}%</td>
+                    <td class="text-right">{{ number_format($yWaste, 2, ',', '.') }}%</td>
+                    <td class="text-right">100,00%</td>
+                </tr>
+            </tbody>
+        </table>
 
-            <!-- GRAND TOTAL ROW -->
-            <tr class="grand-total-row">
-                <td colspan="3" class="text-right">GRAND TOTAL</td>
-                <td>{{ $batch->weighingItems->count() }}</td>
-                <td class="text-right">{{ number_format($batch->mrl_gross_weight, 2, ',', '.') }}</td>
-                <td class="text-right">{{ number_format($batch->mrl_tare_weight, 2, ',', '.') }}</td>
-                <td class="text-right">{{ number_format($batch->mrl_netto_weight, 2, ',', '.') }}</td>
-                <td></td>
-            </tr>
-        </tbody>
-    </table>
-
-    <!-- SEPARATION RESULT SUMMARY TABLE -->
-    <div style="margin-top: 12px;"></div>
-    <table class="pdf-table">
-        <thead>
-            <tr>
-                <th>Product Type</th>
-                <th>Origin</th>
-                <th>Pack Type</th>
-                <th>Product Qty (Kg)</th>
-                <th>Bits Stem Qty (Kg)</th>
-                <th>Dust Qty (Kg)</th>
-                <th>Uncountable Waste Qty (Kg)</th>
-                <th>TOTAL Qty (Kg)</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td class="text-left">{{ $batch->productType->name ?? '-' }}</td>
-                <td>{{ $batch->origin->region_name ?? '-' }}</td>
-                <td>{{ $batch->pack_type }}</td>
-                <td class="text-right" style="font-weight:bold; color:#15803d;">{{ number_format($batch->separation_product_kg, 2, ',', '.') }}</td>
-                <td class="text-right">{{ number_format($batch->separation_bits_stem_netto_kg ?: $batch->separation_bits_stem_kg, 2, ',', '.') }}</td>
-                <td class="text-right">{{ number_format($batch->separation_dust_kg, 2, ',', '.') }}</td>
-                <td class="text-right">{{ number_format($batch->separation_waste_kg, 2, ',', '.') }}</td>
-                <td class="text-right" style="font-weight:bold;">{{ number_format($batch->mrl_netto_weight, 2, ',', '.') }}</td>
-            </tr>
-            <!-- PERCENTAGE (YIELD) ROW -->
-            <tr style="font-weight:bold; background-color:#f4f4f5;">
-                <td colspan="3" class="text-right">PERCENTAGE (YIELD)</td>
-                <td class="text-right" style="color:#15803d;">{{ number_format($batch->yield_product_pct, 2, ',', '.') }}%</td>
-                <td class="text-right">{{ number_format($batch->yield_bits_stem_pct, 2, ',', '.') }}%</td>
-                <td class="text-right">{{ number_format($batch->yield_dust_pct, 2, ',', '.') }}%</td>
-                <td class="text-right">{{ number_format($batch->yield_waste_pct, 2, ',', '.') }}%</td>
-                <td class="text-right">100,00%</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <div class="remarks-box">
-        <strong>Remarks :</strong>
-        <ol>
-            <li>Gross qty. based on actual weighing during the process.</li>
-            <li>Tare qty. based on actual weighing during the process.</li>
-            <li>Uncountable waste qty. based on teoritical calculation.</li>
-            <li>Percentage Yield based on total Nett. qty actual weighing.</li>
-            @if(($batch->separation_bits_stem_gross_kg ?? 0) > 0)
-                <li>Bits Stem Weighing Detail: Gross {{ number_format($batch->separation_bits_stem_gross_kg, 2, ',', '.') }} kg, Tare {{ number_format($batch->separation_bits_stem_tare_kg, 2, ',', '.') }} kg, Netto {{ number_format($batch->separation_bits_stem_netto_kg, 2, ',', '.') }} kg.</li>
+        <div class="remarks-box">
+            <strong>Remark :</strong>
+            <ol>
+                <li>Gross qty. based on actual weighing during the process.</li>
+                <li>Tare qty. based on actual weighing during the process.</li>
+                <li>Uncountable waste qty. based on teoritical calculation.</li>
+                <li>Percentage Yield based on total Nett. qty actual weighing.</li>
+                @if(($b->separation_bits_stem_gross_kg ?? 0) > 0)
+                    <li>Bits Stem Weighing Detail: Gross {{ number_format($b->separation_bits_stem_gross_kg, 2, ',', '.') }} kg, Tare {{ number_format($b->separation_bits_stem_tare_kg, 2, ',', '.') }} kg, Netto {{ number_format($b->separation_bits_stem_netto_kg, 2, ',', '.') }} kg.</li>
+                @endif
+                @if(($b->separation_dust_gross_kg ?? 0) > 0)
+                    <li>Dust Weighing Detail: Gross {{ number_format($b->separation_dust_gross_kg, 2, ',', '.') }} kg, Tare {{ number_format($b->separation_dust_tare_kg, 2, ',', '.') }} kg, Netto {{ number_format($b->separation_dust_netto_kg ?: $b->separation_dust_kg, 2, ',', '.') }} kg.</li>
+                @endif
+                @if(($b->separation_product_remnant_kg ?? 0) > 0)
+                    <li>Product Remnant Weighing Detail: Gross {{ number_format($b->separation_product_remnant_gross_kg, 2, ',', '.') }} kg, Tare {{ number_format($b->separation_product_remnant_tare_kg, 2, ',', '.') }} kg, Netto {{ number_format($b->separation_product_remnant_kg, 2, ',', '.') }} kg.</li>
+                @endif
+            </ol>
+            @if(!empty($b->custom_separation_remark))
+                <div class="custom-remark-text">Catatan Khusus Pemisahan: {{ $b->custom_separation_remark }}</div>
             @endif
-            @if(($batch->separation_dust_gross_kg ?? 0) > 0)
-                <li>Dust Weighing Detail: Gross {{ number_format($batch->separation_dust_gross_kg, 2, ',', '.') }} kg, Tare {{ number_format($batch->separation_dust_tare_kg, 2, ',', '.') }} kg, Netto {{ number_format($batch->separation_dust_netto_kg ?: $batch->separation_dust_kg, 2, ',', '.') }} kg.</li>
-            @endif
-            @if(($batch->separation_product_remnant_kg ?? 0) > 0)
-                <li>Product Remnant Weighing Detail: Gross {{ number_format($batch->separation_product_remnant_gross_kg, 2, ',', '.') }} kg, Tare {{ number_format($batch->separation_product_remnant_tare_kg, 2, ',', '.') }} kg, Netto {{ number_format($batch->separation_product_remnant_kg, 2, ',', '.') }} kg.</li>
-            @endif
-        </ol>
-        @if(!empty($batch->custom_separation_remark))
-            <div class="custom-remark-text">Catatan Khusus Pemisahan: {{ $batch->custom_separation_remark }}</div>
-        @endif
-    </div>
+        </div>
+    @endforeach
 
     <!-- Signature Sign-off -->
     <div class="sig-container">

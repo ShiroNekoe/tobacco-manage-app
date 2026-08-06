@@ -20,7 +20,11 @@ class CertificateController extends Controller
 
         $batch->load(['customer', 'deliveryNote', 'productType', 'origin', 'weighingItems', 'createdBy', 'supervisorApprovedBy']);
 
-        return view('certificates.process-certificate-pdf', compact('batch'));
+        $relatedBatches = Batch::where('batch_code', $batch->batch_code)
+            ->with(['customer', 'deliveryNote', 'productType', 'origin', 'weighingItems', 'createdBy', 'supervisorApprovedBy'])
+            ->get();
+
+        return view('certificates.process-certificate-pdf', compact('batch', 'relatedBatches'));
     }
 
     public function downloadPdf(Batch $batch)
@@ -34,7 +38,11 @@ class CertificateController extends Controller
 
         $batch->load(['customer', 'deliveryNote', 'productType', 'origin', 'weighingItems', 'createdBy', 'supervisorApprovedBy']);
 
-        $pdf = Pdf::loadView('certificates.process-certificate-pdf', compact('batch'))
+        $relatedBatches = Batch::where('batch_code', $batch->batch_code)
+            ->with(['customer', 'deliveryNote', 'productType', 'origin', 'weighingItems', 'createdBy', 'supervisorApprovedBy'])
+            ->get();
+
+        $pdf = Pdf::loadView('certificates.process-certificate-pdf', compact('batch', 'relatedBatches'))
             ->setPaper('a4', 'portrait');
 
         $filename = 'Process_Certificate_' . $batch->batch_code . '.pdf';

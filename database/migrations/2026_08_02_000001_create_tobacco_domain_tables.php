@@ -42,7 +42,7 @@ return new class extends Migration
 
         Schema::create('batches', function (Blueprint $table) {
             $table->id();
-            $table->string('batch_code')->unique();
+            $table->string('batch_code');
             $table->foreignId('customer_id')->constrained('customers')->onDelete('cascade');
             $table->foreignId('delivery_note_id')->constrained('delivery_notes')->onDelete('cascade');
             $table->foreignId('product_type_id')->constrained('product_types')->onDelete('cascade');

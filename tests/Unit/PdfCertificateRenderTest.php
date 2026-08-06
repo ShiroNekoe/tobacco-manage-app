@@ -68,9 +68,9 @@ class PdfCertificateRenderTest extends TestCase
 
         $this->assertStringContainsString('PROCESS CERTIFICATE', $html);
         $this->assertStringContainsString('PT. Falih Nur Gemilang', $html);
-        $this->assertStringContainsString('1. DELIVERY NOTE (DN)', $html);
-        $this->assertStringContainsString('2. MATERIAL RECEIPT LIST (MRL)', $html);
-        $this->assertStringContainsString('3. SEPARATION RESULTS REPORT', $html);
+        $this->assertStringContainsString('DELIVERY NOTE (DN)', $html);
+        $this->assertStringContainsString('MATERIAL RECEIPT LIST (MRL)', $html);
+        $this->assertStringContainsString('SEPARATION RESULTS REPORT', $html);
         $this->assertStringContainsString('Gross qty. Based on Delivery Note.', $html);
         $this->assertStringContainsString('Uncountable waste qty. based on teoritical calculation.', $html);
         $this->assertStringContainsString('PERCENTAGE (YIELD)', $html);

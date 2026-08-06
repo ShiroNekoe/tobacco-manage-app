@@ -102,4 +102,43 @@ class BatchManagementMrlCountTest extends TestCase
             'id' => $batch->id,
         ]);
     }
+
+    public function test_duplicate_batch_code_can_be_created_without_unique_constraint_error(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $customer = \App\Models\Customer::create(['name' => 'PT Duplicate Batch Test', 'code' => 'DUP']);
+        $productType = \App\Models\ProductType::create(['code' => 'DUP-P', 'name' => 'Duplicate Type']);
+        $origin = \App\Models\Origin::create(['region_name' => 'DUP ORIGIN']);
+
+        // Create 1st batch with BCH-20260806-001
+        Livewire::actingAs($admin)
+            ->test(BatchManagement::class)
+            ->set('batch_code', 'BCH-20260806-001')
+            ->set('customer_id', $customer->id)
+            ->set('dn_number', 'DN-DUP-001')
+            ->set('product_type_id', $productType->id)
+            ->set('origin_id', $origin->id)
+            ->set('mrl_items', [
+                ['sack_number' => 1, 'mrl_gross_weight' => 25.0],
+            ])
+            ->call('createBatch')
+            ->assertHasNoErrors();
+
+        // Create 2nd batch with SAME batch_code BCH-20260806-001
+        Livewire::actingAs($admin)
+            ->test(BatchManagement::class)
+            ->set('batch_code', 'BCH-20260806-001')
+            ->set('customer_id', $customer->id)
+            ->set('dn_number', 'DN-DUP-002')
+            ->set('product_type_id', $productType->id)
+            ->set('origin_id', $origin->id)
+            ->set('mrl_items', [
+                ['sack_number' => 1, 'mrl_gross_weight' => 25.0],
+            ])
+            ->call('createBatch')
+            ->assertHasNoErrors();
+
+        $this->assertEquals(2, \App\Models\Batch::where('batch_code', 'BCH-20260806-001')->count());
+    }
 }
+

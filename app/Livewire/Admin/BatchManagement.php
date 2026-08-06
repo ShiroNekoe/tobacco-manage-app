@@ -73,9 +73,8 @@ class BatchManagement extends Component
 
     public function openCreateModal()
     {
-        $this->reset(['customer_id', 'dn_number', 'product_type_id', 'origin_id', 'material_code', 'pack_type', 'selected_origins', 'dn_gross_weight_input']);
-        $countToday = Batch::whereDate('created_at', Carbon::today())->count() + 1;
-        $this->batch_code = 'BCH-' . Carbon::today()->format('Ymd') . '-' . str_pad($countToday, 3, '0', STR_PAD_LEFT);
+        $this->reset(['batch_code', 'customer_id', 'dn_number', 'product_type_id', 'origin_id', 'material_code', 'pack_type', 'selected_origins', 'dn_gross_weight_input']);
+        $this->batch_code = '';
         $this->product_kg_per_sack = 25.20;
         $this->product_tare_per_sack = 0.20;
         $this->date_of_receipt = Carbon::now()->format('Y-m-d');

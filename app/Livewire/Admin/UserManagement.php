@@ -47,15 +47,17 @@ class UserManagement extends Component
     {
         $this->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $this->user_id,
+            'email' => 'nullable|email|unique:users,email,' . $this->user_id,
             'role' => 'required|string|in:karyawan,admin,supervisor,customer',
             'shift' => 'required|string',
             'group' => 'required|string',
         ]);
 
+        $cleanEmail = filled($this->email) ? trim($this->email) : null;
+
         $data = [
             'name' => $this->name,
-            'email' => $this->email,
+            'email' => $cleanEmail,
             'role' => $this->role,
             'shift' => $this->shift,
             'group' => $this->group,

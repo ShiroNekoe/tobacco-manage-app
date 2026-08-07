@@ -575,6 +575,20 @@ class WeighingSheet extends Component
             return;
         }
 
+        // Save batch items first so ownership and modified rows are persisted in DB
+        $this->saveBatch('ACTIVE');
+
+        // Count sacks processed specifically by this worker in this shift
+        $workerSacksProcessedCount = WeighingItem::where('batch_id', $batch->id)
+            ->where('created_by_user_id', Auth::id())
+            ->where('gross_kg', '>', 0)
+            ->count();
+
+        // If 0 (e.g. pre-launch rows or admin), fallback to total active sacks in current session
+        if ($workerSacksProcessedCount === 0) {
+            $workerSacksProcessedCount = collect($this->items)->filter(fn($it) => (float)($it['gross_kg'] ?? 0) > 0)->count();
+        }
+
         $p1Payload = [
             'product_sack' => $this->p1_product_sack,
             'product_remnant_gross_kg' => $this->p1_remnant_gross_kg,
@@ -623,11 +637,10 @@ class WeighingSheet extends Component
             'separation_p1_data' => $p1Payload,
             'separation_p2_data' => $p2Payload,
             'separation_waste_kg' => $this->separation_waste_kg,
-            'sacks_processed_count' => $this->totalPack,
+            'sacks_processed_count' => $workerSacksProcessedCount,
             'notes' => $this->pause_notes ?: 'Selesai Shift Kerja (Done Shift)',
         ]);
 
-        $this->saveBatch('ACTIVE');
         $this->showPauseModal = false;
         $this->showThankYouModal = true;
         session()->flash('message', '🛑 Laporan Selesai Shift berhasil dicatat & data terdeteksi di Live Tracking Admin!');
@@ -807,6 +820,12 @@ class WeighingSheet extends Component
     public function render()
     {
         $activeBatches = Batch::with(['customer', 'productType', 'origin'])
+            ->where(function ($query) {
+                $query->whereIn('status', ['OPEN', 'ACTIVE', 'draft', 'WAITING']);
+                if ($this->batchId) {
+                    $query->orWhere('id', $this->batchId);
+                }
+            })
             ->latest()
             ->get();
 

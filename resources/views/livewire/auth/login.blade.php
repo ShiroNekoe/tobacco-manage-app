@@ -34,16 +34,34 @@
 
         <!-- Login Form -->
         <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-2xl space-y-4">
+            <!-- Mode Switcher Tabs -->
+            <div class="grid grid-cols-2 gap-1 bg-zinc-950 p-1 rounded-2xl border border-zinc-800 text-xs font-bold">
+                <button type="button" wire:click="setMode('karyawan')" class="py-2.5 px-3 rounded-xl transition-all flex items-center justify-center space-x-1.5 {{ $mode === 'karyawan' ? 'bg-amber-600 text-white shadow-lg shadow-amber-950/60 font-black' : 'text-zinc-400 hover:text-zinc-200' }}">
+                    <span>👨‍🌾 Login Karyawan</span>
+                </button>
+                <button type="button" wire:click="setMode('email')" class="py-2.5 px-3 rounded-xl transition-all flex items-center justify-center space-x-1.5 {{ $mode === 'email' ? 'bg-amber-600 text-white shadow-lg shadow-amber-950/60 font-black' : 'text-zinc-400 hover:text-zinc-200' }}">
+                    <span>📧 Login Email</span>
+                </button>
+            </div>
+
             <form wire:submit.prevent="login" class="space-y-4 text-xs">
-                <div>
-                    <label class="block font-bold uppercase text-zinc-300 mb-1">Alamat Email</label>
-                    <input type="email" wire:model="email" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 font-mono outline-none focus:border-amber-500" placeholder="nama@tobacco.com">
-                    @error('email') <span class="text-red-400 font-bold block mt-1">{{ $message }}</span> @enderror
-                </div>
+                @if($mode === 'karyawan')
+                    <div>
+                        <label class="block font-bold uppercase text-zinc-300 mb-1">Nama Karyawan</label>
+                        <input type="text" wire:model="name" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 font-semibold outline-none focus:border-amber-500" placeholder="Masukkan nama Anda (contoh: Karyawan Shift 1)">
+                        @error('name') <span class="text-red-400 font-bold block mt-1">{{ $message }}</span> @enderror
+                    </div>
+                @else
+                    <div>
+                        <label class="block font-bold uppercase text-zinc-300 mb-1">Alamat Email / Nama</label>
+                        <input type="text" wire:model="email" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 font-mono outline-none focus:border-amber-500" placeholder="nama@tobacco.com atau Admin MES">
+                        @error('email') <span class="text-red-400 font-bold block mt-1">{{ $message }}</span> @enderror
+                    </div>
+                @endif
 
                 <div>
                     <label class="block font-bold uppercase text-zinc-300 mb-1">Kata Sandi (Password)</label>
-                    <input type="password" wire:model="password" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 outline-none focus:border-amber-500">
+                    <input type="password" wire:model="password" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 outline-none focus:border-amber-500" placeholder="••••••••">
                     @error('password') <span class="text-red-400 font-bold block mt-1">{{ $message }}</span> @enderror
                 </div>
 
@@ -55,7 +73,7 @@
                 </div>
 
                 <button type="submit" class="w-full py-3.5 min-h-[48px] rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white font-black text-sm hover:from-amber-500 shadow-xl shadow-amber-950/50">
-                    Masuk ke Sistem MES
+                    {{ $mode === 'karyawan' ? 'Masuk Timbangan Karyawan' : 'Masuk ke Sistem MES' }}
                 </button>
             </form>
         </div>

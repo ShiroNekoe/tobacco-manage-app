@@ -33,7 +33,7 @@
                     @forelse($users as $u)
                         <tr class="hover:bg-zinc-800/40 transition-colors">
                             <td class="px-4 py-3.5 font-bold text-zinc-100">{{ $u->name }}</td>
-                            <td class="px-4 py-3.5 text-zinc-400 font-mono">{{ $u->email }}</td>
+                            <td class="px-4 py-3.5 text-zinc-400 font-mono">{{ $u->email ?: '-' }}</td>
                             <td class="px-4 py-3.5">
                                 <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-amber-950 text-amber-300 border border-amber-800">
                                     {{ strtoupper($u->role) }}
@@ -75,7 +75,7 @@
                     @error('name') <span class="text-red-400 font-bold block mt-1">{{ $message }}</span> @enderror
                 </div>
                 <div>
-                    <label class="block font-bold uppercase text-zinc-300 mb-1">Email <span class="text-red-400">*</span></label>
+                    <label class="block font-bold uppercase text-zinc-300 mb-1">Email <span class="text-zinc-500 font-normal text-[10px] lowercase">(opsional)</span></label>
                     <input type="email" wire:model="email" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 font-mono outline-none focus:border-amber-500">
                     @error('email') <span class="text-red-400 font-bold block mt-1">{{ $message }}</span> @enderror
                 </div>

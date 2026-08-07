@@ -9,25 +9,76 @@ use Livewire\Component;
 
 class Login extends Component
 {
+    public string $mode = 'karyawan'; // 'karyawan' or 'email'
+    public string $name = '';
     public string $email = '';
     public string $password = '';
     public bool $remember = false;
 
-    protected array $rules = [
-        'email' => 'required|email',
-        'password' => 'required',
-    ];
+    public function setMode(string $mode)
+    {
+        $this->mode = $mode;
+        $this->resetErrorBag();
+    }
 
     public function login()
     {
-        $this->validate();
+        if ($this->mode === 'karyawan') {
+            $this->validate([
+                'name' => 'required|string',
+                'password' => 'required',
+            ], [
+                'name.required' => 'Nama Karyawan wajib diisi.',
+                'password.required' => 'Kata sandi wajib diisi.',
+            ]);
 
-        if (Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
-            session()->regenerate();
-            return redirect()->intended(route('dashboard'));
+            // Exact or case-insensitive search by name
+            $user = User::where('name', $this->name)->first();
+
+            if ($user && Hash::check($this->password, $user->password)) {
+                Auth::login($user, $this->remember);
+                session()->regenerate();
+
+                if ($user->isCustomer()) {
+                    return redirect()->intended(route('customer.dashboard'));
+                } elseif ($user->isAdmin() || $user->isSupervisor()) {
+                    return redirect()->intended(route('admin.batches'));
+                } else {
+                    return redirect()->intended(route('karyawan.weighing'));
+                }
+            }
+
+            $this->addError('name', 'Nama Karyawan atau Kata Sandi yang Anda masukkan salah.');
+            return;
         }
 
-        $this->addError('email', 'Email atau kata sandi yang Anda masukkan salah.');
+        // Email / General Mode
+        $this->validate([
+            'email' => 'required',
+            'password' => 'required',
+        ], [
+            'email.required' => 'Email atau Nama wajib diisi.',
+            'password.required' => 'Kata sandi wajib diisi.',
+        ]);
+
+        $user = User::where('email', $this->email)
+            ->orWhere('name', $this->email)
+            ->first();
+
+        if ($user && Hash::check($this->password, $user->password)) {
+            Auth::login($user, $this->remember);
+            session()->regenerate();
+
+            if ($user->isCustomer()) {
+                return redirect()->intended(route('customer.dashboard'));
+            } elseif ($user->isAdmin() || $user->isSupervisor()) {
+                return redirect()->intended(route('admin.batches'));
+            } else {
+                return redirect()->intended(route('karyawan.weighing'));
+            }
+        }
+
+        $this->addError('email', 'Email / Nama atau Kata Sandi yang Anda masukkan salah.');
     }
 
     public function loginAsRole(string $role)

@@ -97,49 +97,55 @@
                                     </span>
                                 @endif
                             </td>
-                            <td class="px-4 py-4 text-center whitespace-nowrap space-x-2">
-                                <a href="{{ route('karyawan.weighing', ['batch_id' => $b->id]) }}" class="px-3 py-2 min-h-[44px] inline-flex items-center text-xs font-bold rounded-xl bg-zinc-800 text-zinc-200 hover:bg-zinc-700">
-                                    📋 Timbangan
-                                </a>
+                            <td class="px-3 py-3 text-center">
+                                <div class="flex flex-wrap items-center justify-center gap-1.5 max-w-[195px] mx-auto">
+                                    <a href="{{ route('karyawan.weighing', ['batch_id' => $b->id]) }}" 
+                                       title="Buka Lembar Timbangan Lapangan"
+                                       class="px-2.5 py-1.5 text-xs font-bold rounded-lg bg-zinc-800 text-zinc-200 hover:bg-zinc-700 border border-zinc-700 transition-colors inline-flex items-center gap-1 shrink-0">
+                                        📋 Timbangan
+                                    </a>
 
-                                <!-- Supervisor Approval ACC Button -->
-                                @if(auth()->user() && (auth()->user()->isSupervisor() || auth()->user()->isAdmin()) && !$b->isApprovedBySupervisor() && in_array($b->status, ['CLOSED', 'locked', 'WAITING']))
-                                    <button wire:click="approveCertificate({{ $b->id }})" class="px-3 py-2 min-h-[44px] inline-flex items-center text-xs font-black rounded-xl bg-emerald-900 text-emerald-100 border border-emerald-700 hover:bg-emerald-800 shadow">
-                                        ✅ ACC / Approve
+                                    <button wire:click="openPdfRemarksModal({{ $b->id }})" 
+                                            title="Preview Visual & Cetak Certificate PDF"
+                                            class="px-2.5 py-1.5 text-xs font-bold rounded-lg bg-red-950/80 text-red-300 border border-red-800/80 hover:bg-red-900 shadow transition-colors inline-flex items-center gap-1 shrink-0">
+                                        👁️ Preview PDF
                                     </button>
-                                @endif
 
-                                <!-- PDF Live Preview Trigger Button -->
-                                <button wire:click="openPdfRemarksModal({{ $b->id }})" class="px-3 py-2 min-h-[44px] inline-flex items-center text-xs font-black rounded-xl bg-red-950 text-red-300 border border-red-800 hover:bg-red-900 shadow">
-                                    👁️ Preview & Cetak PDF
-                                </button>
+                                    @if(auth()->user() && (auth()->user()->isSupervisor() || auth()->user()->isAdmin()) && !$b->isApprovedBySupervisor() && in_array($b->status, ['CLOSED', 'locked', 'WAITING']))
+                                        <button wire:click="approveCertificate({{ $b->id }})" 
+                                                title="ACC / Setujui Sertifikat Process Certificate"
+                                                class="px-2.5 py-1.5 text-xs font-bold rounded-lg bg-emerald-950/80 text-emerald-300 border border-emerald-800/80 hover:bg-emerald-900 shadow transition-colors inline-flex items-center gap-1 shrink-0">
+                                            ✅ ACC
+                                        </button>
+                                    @endif
 
-                                <!-- Delete Batch Button -->
-                                @if(auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isSupervisor()))
-                                    <button type="button"
-                                        @click="
-                                            Swal.fire({
-                                                title: 'Konfirmasi Hapus Batch',
-                                                html: 'Apakah Anda yakin ingin menghapus <b>{{ $b->batch_code }}</b>?<br><span class=\'text-xs text-rose-400 mt-2 block\'>Seluruh data timbangan karung dan sertifikat terkait akan terhapus permanen.</span>',
-                                                icon: 'warning',
-                                                showCancelButton: true,
-                                                confirmButtonColor: '#e11d48',
-                                                cancelButtonColor: '#27272a',
-                                                confirmButtonText: 'Ya, Hapus!',
-                                                cancelButtonText: 'Batal',
-                                                background: '#18181b',
-                                                color: '#f4f4f5',
-                                                heightAuto: false
-                                            }).then((result) => {
-                                                if (result.isConfirmed) {
-                                                    $wire.deleteBatch({{ $b->id }});
-                                                }
-                                            })
-                                        "
-                                        class="px-3 py-2 min-h-[44px] inline-flex items-center text-xs font-black rounded-xl bg-rose-950 text-rose-300 border border-rose-800 hover:bg-rose-900 shadow transition-colors">
-                                        🗑️ Hapus
-                                    </button>
-                                @endif
+                                    @if(auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isSupervisor()))
+                                        <button type="button"
+                                            @click="
+                                                Swal.fire({
+                                                    title: 'Konfirmasi Hapus Batch',
+                                                    html: 'Apakah Anda yakin ingin menghapus <b>{{ $b->batch_code }}</b>?<br><span class=\'text-xs text-rose-400 mt-2 block\'>Seluruh data timbangan karung dan sertifikat terkait akan terhapus permanen.</span>',
+                                                    icon: 'warning',
+                                                    showCancelButton: true,
+                                                    confirmButtonColor: '#e11d48',
+                                                    cancelButtonColor: '#27272a',
+                                                    confirmButtonText: 'Ya, Hapus!',
+                                                    cancelButtonText: 'Batal',
+                                                    background: '#18181b',
+                                                    color: '#f4f4f5',
+                                                    heightAuto: false
+                                                }).then((result) => {
+                                                    if (result.isConfirmed) {
+                                                        $wire.deleteBatch({{ $b->id }});
+                                                    }
+                                                })
+                                            "
+                                            title="Hapus Data Batch Ini"
+                                            class="px-2.5 py-1.5 text-xs font-bold rounded-lg bg-rose-950/80 text-rose-300 border border-rose-800/80 hover:bg-rose-900 shadow transition-colors inline-flex items-center gap-1 shrink-0">
+                                            🗑️ Hapus
+                                        </button>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty
@@ -169,89 +175,89 @@
                 <!-- Header Info -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Kode Batch / No. Batch <span class="text-red-400">*</span> <span class="text-zinc-500 font-normal">(Isi Manual)</span></label>
-                        <input type="text" wire:model="batch_code" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-400 font-mono font-bold text-sm outline-none focus:border-amber-400" placeholder="BCH-20260804-001">
+                        <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Kode Batch / No. Batch <span class="text-red-400">*</span> <span class="text-zinc-500/70 opacity-60 font-normal text-[11px]">(Isi Manual)</span></label>
+                        <input type="text" wire:model="batch_code" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-mono font-bold text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50 placeholder-zinc-600/70" placeholder="BCH-20260804-001">
                         @error('batch_code') <span class="text-red-400 font-bold block text-[11px] mt-1">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold uppercase text-zinc-300 mb-1">Pelanggan (Customer) <span class="text-red-400">*</span></label>
-                        <select wire:model="customer_id" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm outline-none focus:border-amber-500">
-                            <option value="">-- Pilih Customer --</option>
+                        <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Pelanggan (Customer) <span class="text-red-400">*</span></label>
+                        <select wire:model="customer_id" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-bold text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50">
+                            <option value="" class="bg-zinc-950 text-zinc-500/70 opacity-60">-- Pilih Customer --</option>
                             @foreach($customers as $c)
-                                <option value="{{ $c->id }}">{{ $c->name }} ({{ $c->code }})</option>
+                                <option value="{{ $c->id }}" class="bg-zinc-950 text-zinc-100">{{ $c->name }} ({{ $c->code }})</option>
                             @endforeach
                         </select>
                         @error('customer_id') <span class="text-red-400 font-bold block text-[11px] mt-1">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold uppercase text-zinc-300 mb-1">Nomor Surat Jalan (DN Number) <span class="text-zinc-500 font-normal">(Opsional)</span></label>
-                        <input type="text" wire:model="dn_number" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm outline-none focus:border-amber-500" placeholder="DN-2026-0801 (Otmatis jika dikosongkan)">
+                        <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Nomor Surat Jalan (DN Number) <span class="text-zinc-500/70 opacity-60 font-normal text-[11px]">(Opsional)</span></label>
+                        <input type="text" wire:model="dn_number" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-bold text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50 placeholder-zinc-600/70" placeholder="DN-2026-0801 (Otomatis jika dikosongkan)">
                         @error('dn_number') <span class="text-red-400 font-bold block text-[11px] mt-1">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold uppercase text-zinc-300 mb-1">DN Total Gross Weight Surat Jalan (kg)</label>
-                        <input type="number" step="0.01" wire:model.live.debounce.300ms="dn_gross_weight_input" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm outline-none focus:border-amber-500" placeholder="Opsional (Opsional untuk hitung selisih)">
-                         <span class="text-[10px] text-zinc-400 block mt-1">Pengisian angka setelah 0</span>
+                        <label class="block text-xs font-bold uppercase text-amber-400 mb-1">DN Total Gross Weight Surat Jalan (kg) <span class="text-zinc-500/70 opacity-60 font-normal text-[11px]">(Opsional)</span></label>
+                        <input type="number" step="0.01" wire:model.live.debounce.300ms="dn_gross_weight_input" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-bold text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50 placeholder-zinc-600/70" placeholder="Opsional (Opsional untuk hitung selisih)">
+                        <span class="text-[10px] text-zinc-500/70 opacity-60 block mt-1">Pengisian angka setelah 0</span>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold uppercase text-zinc-300 mb-1">Jenis Produk (Product Type) <span class="text-red-400">*</span></label>
-                        <select wire:model="product_type_id" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm outline-none focus:border-amber-500">
-                            <option value="">-- Pilih Jenis Produk --</option>
+                        <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Jenis Produk (Product Type) <span class="text-red-400">*</span></label>
+                        <select wire:model="product_type_id" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-bold text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50">
+                            <option value="" class="bg-zinc-950 text-zinc-500/70 opacity-60">-- Pilih Jenis Produk --</option>
                             @foreach($productTypes as $pt)
-                                <option value="{{ $pt->id }}">{{ $pt->name }}</option>
+                                <option value="{{ $pt->id }}" class="bg-zinc-950 text-zinc-100">{{ $pt->name }}</option>
                             @endforeach
                         </select>
                         @error('product_type_id') <span class="text-red-400 font-bold block text-[11px] mt-1">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold uppercase text-zinc-300 mb-1">Asal Utama Tembakau (Primary Origin) <span class="text-red-400">*</span></label>
-                        <select wire:model="origin_id" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm outline-none focus:border-amber-500">
-                            <option value="">-- Pilih Asal Utama --</option>
+                        <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Asal Utama Tembakau (Primary Origin) <span class="text-red-400">*</span></label>
+                        <select wire:model="origin_id" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-bold text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50">
+                            <option value="" class="bg-zinc-950 text-zinc-500/70 opacity-60">-- Pilih Asal Utama --</option>
                             @foreach($origins as $org)
-                                <option value="{{ $org->id }}">{{ $org->region_name }}</option>
+                                <option value="{{ $org->id }}" class="bg-zinc-950 text-zinc-100">{{ $org->region_name }}</option>
                             @endforeach
                         </select>
                         @error('origin_id') <span class="text-red-400 font-bold block text-[11px] mt-1">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Kode Material / Material Code <span class="text-zinc-500 font-normal">(Isi Manual)</span></label>
-                        <input type="text" wire:model="material_code" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-mono text-sm outline-none focus:border-amber-400" placeholder="FN602 / MAT-001 / Custom Code">
-                        <span class="text-[10px] text-zinc-400 block mt-1">Kode material manual untuk dokumen PDF & tracking</span>
+                        <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Kode Material / Material Code <span class="text-zinc-500/70 opacity-60 font-normal text-[11px]">(Isi Manual)</span></label>
+                        <input type="text" wire:model="material_code" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-mono font-bold text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50 placeholder-zinc-600/70" placeholder="FN602 / MAT-001 / Custom Code">
+                        <span class="text-[10px] text-zinc-500/70 opacity-60 block mt-1">Kode material manual untuk dokumen PDF & tracking</span>
                         @error('material_code') <span class="text-red-400 font-bold block text-[11px] mt-1">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold uppercase text-zinc-300 mb-1">Jenis Kemasan (Pack Type) <span class="text-red-400">*</span></label>
-                        <select wire:model="pack_type" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm outline-none focus:border-amber-500">
-                            <option value="Bale">Bale</option>
-                            <option value="Sack">Sack (Karung)</option>
-                            <option value="Box">Box</option>
+                        <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Jenis Kemasan (Pack Type) <span class="text-red-400">*</span></label>
+                        <select wire:model="pack_type" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-bold text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50">
+                            <option value="Bale" class="bg-zinc-950 text-zinc-100">Bale</option>
+                            <option value="Sack" class="bg-zinc-950 text-zinc-100">Sack (Karung)</option>
+                            <option value="Box" class="bg-zinc-950 text-zinc-100">Box</option>
                         </select>
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Berat Gross Per Sak Produk Jadi (kg/sak) <span class="text-red-400">*</span></label>
-                        <input type="number" step="0.01" wire:model="product_kg_per_sack" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-400 font-bold text-sm outline-none focus:border-amber-400" placeholder="25.20">
-                        <span class="text-[10px] text-zinc-400 block mt-1">Gross per sak untuk konversi Produk Jadi</span>
+                        <input type="number" step="0.01" wire:model="product_kg_per_sack" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-bold text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50 placeholder-zinc-600/70" placeholder="25.20">
+                        <span class="text-[10px] text-zinc-500/70 opacity-60 block mt-1">Gross per sak untuk konversi Produk Jadi</span>
                         @error('product_kg_per_sack') <span class="text-red-400 font-bold block text-[11px] mt-1">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Tare Standar Produk Jadi (kg/sak) <span class="text-red-400">*</span></label>
-                        <input type="number" step="0.01" wire:model="product_tare_per_sack" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-400 font-bold text-sm outline-none focus:border-amber-400" placeholder="0.20">
-                        <span class="text-[10px] text-zinc-400 block mt-1">Tare standar awal per sak di Laporan Pemisahan</span>
+                        <input type="number" step="0.01" wire:model="product_tare_per_sack" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-bold text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50 placeholder-zinc-600/70" placeholder="0.20">
+                        <span class="text-[10px] text-zinc-500/70 opacity-60 block mt-1">Tare standar awal per sak di Laporan Pemisahan</span>
                         @error('product_tare_per_sack') <span class="text-red-400 font-bold block text-[11px] mt-1">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold uppercase text-zinc-300 mb-1">Tanggal Penerimaan <span class="text-red-400">*</span></label>
-                        <input type="date" wire:model="date_of_receipt" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm outline-none focus:border-amber-500">
+                        <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Tanggal Penerimaan <span class="text-red-400">*</span></label>
+                        <input type="date" wire:model="date_of_receipt" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-bold text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50">
                     </div>
                 </div>
 
@@ -276,39 +282,45 @@
                         </div>
                     </div>
 
-                    <!-- Clean MRL Table Items: Only No | MRL Gross Weight (kg) | Aksi -->
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs">
-                            <thead class="bg-zinc-950 text-zinc-400 font-bold uppercase border-b border-zinc-800">
-                                <tr>
-                                    <th class="px-4 py-3 text-center w-16">No</th>
-                                    <th class="px-4 py-3">MRL Gross Weight (kg) *</th>
-                                    <th class="px-4 py-3 text-center w-16">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-zinc-800/80">
-                                @foreach($mrl_items as $index => $item)
-                                    <tr class="hover:bg-zinc-800/30 transition-colors">
-                                        <td class="px-4 py-3 text-center font-mono font-bold text-amber-400 text-sm">
-                                            {{ $item['sack_number'] }}
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <input type="number" step="0.01" inputmode="decimal" 
-                                                wire:model.live.debounce.300ms="mrl_items.{{ $index }}.mrl_gross_weight" 
-                                                class="w-full px-4 py-2.5 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-400 font-black text-base outline-none focus:border-amber-400" 
-                                                placeholder="Ketik MRL Gross Weight (kg)...">
-                                        </td>
-                                        <td class="px-4 py-3 text-center">
-                                            @if(count($mrl_items) > 1)
-                                                <button type="button" wire:click="removeMrlItemRow({{ $index }})" class="p-2 min-w-[44px] min-h-[44px] rounded-xl bg-red-950 text-red-400 hover:bg-red-900 font-bold">
-                                                    &times;
-                                                </button>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                    <!-- Responsive Multi-Column Grid Layout for MRL Items (Arranged Side-by-Side) -->
+                    <div class="bg-zinc-950/80 p-3.5 rounded-2xl border border-zinc-800/80">
+                        <div class="flex items-center justify-between mb-3 px-1">
+                            <span class="text-xs font-black uppercase text-amber-400 tracking-wider">
+                                Daftar Baris MRL ({{ count($mrl_items) }} Sak / Bale)
+                            </span>
+                            <span class="text-[10px] text-zinc-400 font-bold bg-zinc-900 px-2 py-1 rounded-lg border border-zinc-800">
+                                📊 Layout Kolom Menyamping
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 max-h-[380px] overflow-y-auto p-1 pr-2">
+                            @foreach($mrl_items as $index => $item)
+                                <div class="bg-zinc-900/90 border border-amber-500/40 hover:border-amber-400 rounded-xl p-2.5 flex items-center space-x-2.5 shadow-sm transition-all">
+                                    <!-- Sack Number Badge -->
+                                    <div class="w-9 h-9 rounded-lg bg-amber-950/90 border border-amber-800/80 text-amber-400 font-mono font-black text-xs flex items-center justify-center shrink-0 shadow-inner">
+                                        #{{ $item['sack_number'] }}
+                                    </div>
+
+                                    <!-- MRL Gross Weight Input -->
+                                    <div class="flex-1 min-w-0">
+                                        <label class="block text-[9px] font-black uppercase text-amber-400/90 tracking-wider mb-0.5">Gross (kg) <span class="text-red-400">*</span></label>
+                                        <input type="number" step="0.01" inputmode="decimal" 
+                                            wire:model.live.debounce.300ms="mrl_items.{{ $index }}.mrl_gross_weight" 
+                                            class="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-amber-500/60 text-amber-300 font-black text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50 placeholder-zinc-600/70" 
+                                            placeholder="0.00">
+                                    </div>
+
+                                    <!-- Hapus Action Button -->
+                                    @if(count($mrl_items) > 1)
+                                        <button type="button" wire:click="removeMrlItemRow({{ $index }})" 
+                                            title="Hapus Sak #{{ $item['sack_number'] }}"
+                                            class="w-8 h-8 rounded-lg bg-red-950/80 border border-red-800/80 text-red-400 hover:bg-red-900 font-bold text-base flex items-center justify-center shrink-0 transition-colors">
+                                            &times;
+                                        </button>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
 
                     <!-- MRL Real-Time Calculated Summary Cards -->

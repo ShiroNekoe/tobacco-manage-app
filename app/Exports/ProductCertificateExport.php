@@ -58,7 +58,7 @@ class ProductCertificateExport implements FromCollection, WithHeadings, WithMapp
         return [
             $cert->certificate_number,
             $snap['mrl_number'] ?? ($mrl ? $mrl->mrl_number : '-'),
-            $snap['dn_number'] ?? ($mrl && $mrl->deliveryNote ? $mrl->deliveryNote->dn_number : '-'),
+            ($mrl && $mrl->deliveryNote) ? $mrl->deliveryNote->formatted_dn_number : ((!empty($snap['dn_number']) && !str_starts_with($snap['dn_number'], 'DN-BCH-')) ? $snap['dn_number'] : '-'),
             $snap['batch_number'] ?? ($mrl ? $mrl->batch_number : '-'),
             $snap['origin_region'] ?? ($mrl ? $mrl->origin_region : '-'),
             $snap['tobacco_grade'] ?? ($mrl ? $mrl->tobacco_grade : '-'),

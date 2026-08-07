@@ -27,7 +27,7 @@
             </div>
             <div>
                 <span class="text-zinc-500 block uppercase font-bold text-[10px]">Surat Jalan (DN)</span>
-                <strong class="text-zinc-200 font-mono">{{ $batch->deliveryNote->dn_number ?? '-' }}</strong>
+                <strong class="text-zinc-200 font-mono">{{ $batch->deliveryNote ? $batch->deliveryNote->formatted_dn_number : '-' }}</strong>
             </div>
             <div>
                 <span class="text-zinc-500 block uppercase font-bold text-[10px]">Jenis Produk</span>

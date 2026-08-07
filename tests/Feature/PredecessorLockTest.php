@@ -87,7 +87,7 @@ class PredecessorLockTest extends TestCase
         ]);
     }
 
-    public function test_worker_can_fill_weights_on_admin_initialized_pre_launch_rows(): void
+    public function test_worker_cannot_fill_gross_weight_only_admin_can(): void
     {
         $admin = User::create(['name' => 'Admin Test', 'email' => 'adm@tobacco.com', 'password' => bcrypt('password'), 'role' => 'admin']);
         $worker = User::create(['name' => 'Worker 1', 'email' => 'w1_test@tobacco.com', 'password' => bcrypt('password'), 'role' => 'karyawan', 'shift' => 'Shift 1', 'group' => 'Group A']);
@@ -109,34 +109,44 @@ class PredecessorLockTest extends TestCase
             'created_by_user_id' => $admin->id,
         ]);
 
-        // Pre-launch row created by Admin (e.g. tare 0.20, gross 0)
+        // Pre-launch row created by Admin (e.g. tare 0.20, gross 98.60)
         $adminRow = WeighingItem::create([
             'batch_id' => $batch->id,
             'sack_number' => 1,
-            'gross_kg' => 0.00,
+            'gross_kg' => 98.60,
             'tare_kg' => 0.20,
-            'netto_kg' => 0.00,
+            'netto_kg' => 98.40,
             'remark' => 'Normal',
             'created_by_user_id' => $admin->id,
         ]);
 
-        // Worker opens sheet and fills gross weight 98.60
+        // Worker attempts to alter gross weight to 999.00 -> should be ignored (gross remains 98.60)
         Livewire::actingAs($worker)
             ->test(WeighingSheet::class, ['batch_id' => $batch->id])
-            ->assertSet('items.0.is_locked_for_user', false)
-            ->set('items.0.gross_kg', 98.60)
+            ->set('items.0.gross_kg', 999.00)
+            ->set('items.0.tare_kg', 0.50)
             ->call('saveDraft');
 
         $this->assertDatabaseHas('weighing_items', [
             'id' => $adminRow->id,
             'gross_kg' => 98.60,
-            'tare_kg' => 0.20,
-            'netto_kg' => 98.40,
-            'created_by_user_id' => $worker->id,
+            'tare_kg' => 0.50,
+            'netto_kg' => 98.10,
+        ]);
+
+        // Admin opens sheet and updates gross weight to 100.00 -> gross weight is updated
+        Livewire::actingAs($admin)
+            ->test(WeighingSheet::class, ['batch_id' => $batch->id])
+            ->set('items.0.gross_kg', 100.00)
+            ->call('saveDraft');
+
+        $this->assertDatabaseHas('weighing_items', [
+            'id' => $adminRow->id,
+            'gross_kg' => 100.00,
         ]);
     }
 
-    public function test_worker_can_fill_and_modify_batch_launched_pre_fill_rows(): void
+    public function test_worker_cannot_modify_batch_launched_pre_fill_gross_weight(): void
     {
         $admin = User::create(['name' => 'Admin Launch', 'email' => 'adm_launch@tobacco.com', 'password' => bcrypt('password'), 'role' => 'admin']);
         $worker = User::create(['name' => 'Worker 1', 'email' => 'w1_launch@tobacco.com', 'password' => bcrypt('password'), 'role' => 'karyawan', 'shift' => 'Shift 1', 'group' => 'Group A']);
@@ -169,17 +179,18 @@ class PredecessorLockTest extends TestCase
             'created_by_user_id' => $admin->id,
         ]);
 
-        // Worker opens sheet
+        // Worker opens sheet and attempts to change gross weight
         Livewire::actingAs($worker)
             ->test(WeighingSheet::class, ['batch_id' => $batch->id])
-            ->assertSet('items.0.is_locked_for_user', false)
             ->set('items.0.gross_kg', 77.00)
+            ->set('items.0.tare_kg', 0.30)
             ->call('saveDraft');
 
+        // Gross weight remains 76.70, tare updated to 0.30
         $this->assertDatabaseHas('weighing_items', [
             'id' => $preLaunchRow->id,
-            'gross_kg' => 77.00,
-            'created_by_user_id' => $worker->id,
+            'gross_kg' => 76.70,
+            'tare_kg' => 0.30,
         ]);
     }
 
@@ -256,10 +267,10 @@ class PredecessorLockTest extends TestCase
         $row1 = WeighingItem::create(['batch_id' => $batch->id, 'sack_number' => 1, 'gross_kg' => 99.75, 'tare_kg' => 0.50, 'netto_kg' => 99.25, 'remark' => 'MRL Pre-Launch', 'created_by_user_id' => $admin->id]);
         $row5 = WeighingItem::create(['batch_id' => $batch->id, 'sack_number' => 5, 'gross_kg' => 99.96, 'tare_kg' => 0.20, 'netto_kg' => 99.76, 'remark' => 'MRL Pre-Launch', 'created_by_user_id' => $admin->id]);
 
-        // Worker Shift 1 opens sheet and edits Row 1 (gross -> 99.80), but DOES NOT touch Row 5
+        // Worker Shift 1 opens sheet and edits Row 1 (tare -> 0.60), but DOES NOT touch Row 5
         Livewire::actingAs($workerShift1)
             ->test(WeighingSheet::class, ['batch_id' => $batch->id])
-            ->set('items.0.gross_kg', 99.80)
+            ->set('items.0.tare_kg', 0.60)
             ->call('saveDraft');
 
         // Worker Shift 2 opens sheet
@@ -268,12 +279,12 @@ class PredecessorLockTest extends TestCase
             ->test(WeighingSheet::class, ['batch_id' => $batch->id])
             ->assertSet('items.0.is_locked_for_user', true)
             ->assertSet('items.1.is_locked_for_user', false)
-            ->set('items.1.gross_kg', 100.00)
+            ->set('items.1.tare_kg', 0.40)
             ->call('saveDraft');
 
         $this->assertDatabaseHas('weighing_items', [
             'id' => $row5->id,
-            'gross_kg' => 100.00,
+            'tare_kg' => 0.40,
             'created_by_user_id' => $workerShift2->id,
         ]);
     }

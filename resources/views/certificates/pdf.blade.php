@@ -49,7 +49,7 @@
             <th>Nomor MRL</th>
             <td>{{ $snap['mrl_number'] ?? ($mrl ? $mrl->mrl_number : '-') }}</td>
             <th>Nomor Surat Jalan (DN)</th>
-            <td>{{ $snap['dn_number'] ?? ($mrl && $mrl->deliveryNote ? $mrl->deliveryNote->dn_number : '-') }}</td>
+            <td>{{ ($mrl && $mrl->deliveryNote) ? $mrl->deliveryNote->formatted_dn_number : ($snap['dn_number'] ?? '-') }}</td>
         </tr>
         <tr>
             <th>Nomor Batch ID</th>

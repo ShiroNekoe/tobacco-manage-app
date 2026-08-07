@@ -84,7 +84,7 @@
                     <td class="text-right">{{ number_format($b->dn_tare_weight, 2, ',', '.') }}</td>
                     <td class="text-right" style="font-weight:bold;">{{ number_format($b->dn_netto_weight, 2, ',', '.') }}</td>
                     <td>{{ $b->date_of_receipt ? $b->date_of_receipt->format('d/m/Y') : '-' }}</td>
-                    <td>{{ $b->deliveryNote->dn_number ?? '-' }}</td>
+                    <td>{{ $b->deliveryNote ? $b->deliveryNote->formatted_dn_number : '-' }}</td>
                 </tr>
             @endforeach
         </tbody>

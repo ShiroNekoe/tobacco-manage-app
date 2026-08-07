@@ -183,14 +183,10 @@ class BatchManagement extends Component
         $this->recalculateMrlTotals();
 
         $dnNumber = trim($this->dn_number);
-        if ($dnNumber === '') {
-            $dnNumber = 'DN-' . trim($this->batch_code);
-        }
 
         $dn = DeliveryNote::firstOrCreate(
-            ['dn_number' => $dnNumber],
+            ['dn_number' => $dnNumber, 'customer_id' => $this->customer_id],
             [
-                'customer_id' => $this->customer_id,
                 'delivery_date' => $this->date_of_receipt,
                 'status' => 'received',
             ]

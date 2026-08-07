@@ -55,12 +55,13 @@ class BatchManagementMrlCountTest extends TestCase
             ->call('createBatch')
             ->assertHasNoErrors();
 
-        $this->assertDatabaseHas('batches', [
-            'batch_code' => 'BCH-TEST-OPTIONAL',
-        ]);
+        $batch = \App\Models\Batch::where('batch_code', 'BCH-TEST-OPTIONAL')->first();
+        $this->assertNotNull($batch);
         $this->assertDatabaseHas('delivery_notes', [
-            'dn_number' => 'DN-BCH-TEST-OPTIONAL',
+            'id' => $batch->delivery_note_id,
+            'dn_number' => '',
         ]);
+        $this->assertEquals('-', $batch->deliveryNote->formatted_dn_number);
     }
 
     public function test_product_tare_per_sack_calculates_dn_tare_weight_correctly(): void

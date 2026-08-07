@@ -78,13 +78,102 @@
             @endif
         </div>
 
-        <!-- Speed Entry Table Grid -->
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
+        <!-- Mobile Sack Cards View (Android & Small Screens < 640px) -->
+        <div class="sm:hidden space-y-3">
+            @foreach($items as $index => $item)
+                <div class="bg-zinc-950/90 border border-zinc-800/90 rounded-2xl p-4 space-y-3 shadow-lg {{ !empty($item['is_locked_for_user']) ? 'opacity-85 border-amber-900/50 bg-zinc-950/70' : '' }}">
+                    <!-- Header Bar: Sack No, Worker Status, and Delete Action -->
+                    <div class="flex items-center justify-between pb-2 border-b border-zinc-800/80 gap-2">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="px-3 py-1 rounded-xl bg-amber-950 text-amber-400 font-mono font-black text-xs border border-amber-800/80 shadow-sm">
+                                Karung #{{ $item['sack_number'] }}
+                            </span>
+                            @if(!empty($item['is_locked_for_user']))
+                                <span class="text-[10px] text-amber-400 font-bold bg-amber-950 px-2 py-0.5 rounded-lg border border-amber-800/80 inline-flex items-center gap-1">
+                                    🔒 {{ $item['creator_name'] ?: 'Pekerja' }} ({{ $item['shift'] ?? 'Shift Lampau' }})
+                                </span>
+                            @elseif(!empty($item['creator_name']) || !empty($item['shift']))
+                                <span class="text-[10px] text-emerald-400 font-medium bg-emerald-950 px-2 py-0.5 rounded-lg border border-emerald-800/50 inline-flex items-center gap-1">
+                                    👤 {{ $item['creator_name'] ?: 'Pekerja' }} ({{ $item['shift'] ?? '' }})
+                                </span>
+                            @endif
+                        </div>
+
+                        @if(count($items) > 1 && !in_array($status, ['CLOSED', 'locked']) && empty($item['is_locked_for_user']))
+                            <button type="button" wire:click="removeSackRow({{ $index }})" class="p-2 min-w-[40px] min-h-[40px] rounded-xl bg-red-950/80 text-red-400 hover:bg-red-900 text-xs font-black flex items-center justify-center border border-red-800/60 shadow">
+                                ✕
+                            </button>
+                        @endif
+                    </div>
+
+                    <!-- Input Fields Grid inside Card -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <!-- Gross (Kg) -->
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-zinc-400 mb-1">
+                                Gross (Kg)
+                                @if(! (auth()->user()?->isAdmin() || auth()->user()?->isSupervisor()))
+                                    <span class="text-amber-500 font-normal lowercase">(Admin)</span>
+                                @endif
+                            </label>
+                            <input type="number" step="0.01" inputmode="decimal" 
+                                wire:model.live.debounce.300ms="items.{{ $index }}.gross_kg" 
+                                {{ in_array($status, ['CLOSED', 'locked']) || !empty($item['is_locked_for_user']) || ! (auth()->user()?->isAdmin() || auth()->user()?->isSupervisor()) ? 'disabled' : '' }}
+                                id="mobile-gross-input-{{ $index }}"
+                                data-index="{{ $index }}"
+                                onkeydown="if(event.key==='Enter'){ event.preventDefault(); const next=document.getElementById('mobile-tare-input-{{ $index }}') || document.getElementById('mobile-gross-input-{{ $index + 1 }}'); if(next){ next.focus(); next.select(); } }"
+                                class="w-full px-3 py-2.5 min-h-[48px] rounded-xl bg-zinc-900 border border-zinc-800 text-emerald-400 font-black text-base focus:border-emerald-500 outline-none {{ !empty($item['is_locked_for_user']) || ! (auth()->user()?->isAdmin() || auth()->user()?->isSupervisor()) ? 'cursor-not-allowed text-zinc-500 bg-zinc-950/80' : '' }}" 
+                                placeholder="0.00">
+                        </div>
+
+                        <!-- Tare (Kg) -->
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-zinc-400 mb-1">Tare / Wadah (Kg)</label>
+                            <input type="number" step="0.01" inputmode="decimal" 
+                                wire:model.live.debounce.300ms="items.{{ $index }}.tare_kg" 
+                                {{ in_array($status, ['CLOSED', 'locked']) || !empty($item['is_locked_for_user']) ? 'disabled' : '' }}
+                                id="mobile-tare-input-{{ $index }}"
+                                onkeydown="if(event.key==='Enter'){ event.preventDefault(); const next=document.getElementById('mobile-gross-input-{{ $index + 1 }}'); if(next){ next.focus(); next.select(); } }"
+                                class="w-full px-3 py-2.5 min-h-[48px] rounded-xl bg-zinc-900 border border-zinc-800 text-amber-400 font-bold text-base focus:border-amber-500 outline-none {{ !empty($item['is_locked_for_user']) ? 'cursor-not-allowed text-zinc-500' : '' }}" 
+                                placeholder="2.00">
+                        </div>
+
+                        <!-- Netto (Kg) -->
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-zinc-400 mb-1">Netto / Bersih (Kg)</label>
+                            <input type="number" step="0.01" value="{{ number_format($item['netto_kg'], 2) }}" readonly 
+                                class="w-full px-3 py-2.5 min-h-[48px] rounded-xl bg-zinc-900/80 border border-zinc-800 text-amber-400 font-black text-base outline-none cursor-not-allowed">
+                        </div>
+
+                        <!-- Remark -->
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-zinc-400 mb-1">Catatan Shift</label>
+                            <select wire:model="items.{{ $index }}.remark" {{ in_array($status, ['CLOSED', 'locked']) || !empty($item['is_locked_for_user']) ? 'disabled' : '' }} class="w-full px-3 py-2.5 min-h-[48px] rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-200 text-xs font-bold outline-none">
+                                <option value="Normal">Normal</option>
+                                <option value="Remnant">Remnant (Sisa)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    @if((float)($item['tare_kg'] ?? 0) > (float)($item['gross_kg'] ?? 0) && (float)($item['gross_kg'] ?? 0) > 0)
+                        <span class="text-red-400 text-[10px] font-bold block pt-1">⚠️ Berat wadah tidak boleh lebih besar dari berat kotor.</span>
+                    @endif
+                </div>
+            @endforeach
+        </div>
+
+        <!-- Desktop / Tablet Table Grid (≥ 640px) -->
+        <div class="hidden sm:block overflow-x-auto">
+            <table class="w-full text-left text-xs min-w-[650px]">
                 <thead class="bg-zinc-950 text-zinc-400 font-bold uppercase border-b border-zinc-800">
                     <tr>
                         <th class="px-3 py-3 text-center w-12">No</th>
-                        <th class="px-3 py-3">Berat Kotor / Gross (Kg)</th>
+                        <th class="px-3 py-3">
+                            Berat Kotor / Gross (Kg)
+                            @if(! (auth()->user()?->isAdmin() || auth()->user()?->isSupervisor()))
+                                <span class="text-[10px] text-amber-500 font-normal lowercase">(Admin Only)</span>
+                            @endif
+                        </th>
                         <th class="px-3 py-3">Berat Wadah / Tare (Kg)</th>
                         <th class="px-3 py-3">Berat Bersih / Netto (Kg)</th>
                         <th class="px-3 py-3">Catatan & Status Shift</th>
@@ -103,11 +192,11 @@
                             <td class="px-3 py-3">
                                 <input type="number" step="0.01" inputmode="decimal" 
                                     wire:model.live.debounce.300ms="items.{{ $index }}.gross_kg" 
-                                    {{ in_array($status, ['CLOSED', 'locked']) || !empty($item['is_locked_for_user']) ? 'disabled' : '' }}
+                                    {{ in_array($status, ['CLOSED', 'locked']) || !empty($item['is_locked_for_user']) || ! (auth()->user()?->isAdmin() || auth()->user()?->isSupervisor()) ? 'disabled' : '' }}
                                     id="gross-input-{{ $index }}"
                                     data-index="{{ $index }}"
                                     onkeydown="if(event.key==='Enter'){ event.preventDefault(); const next=document.getElementById('gross-input-{{ $index + 1 }}'); if(next){ next.focus(); next.select(); } }"
-                                    class="w-full px-3 py-2.5 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-emerald-400 font-black text-base focus:border-emerald-500 outline-none {{ !empty($item['is_locked_for_user']) ? 'cursor-not-allowed text-zinc-500' : '' }}" 
+                                    class="w-full px-3 py-2.5 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-emerald-400 font-black text-base focus:border-emerald-500 outline-none {{ !empty($item['is_locked_for_user']) || ! (auth()->user()?->isAdmin() || auth()->user()?->isSupervisor()) ? 'cursor-not-allowed text-zinc-500 bg-zinc-950/80' : '' }}" 
                                     placeholder="0.00">
 
                                 @if((float)($item['tare_kg'] ?? 0) > (float)($item['gross_kg'] ?? 0) && (float)($item['gross_kg'] ?? 0) > 0)
@@ -138,7 +227,13 @@
                                 </select>
 
                                 @if(!empty($item['is_locked_for_user']))
-                                    <span class="text-[10px] text-amber-500 font-bold mt-1 block">🔒 Shift Sebelumnya (Read-Only)</span>
+                                    <div class="mt-1 text-[10px] text-amber-400 font-bold bg-amber-950/80 px-2 py-0.5 rounded-lg border border-amber-800/80 inline-flex items-center gap-1">
+                                        🔒 {{ $item['creator_name'] ?: 'Pekerja' }} ({{ $item['shift'] ?? 'Shift Lampau' }})
+                                    </div>
+                                @elseif(!empty($item['creator_name']) || !empty($item['shift']))
+                                    <div class="mt-1 text-[10px] text-emerald-400 font-medium bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/50 inline-flex items-center gap-1">
+                                        👤 {{ $item['creator_name'] ?: 'Pekerja' }} ({{ $item['shift'] ?? '' }})
+                                    </div>
                                 @endif
                             </td>
 

@@ -31,4 +31,13 @@ class DeliveryNote extends Model
     {
         return $this->hasMany(Batch::class);
     }
+
+    public function getFormattedDnNumberAttribute(): string
+    {
+        $num = trim($this->dn_number ?? '');
+        if (empty($num) || str_starts_with($num, 'DN-BCH-')) {
+            return '-';
+        }
+        return $num;
+    }
 }

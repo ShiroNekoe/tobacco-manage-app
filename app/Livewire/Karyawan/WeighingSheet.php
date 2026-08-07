@@ -216,30 +216,30 @@ class WeighingSheet extends Component
         }
 
         $this->items = [];
+        $currentShift = $user ? ($user->shift ?? 'Shift 1') : 'Shift 1';
+        $currentGroup = $user ? ($user->group ?? 'Group A') : 'Group A';
         $isCurrentUserAdmin = $user && ($user->isAdmin() || $user->isSupervisor());
 
         if ($batch->weighingItems->count() > 0) {
             foreach ($batch->weighingItems->sortBy('sack_number') as $wItem) {
                 $createdById = $wItem->created_by_user_id;
                 $creator = $wItem->createdBy;
+                $itemShift = $wItem->shift ?: ($creator ? $creator->shift : null);
                 
                 $isCreatorAdmin = $creator && ($creator->isAdmin() || $creator->isSupervisor());
-                $isKaryawanCreator = $creator && $creator->isKaryawan();
                 $isPreLaunchRow = ($wItem->remark === 'MRL Pre-Launch');
 
                 // Row is locked ONLY if:
-                // 1. Current user is NOT Admin/Supervisor (Admin can view and edit everything)
+                // 1. Current user is NOT Admin/Supervisor
                 // 2. The row was NOT created by Admin/Supervisor
                 // 3. The row is NOT marked 'MRL Pre-Launch'
-                // 4. The row was created by a DIFFERENT Karyawan worker
-                // 5. The row has a gross weight recorded (> 0)
+                // 4. The row has a recorded shift that is DIFFERENT from current user's shift
+                // 5. The row has a weight recorded (> 0)
                 $isLockedForUser = (! $isCurrentUserAdmin)
                     && (! $isCreatorAdmin)
                     && (! $isPreLaunchRow)
-                    && ($createdById !== null)
-                    && ($createdById !== $currentUserId)
-                    && $isKaryawanCreator
-                    && ((float) $wItem->gross_kg > 0);
+                    && (! empty($itemShift) && $itemShift !== $currentShift)
+                    && ((float) $wItem->gross_kg > 0 || (float) $wItem->tare_kg > 0);
 
                 $this->items[] = [
                     'id' => $wItem->id,
@@ -249,6 +249,9 @@ class WeighingSheet extends Component
                     'netto_kg' => (float) $wItem->netto_kg,
                     'remark' => $wItem->remark ?? 'Normal',
                     'created_by_user_id' => $createdById,
+                    'creator_name' => $creator ? trim(explode('(', $creator->name)[0]) : null,
+                    'shift' => $itemShift,
+                    'group' => $wItem->group ?: ($creator ? $creator->group : null),
                     'is_locked_for_user' => $isLockedForUser,
                 ];
             }
@@ -273,6 +276,9 @@ class WeighingSheet extends Component
                 'netto_kg' => 0,
                 'remark' => 'Normal',
                 'created_by_user_id' => null,
+                'creator_name' => null,
+                'shift' => null,
+                'group' => null,
                 'is_locked_for_user' => false,
             ];
         }
@@ -290,6 +296,9 @@ class WeighingSheet extends Component
             'netto_kg' => 0,
             'remark' => 'Normal',
             'created_by_user_id' => null,
+            'creator_name' => null,
+            'shift' => null,
+            'group' => null,
             'is_locked_for_user' => false,
         ];
         $this->recalculateTotals();
@@ -672,6 +681,8 @@ class WeighingSheet extends Component
 
         $user = Auth::user();
         $currentUserId = $user ? $user->id : null;
+        $currentShift = $user ? ($user->shift ?? 'Shift 1') : 'Shift 1';
+        $currentGroup = $user ? ($user->group ?? 'Group A') : 'Group A';
         $isCurrentUserAdmin = $user && ($user->isAdmin() || $user->isSupervisor());
 
         if ($batch->isLocked() && ! $isCurrentUserAdmin) {
@@ -744,26 +755,25 @@ class WeighingSheet extends Component
 
         // Sync Weighing Items DB while preserving predecessor lock rules
         foreach ($this->items as $it) {
-            if ((float) ($it['gross_kg'] ?? 0) > 0) {
+            if ((float) ($it['gross_kg'] ?? 0) > 0 || (float) ($it['tare_kg'] ?? 0) > 0) {
                 if (! empty($it['id'])) {
                     $existing = WeighingItem::with('createdBy')->find($it['id']);
                     
                     $isExistingCreatedByAdmin = $existing && $existing->createdBy && ($existing->createdBy->isAdmin() || $existing->createdBy->isSupervisor());
                     $isExistingPreLaunch = $existing && $existing->remark === 'MRL Pre-Launch';
+                    $existingShift = $existing ? ($existing->shift ?: ($existing->createdBy ? $existing->createdBy->shift : null)) : null;
 
                     // Reject backend edit ONLY if:
                     // 1. Current user is NOT Admin/Supervisor
                     // 2. Row was NOT created by Admin/Supervisor
                     // 3. Row is NOT MRL Pre-Launch
-                    // 4. Row was created by a DIFFERENT Karyawan worker
+                    // 4. Row belongs to a DIFFERENT shift
                     if (! $isCurrentUserAdmin 
                         && $existing 
-                        && $existing->created_by_user_id 
-                        && $existing->created_by_user_id !== $currentUserId 
+                        && ! empty($existingShift) 
+                        && $existingShift !== $currentShift 
                         && ! $isExistingCreatedByAdmin 
-                        && ! $isExistingPreLaunch 
-                        && $existing->createdBy 
-                        && $existing->createdBy->isKaryawan()
+                        && ! $isExistingPreLaunch
                     ) {
                         continue; // Keep original predecessor worker data
                     }
@@ -781,30 +791,38 @@ class WeighingSheet extends Component
                         $targetRemark = 'Normal';
                     }
 
+                    $targetGross = $isCurrentUserAdmin ? $it['gross_kg'] : ($existing ? $existing->gross_kg : 0);
+                    $targetTare = $it['tare_kg'];
+                    $targetNetto = max(0, round((float)$targetGross - (float)$targetTare, 2));
+
                     $updateData = [
-                        'gross_kg' => $it['gross_kg'],
-                        'tare_kg' => $it['tare_kg'],
-                        'netto_kg' => $it['netto_kg'],
+                        'gross_kg' => $targetGross,
+                        'tare_kg' => $targetTare,
+                        'netto_kg' => $targetNetto,
                         'remark' => $targetRemark,
                     ];
 
-                    // Transfer ownership to active KARYAWAN worker ONLY IF row was actually modified by this worker
-                    if ($existing && ($isExistingCreatedByAdmin || $isExistingPreLaunch || ! $existing->createdBy || ! $existing->createdBy->isKaryawan())) {
-                        if ($user && $user->isKaryawan() && ($isRowModifiedByWorker || ! $isExistingPreLaunch)) {
+                    // Transfer/update ownership to active KARYAWAN worker ONLY IF row was actually modified by this worker
+                    if ($user && $user->isKaryawan()) {
+                        if ($isRowModifiedByWorker || ! $isExistingPreLaunch) {
                             $updateData['created_by_user_id'] = $currentUserId;
-                            $updateData['shift'] = $user->shift ?? 'Shift 1';
-                            $updateData['group'] = $user->group ?? 'Group A';
+                            $updateData['shift'] = $currentShift;
+                            $updateData['group'] = $currentGroup;
                         }
                     }
 
                     $existing->update($updateData);
                 } else {
+                    $targetGross = $isCurrentUserAdmin ? $it['gross_kg'] : 0;
+                    $targetTare = $it['tare_kg'];
+                    $targetNetto = max(0, round((float)$targetGross - (float)$targetTare, 2));
+
                     WeighingItem::create([
                         'batch_id' => $batch->id,
                         'sack_number' => $it['sack_number'],
-                        'gross_kg' => $it['gross_kg'],
-                        'tare_kg' => $it['tare_kg'],
-                        'netto_kg' => $it['netto_kg'],
+                        'gross_kg' => $targetGross,
+                        'tare_kg' => $targetTare,
+                        'netto_kg' => $targetNetto,
                         'remark' => ($it['remark'] === 'MRL Pre-Launch') ? 'Normal' : ($it['remark'] ?? 'Normal'),
                         'created_by_user_id' => $currentUserId,
                         'shift' => $user ? ($user->shift ?? 'Shift 1') : 'Shift 1',

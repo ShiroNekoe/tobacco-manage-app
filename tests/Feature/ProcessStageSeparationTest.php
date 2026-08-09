@@ -34,6 +34,8 @@ class ProcessStageSeparationTest extends TestCase
             'product_type_id' => $prodType->id,
             'origin_id' => $origin->id,
             'pack_type' => 'Bale',
+            'product_kg_per_sack' => 25.20,
+            'product_tare_per_sack' => 0.20,
             'date_of_receipt' => Carbon::now(),
             'status' => 'OPEN',
             'mrl_netto_weight' => 477.00,
@@ -70,5 +72,39 @@ class ProcessStageSeparationTest extends TestCase
         $this->assertEquals(6, $freshBatch->separation_p1_data['product_sack']);
         $this->assertEquals(5, $freshBatch->separation_p2_data['product_sack']);
         $this->assertEquals(280.40, (float) $freshBatch->separation_product_kg);
+    }
+
+    public function test_gross_standard_follows_custom_product_kg_per_sack(): void
+    {
+        $worker = User::factory()->create(['role' => 'karyawan', 'shift' => 'Shift 1']);
+        $customer = Customer::create(['name' => 'PT Custom Gross Test', 'code' => 'CUST-GROSS']);
+        $prodType = ProductType::create(['code' => 'P-GROSS', 'name' => 'PAITON GROSS']);
+        $origin = Origin::create(['region_name' => 'PAITON GROSS']);
+        $dn = DeliveryNote::create(['dn_number' => 'DN-GROSS-01', 'customer_id' => $customer->id, 'delivery_date' => Carbon::now()]);
+
+        // Batch created with custom gross per sack = 20.50 kg/sak
+        $batch = Batch::create([
+            'batch_code' => 'BCH-GROSS-001',
+            'customer_id' => $customer->id,
+            'delivery_note_id' => $dn->id,
+            'product_type_id' => $prodType->id,
+            'origin_id' => $origin->id,
+            'pack_type' => 'Bale',
+            'product_kg_per_sack' => 20.50,
+            'product_tare_per_sack' => 0.50,
+            'date_of_receipt' => Carbon::now(),
+            'status' => 'OPEN',
+            'mrl_netto_weight' => 500.00,
+        ]);
+
+        Livewire::actingAs($worker)
+            ->test(WeighingSheet::class, ['batch_id' => $batch->id])
+            ->assertSet('product_kg_per_sack', 20.50)
+            ->assertSet('product_tare_per_sack', 0.50)
+            ->assertSee('Gross Standard: 20.50 kg/sak')
+            ->assertSee('Tare Standard: 0.50 kg/sak')
+            ->set('p1_product_sack', 10)
+            // 10 sacks * (20.50 gross - 0.50 tare = 20.00 netto) = 200.00 kg
+            ->assertSet('p1_product_kg', 200.00);
     }
 }

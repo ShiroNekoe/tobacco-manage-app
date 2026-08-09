@@ -57,6 +57,16 @@ Route::middleware(['auth'])->group(function () {
     // 3. Customer Portal Route
     Route::middleware(['role:customer,admin,supervisor'])->group(function () {
         Route::get('/customer/dashboard', CustomerDashboard::class)->name('customer.dashboard');
+
+        // Customer REST API Endpoints with Server-side Tenant Isolation
+        Route::prefix('api/customer')->group(function () {
+            Route::get('/batches', [\App\Http\Controllers\Api\CustomerPortalApiController::class, 'indexBatches'])->name('api.customer.batches');
+            Route::get('/batches/{batchId}', [\App\Http\Controllers\Api\CustomerPortalApiController::class, 'showBatch'])->name('api.customer.batch.show');
+            Route::get('/batches/{batchId}/receiving-reconciliation', [\App\Http\Controllers\Api\CustomerPortalApiController::class, 'receivingReconciliation'])->name('api.customer.batch.reconciliation');
+            Route::get('/batches/{batchId}/process-balance', [\App\Http\Controllers\Api\CustomerPortalApiController::class, 'processBalance'])->name('api.customer.batch.balance');
+            Route::get('/performance/summary', [\App\Http\Controllers\Api\CustomerPortalApiController::class, 'performanceSummary'])->name('api.customer.performance.summary');
+            Route::get('/performance/trend', [\App\Http\Controllers\Api\CustomerPortalApiController::class, 'performanceTrend'])->name('api.customer.performance.trend');
+        });
     });
 
     // Process Certificate View & PDF Download Routes (Supervisor Approval Gated for Customer)

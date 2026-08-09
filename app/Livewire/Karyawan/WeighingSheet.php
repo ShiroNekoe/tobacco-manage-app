@@ -144,6 +144,8 @@ class WeighingSheet extends Component
 
         $this->batchId = $batch->id;
         $this->status = $batch->status;
+        $this->product_kg_per_sack = ($batch->product_kg_per_sack && (float)$batch->product_kg_per_sack > 0) ? (float)$batch->product_kg_per_sack : 25.20;
+        $this->product_tare_per_sack = (isset($batch->product_tare_per_sack) && $batch->product_tare_per_sack !== null) ? (float)$batch->product_tare_per_sack : 0.20;
 
         $user = Auth::user();
         $currentUserId = $user ? $user->id : 0;
@@ -397,6 +399,11 @@ class WeighingSheet extends Component
     public function updatedP2RemnantGrossKg() { $this->recalculateTotals(); }
     public function updatedP2RemnantTareKg() { $this->recalculateTotals(); }
     public function updatedP2DustItems() { $this->recalculateTotals(); }
+
+    public function updatedProductKgPerSack()
+    {
+        $this->recalculateTotals();
+    }
 
     public function updatedProductTarePerSack()
     {

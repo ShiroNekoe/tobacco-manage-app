@@ -165,6 +165,13 @@ class BatchManagement extends Component
             abort(403, 'Anda tidak memiliki hak akses untuk membuat Batch baru.');
         }
 
+        if (is_string($this->product_kg_per_sack)) {
+            $this->product_kg_per_sack = str_replace(',', '.', trim($this->product_kg_per_sack));
+        }
+        if (is_string($this->product_tare_per_sack)) {
+            $this->product_tare_per_sack = str_replace(',', '.', trim($this->product_tare_per_sack));
+        }
+
         $this->validate([
             'batch_code' => 'required|string',
             'customer_id' => 'required|exists:customers,id',

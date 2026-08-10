@@ -488,16 +488,43 @@ class CustomerDashboard extends Component
         foreach ($filtered as $b) {
             preg_match('/(\d+)$/', $b->batch_code, $m);
             $batchNum = isset($m[1]) ? (int) $m[1] : $idx;
-            $input = (float) ($b->mrl_netto_weight > 0 ? $b->mrl_netto_weight : $b->mrl_gross_weight);
+            $input = (float) ($b->mrl_netto_weight > 0 ? $b->mrl_netto_weight : ($b->mrl_gross_weight > 0 ? $b->mrl_gross_weight : $b->dn_netto_weight));
             $prod = (float) $b->separation_product_kg;
-            $yield = $input > 0 ? round(($prod / $input) * 100, 2) : (float) $b->yield_product_pct;
             $stem = (float) $b->separation_bits_stem_kg;
             $dust = (float) $b->separation_dust_kg;
             $var = (float) $b->separation_waste_kg;
 
-            $stemPct = $input > 0 ? round(($stem / $input) * 100, 2) : (float) $b->yield_bits_stem_pct;
-            $dustPct = $input > 0 ? round(($dust / $input) * 100, 2) : (float) $b->yield_dust_pct;
-            $varPct = $input > 0 ? round(($var / $input) * 100, 2) : (float) $b->yield_waste_pct;
+            if ($prod > 0 && $input > 0) {
+                $yield = round(($prod / $input) * 100, 2);
+            } elseif ((float) $b->yield_product_pct > 0) {
+                $yield = (float) $b->yield_product_pct;
+            } else {
+                $yield = 0.0;
+            }
+
+            if ($stem > 0 && $input > 0) {
+                $stemPct = round(($stem / $input) * 100, 2);
+            } elseif ((float) $b->yield_bits_stem_pct > 0) {
+                $stemPct = (float) $b->yield_bits_stem_pct;
+            } else {
+                $stemPct = 0.0;
+            }
+
+            if ($dust > 0 && $input > 0) {
+                $dustPct = round(($dust / $input) * 100, 2);
+            } elseif ((float) $b->yield_dust_pct > 0) {
+                $dustPct = (float) $b->yield_dust_pct;
+            } else {
+                $dustPct = 0.0;
+            }
+
+            if ($var > 0 && $input > 0) {
+                $varPct = round(($var / $input) * 100, 2);
+            } elseif ((float) $b->yield_waste_pct > 0) {
+                $varPct = (float) $b->yield_waste_pct;
+            } else {
+                $varPct = 0.0;
+            }
 
             $isOutlier = abs($yield - $weightedYieldPct) > 5.0;
 

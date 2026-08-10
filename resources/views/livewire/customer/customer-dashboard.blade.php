@@ -1,11 +1,14 @@
 <div x-data="{
     activeTab: @entangle('activeTab'),
     showPreviewModal: @entangle('showPreviewModal')
-}" class="space-y-6">
+}"
+x-init="$watch('activeTab', value => $dispatch('customer-tab-changed', value))"
+x-on:switch-customer-tab.window="activeTab = $event.detail; $wire.setTab($event.detail)"
+class="space-y-6">
 
-    <!-- TOP PORTAL HEADER & SUB-NAVIGATION -->
+    <!-- TOP PORTAL HEADER -->
     <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-4 sm:p-6 shadow-2xl">
-        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div class="flex items-center space-x-3">
                 <div class="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/10">
                     <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -23,49 +26,17 @@
                 </div>
             </div>
 
-            <!-- TAB SELECTOR BUTTONS -->
-            <div class="flex items-center flex-wrap gap-1.5 bg-zinc-950 p-1.5 rounded-2xl border border-zinc-800">
-                <button type="button" wire:click="setTab('batch_overview')"
-                    :class="activeTab === 'batch_overview' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'"
-                    class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center">
-                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-                    Batch Overview
-                </button>
-
-                <button type="button" wire:click="setTab('historical_analytics')"
-                    :class="activeTab === 'historical_analytics' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'"
-                    class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center">
-                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                    Historical Analytics
-                </button>
-
-                <button type="button" wire:click="setTab('yield_calculator')"
-                    :class="activeTab === 'yield_calculator' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'"
-                    class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center">
-                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                    Yield Cost Calculator
-                </button>
-
-                <button type="button" wire:click="setTab('reconciliation')"
-                    :class="activeTab === 'reconciliation' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'"
-                    class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all hidden sm:flex items-center">
-                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    Receiving Reconciliation
-                </button>
-
-                <button type="button" wire:click="setTab('traceability')"
-                    :class="activeTab === 'traceability' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'"
-                    class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all hidden md:flex items-center">
-                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-                    Batch Traceability
-                </button>
-
-                <button type="button" wire:click="setTab('certificates')"
-                    :class="activeTab === 'certificates' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'"
-                    class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center">
-                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                    Certificates
-                </button>
+            <!-- ACTIVE MODULE BADGE -->
+            <div class="flex items-center gap-2 bg-zinc-950 px-4 py-2 rounded-2xl border border-zinc-800 self-start sm:self-auto shadow-inner">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                <span class="text-xs font-mono font-bold text-amber-400" x-text="
+                    activeTab === 'batch_overview' ? 'Batch Overview' :
+                    activeTab === 'historical_analytics' ? 'Historical Analytics' :
+                    activeTab === 'yield_calculator' ? 'Yield Cost Calculator' :
+                    activeTab === 'reconciliation' ? 'Receiving Reconciliation' :
+                    activeTab === 'traceability' ? 'Batch Traceability' :
+                    activeTab === 'certificates' ? 'Certificates' : 'Batch Overview'
+                ">Batch Overview</span>
             </div>
         </div>
     </div>
@@ -657,77 +628,98 @@
             </div>
         </div>
 
-        <!-- UPPER SECTION: HISTORICAL PRODUCT YIELD TREND + PERFORMANCE INSIGHTS -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-            <!-- MAIN LINE CHART (2 COLS) -->
-            <div wire:key="historical-line-chart-{{ md5(json_encode($historicalData['chartLabels'] ?? [])) }}"
-                 x-data="historicalYieldChart({
-                     labels: @js($historicalData['chartLabels'] ?? []),
-                     yieldSeries: @js($historicalData['yieldSeries'] ?? []),
-                     weightedAvg: @js($historicalData['weightedProductYield'] ?? 72.31),
-                     outlierPoints: @js($historicalData['outlierPoints'] ?? [])
-                 })"
-                 x-init="initChart()"
-                 class="lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
-                
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800 pb-3">
-                    <div>
-                        <h3 class="text-sm font-black text-zinc-100 uppercase tracking-wide">Historical Product Yield Trend</h3>
-                        <p class="text-xs text-zinc-400 mt-0.5">Tren hasil yield per batch dengan garis rata-rata tertimbang & deteksi outlier</p>
+        <!-- UPPER SECTION: HISTORICAL PRODUCT YIELD TREND (FULL-WIDTH ENLARGED CHART) -->
+        <div wire:key="historical-line-chart-{{ md5(json_encode($historicalData['chartLabels'] ?? [])) }}"
+             x-data="historicalYieldChart({
+                 labels: @js($historicalData['chartLabels'] ?? []),
+                 yieldSeries: @js($historicalData['yieldSeries'] ?? []),
+                 weightedAvg: @js($historicalData['weightedProductYield'] ?? 72.31),
+                 outlierPoints: @js($historicalData['outlierPoints'] ?? [])
+             })"
+             x-init="initChart()"
+             class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-5">
+            
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-zinc-800 pb-4">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-base sm:text-lg font-black text-zinc-100 uppercase tracking-wide">Historical Product Yield Trend</h3>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-950 text-emerald-300 border border-emerald-800">
+                            FULL EXPANDED VIEW
+                        </span>
                     </div>
-
-                    <!-- Legend -->
-                    <div class="flex items-center flex-wrap gap-2 text-[10px] font-bold">
-                        <span class="flex items-center text-emerald-400"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1"></span> Product Yield (%)</span>
-                        <span class="flex items-center text-amber-400"><span class="w-3 h-0.5 border-t-2 border-dashed border-amber-400 mr-1"></span> Weighted Avg ({{ number_format($historicalData['weightedProductYield'] ?? 72.31, 2) }}%)</span>
-                        <span class="flex items-center text-red-400"><span class="w-2.5 h-2.5 rounded-full bg-red-500 mr-1"></span> Outlier</span>
-                    </div>
+                    <p class="text-xs text-zinc-400 mt-1">Tren hasil yield per batch dengan garis rata-rata tertimbang & deteksi outlier</p>
                 </div>
 
-                <!-- Canvas -->
-                <div class="relative w-full h-[280px] bg-zinc-950 p-2 sm:p-4 rounded-2xl border border-zinc-800/80">
-                    <canvas x-ref="canvas" class="w-full h-full"></canvas>
-                </div>
-
-                <div class="text-[11px] text-zinc-500 flex items-center">
-                    <svg class="w-3.5 h-3.5 mr-1 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <span>Milestone Batch 23: Implementasi kontrol penerimaan langsung gudang (DN + MRL).</span>
+                <!-- Legend -->
+                <div class="flex items-center flex-wrap gap-2.5 sm:gap-4 text-xs font-bold bg-zinc-950 px-4 py-2.5 rounded-2xl border border-zinc-800">
+                    <span class="flex items-center text-emerald-400"><span class="w-3 h-3 rounded-full bg-emerald-500 mr-2 shadow-sm shadow-emerald-500/50"></span> Product Yield (%)</span>
+                    <span class="flex items-center text-amber-400"><span class="w-4 h-0.5 border-t-2 border-dashed border-amber-400 mr-2"></span> Weighted Avg ({{ number_format($historicalData['weightedProductYield'] ?? 72.31, 2) }}%)</span>
+                    <span class="flex items-center text-red-400"><span class="w-3 h-3 rounded-full bg-red-500 mr-2 shadow-sm shadow-red-500/50"></span> Outlier</span>
                 </div>
             </div>
 
-            <!-- PERFORMANCE INSIGHTS (1 COL) -->
-            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4 flex flex-col justify-between">
+            <!-- Enlarged Full-Width Canvas Container -->
+            <div class="relative w-full h-[420px] sm:h-[480px] lg:h-[520px] bg-zinc-950 p-3 sm:p-5 rounded-2xl border border-zinc-800/80 shadow-inner">
+                <canvas x-ref="canvas" class="w-full h-full"></canvas>
+            </div>
+
+            <!-- Chart Footer Information Strip -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-zinc-400 bg-zinc-950/70 p-3.5 rounded-2xl border border-zinc-800">
+                <div class="flex items-center text-zinc-300">
+                    <svg class="w-4 h-4 mr-2 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>Milestone Batch 23: Implementasi kontrol penerimaan langsung gudang (DN + MRL).</span>
+                </div>
+                <div class="text-zinc-500 font-mono text-[11px] flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>Monitoring {{ count($historicalData['chartLabels'] ?? []) }} Approved Batches</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- PERFORMANCE INSIGHTS (4 HIGH-IMPACT METRIC CARDS + ADVISORY NOTE) -->
+        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800 pb-3">
                 <div>
                     <h3 class="text-sm font-black text-zinc-100 uppercase tracking-wide">Performance Insights</h3>
                     <p class="text-xs text-zinc-400 mt-0.5">Ringkasan performa yield & konsistensi separasi</p>
+                </div>
+                <div class="px-3.5 py-1.5 rounded-xl bg-amber-950/50 border border-amber-800/60 text-xs text-amber-300 flex items-center">
+                    <span class="mr-1.5">💡</span>
+                    <span>92% batch berada pada rentang deviasi toleransi standar &plusmn;3.5%.</span>
+                </div>
+            </div>
 
-                    <div class="mt-5 space-y-3 font-mono">
-                        <div class="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-between">
-                            <span class="text-xs font-sans text-zinc-400 flex items-center">🏆 Best Batch:</span>
-                            <span class="font-bold text-emerald-400 text-sm">{{ $historicalData['bestBatch'] ?? '24 / 75.8%' }}</span>
-                        </div>
-
-                        <div class="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-between">
-                            <span class="text-xs font-sans text-zinc-400 flex items-center">📉 Lowest Batch:</span>
-                            <span class="font-bold text-amber-400 text-sm">{{ $historicalData['lowestBatch'] ?? '7 / 67.4%' }}</span>
-                        </div>
-
-                        <div class="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-between">
-                            <span class="text-xs font-sans text-zinc-400 flex items-center">⟷ Stable Range:</span>
-                            <span class="font-bold text-cyan-300 text-sm">{{ $historicalData['stableRange'] ?? '71.0 - 74.5%' }}</span>
-                        </div>
-
-                        <div class="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-between">
-                            <span class="text-xs font-sans text-zinc-400 flex items-center">⚠️ Outliers:</span>
-                            <span class="font-bold text-red-400 text-sm">{{ $historicalData['outliersCount'] ?? 3 }} batches</span>
-                        </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono">
+                <div class="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-between shadow-md">
+                    <div>
+                        <div class="text-xs font-sans text-zinc-400">🏆 Best Batch</div>
+                        <div class="font-bold text-emerald-400 text-lg mt-1">{{ $historicalData['bestBatch'] ?? '24 / 75.8%' }}</div>
                     </div>
+                    <span class="text-2xl">📈</span>
                 </div>
 
-                <div class="p-3 rounded-2xl bg-amber-950/40 border border-amber-800/60 text-[11px] text-amber-300 flex items-center">
-                    <span class="mr-2">💡</span>
-                    <span>92% batch berada pada rentang deviasi toleransi standar &plusmn;3.5%.</span>
+                <div class="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-between shadow-md">
+                    <div>
+                        <div class="text-xs font-sans text-zinc-400">📉 Lowest Batch</div>
+                        <div class="font-bold text-amber-400 text-lg mt-1">{{ $historicalData['lowestBatch'] ?? '7 / 67.4%' }}</div>
+                    </div>
+                    <span class="text-2xl">📉</span>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-between shadow-md">
+                    <div>
+                        <div class="text-xs font-sans text-zinc-400">⟷ Stable Range</div>
+                        <div class="font-bold text-cyan-300 text-lg mt-1">{{ $historicalData['stableRange'] ?? '71.0 - 74.5%' }}</div>
+                    </div>
+                    <span class="text-2xl">📊</span>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-between shadow-md">
+                    <div>
+                        <div class="text-xs font-sans text-zinc-400">⚠️ Outliers</div>
+                        <div class="font-bold text-red-400 text-lg mt-1">{{ $historicalData['outliersCount'] ?? 3 }} batches</div>
+                    </div>
+                    <span class="text-2xl">🚨</span>
                 </div>
             </div>
         </div>
@@ -1288,6 +1280,20 @@ function historicalYieldChart(data) {
 
                 const avgArray = new Array(data.labels.length).fill(data.weightedAvg);
 
+                // Dynamically compute safe bounds so both top and bottom are completely visible with zero clipping
+                const values = (data.yieldSeries || []).filter(v => v !== null && v !== undefined && !isNaN(v));
+                const minVal = values.length > 0 ? Math.min(...values, data.weightedAvg) : 0;
+                const maxVal = values.length > 0 ? Math.max(...values, data.weightedAvg) : 100;
+                const hasZero = values.some(v => v <= 5);
+
+                // Auto-scale min/max with comfortable margin so no points or peaks clip
+                let yMin = hasZero ? 0 : Math.max(0, Math.floor((minVal - 10) / 10) * 10);
+                let yMax = Math.min(100, Math.ceil((maxVal + 8) / 10) * 10);
+                if (maxVal > 85 || yMax < 100) {
+                    if (maxVal > 85) yMax = 100;
+                }
+                if (yMin >= yMax) { yMin = 0; yMax = 100; }
+
                 this.chart = new Chart(ctx, {
                     type: 'line',
                     data: {
@@ -1297,30 +1303,33 @@ function historicalYieldChart(data) {
                                 label: 'Product Yield (%)',
                                 data: data.yieldSeries,
                                 borderColor: '#10b981',
-                                backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                                backgroundColor: 'rgba(16, 185, 129, 0.12)',
                                 pointBackgroundColor: '#10b981',
                                 pointBorderColor: '#064e3b',
-                                pointRadius: 4,
-                                pointHoverRadius: 6,
+                                pointRadius: 5,
+                                pointHoverRadius: 8,
                                 tension: 0.25,
-                                borderWidth: 2.5
+                                borderWidth: 3,
+                                fill: true
                             },
                             {
                                 label: 'Weighted Average (' + data.weightedAvg + '%)',
                                 data: avgArray,
                                 borderColor: '#f59e0b',
-                                borderDash: [6, 6],
+                                borderDash: [8, 6],
                                 pointRadius: 0,
                                 fill: false,
-                                borderWidth: 2
+                                borderWidth: 2.5
                             },
                             {
                                 label: 'Outlier',
                                 data: data.outlierPoints,
-                                borderColor: 'transparent',
+                                borderColor: '#ffffff',
+                                borderWidth: 2,
                                 backgroundColor: '#ef4444',
                                 pointBackgroundColor: '#ef4444',
-                                pointRadius: 6,
+                                pointRadius: 7,
+                                pointHoverRadius: 10,
                                 pointStyle: 'circle',
                                 showLine: false
                             }
@@ -1329,17 +1338,35 @@ function historicalYieldChart(data) {
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        layout: {
+                            padding: {
+                                top: 20,
+                                bottom: 15,
+                                left: 10,
+                                right: 15
+                            }
+                        },
                         interaction: { intersect: false, mode: 'index' },
                         scales: {
                             y: {
-                                min: 55,
-                                max: 85,
-                                grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                                ticks: { color: '#9ca3af', font: { family: 'monospace', size: 10 }, callback: v => v + '%' }
+                                min: yMin,
+                                max: yMax,
+                                grid: { color: 'rgba(255, 255, 255, 0.08)' },
+                                ticks: { 
+                                    color: '#a1a1aa', 
+                                    font: { family: 'ui-monospace, SFMono-Regular, monospace', size: 12, weight: '600' },
+                                    stepSize: 10,
+                                    callback: v => v + '%' 
+                                }
                             },
                             x: {
                                 grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                                ticks: { color: '#9ca3af', font: { family: 'monospace', size: 10 } }
+                                ticks: { 
+                                    color: '#a1a1aa', 
+                                    font: { family: 'ui-monospace, SFMono-Regular, monospace', size: 11, weight: '600' },
+                                    maxRotation: 0,
+                                    autoSkip: false
+                                }
                             }
                         },
                         plugins: {
@@ -1347,10 +1374,26 @@ function historicalYieldChart(data) {
                             tooltip: {
                                 backgroundColor: '#18181b',
                                 titleColor: '#f59e0b',
+                                titleFont: { size: 13, weight: 'bold' },
                                 bodyColor: '#ffffff',
-                                borderColor: '#27272a',
+                                bodyFont: { size: 12 },
+                                borderColor: '#3f3f46',
                                 borderWidth: 1,
-                                padding: 10
+                                padding: 12,
+                                boxPadding: 6,
+                                usePointStyle: true,
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += context.parsed.y + '%';
+                                        }
+                                        return label;
+                                    }
+                                }
                             }
                         }
                     }

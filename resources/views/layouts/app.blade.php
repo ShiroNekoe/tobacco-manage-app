@@ -29,7 +29,13 @@
     @livewireStyles
 </head>
 <body class="h-full bg-zinc-950 font-sans antialiased selection:bg-amber-600 selection:text-white pb-24">
-    <div x-data="{ sidebarOpen: false }" class="min-h-screen flex flex-col md:flex-row bg-zinc-950">
+    <div x-data="{ 
+        sidebarOpen: false, 
+        customerSubmenuOpen: {{ request()->routeIs('customer.dashboard') ? 'true' : 'false' }}, 
+        activeCustomerTab: '{{ request('activeTab', 'batch_overview') }}' 
+    }" 
+    x-on:customer-tab-changed.window="activeCustomerTab = $event.detail"
+    class="min-h-screen flex flex-col md:flex-row bg-zinc-950">
         
         <!-- Mobile Header Bar -->
         <header class="md:hidden flex items-center justify-between px-4 py-3 bg-zinc-900 border-b border-zinc-800 sticky top-0 z-40">
@@ -103,12 +109,108 @@
                 </a>
                 @endif
 
-                <!-- 3. Customer Portal Menu -->
+                <!-- 3. Customer Portal Menu with Nested Submenu -->
                 @if(auth()->user() && (auth()->user()->isCustomer() || auth()->user()->isAdmin() || auth()->user()->isSupervisor()))
-                <a href="{{ route('customer.dashboard') }}" class="flex items-center px-4 py-3 min-h-[48px] text-sm font-bold rounded-xl transition-all {{ request()->routeIs('customer.dashboard') ? 'bg-amber-600 text-white shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200' }}">
-                    <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    Portal Customer
-                </a>
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between px-4 py-3 min-h-[48px] text-sm font-bold rounded-xl transition-all cursor-pointer select-none {{ request()->routeIs('customer.dashboard') ? 'bg-amber-600/20 text-amber-300 border border-amber-500/30' : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200' }}"
+                         @click="customerSubmenuOpen = !customerSubmenuOpen">
+                        <a href="{{ route('customer.dashboard') }}" 
+                           class="flex items-center flex-1 text-inherit"
+                           @click.stop="customerSubmenuOpen = true">
+                            <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <span>Portal Customer</span>
+                        </a>
+                        <button type="button" class="p-1 text-zinc-400 hover:text-zinc-200">
+                            <svg :class="customerSubmenuOpen ? 'rotate-180' : ''" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                    </div>
+
+                    <!-- Collapsible Customer Submenu Items -->
+                    <div x-show="customerSubmenuOpen" 
+                         x-transition:enter="transition ease-out duration-150"
+                         x-transition:enter-start="opacity-0 -translate-y-1"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         class="pl-3 pr-1 space-y-1 pt-1 border-l-2 border-amber-600/30 ml-4">
+                        
+                        <!-- 1. Batch Overview -->
+                        <a href="{{ route('customer.dashboard', ['activeTab' => 'batch_overview']) }}"
+                           @if(request()->routeIs('customer.dashboard'))
+                           @click.prevent="activeCustomerTab = 'batch_overview'; sidebarOpen = false; $dispatch('switch-customer-tab', 'batch_overview'); window.history.replaceState({}, '', '{{ route('customer.dashboard') }}?activeTab=batch_overview')"
+                           @else
+                           @click="sidebarOpen = false"
+                           @endif
+                           :class="activeCustomerTab === 'batch_overview' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200'"
+                           class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all">
+                            <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                            <span class="truncate">Batch Overview</span>
+                        </a>
+
+                        <!-- 2. Historical Analytics -->
+                        <a href="{{ route('customer.dashboard', ['activeTab' => 'historical_analytics']) }}"
+                           @if(request()->routeIs('customer.dashboard'))
+                           @click.prevent="activeCustomerTab = 'historical_analytics'; sidebarOpen = false; $dispatch('switch-customer-tab', 'historical_analytics'); window.history.replaceState({}, '', '{{ route('customer.dashboard') }}?activeTab=historical_analytics')"
+                           @else
+                           @click="sidebarOpen = false"
+                           @endif
+                           :class="activeCustomerTab === 'historical_analytics' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200'"
+                           class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all">
+                            <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                            <span class="truncate">Historical Analytics</span>
+                        </a>
+
+                        <!-- 3. Yield Cost Calculator -->
+                        <a href="{{ route('customer.dashboard', ['activeTab' => 'yield_calculator']) }}"
+                           @if(request()->routeIs('customer.dashboard'))
+                           @click.prevent="activeCustomerTab = 'yield_calculator'; sidebarOpen = false; $dispatch('switch-customer-tab', 'yield_calculator'); window.history.replaceState({}, '', '{{ route('customer.dashboard') }}?activeTab=yield_calculator')"
+                           @else
+                           @click="sidebarOpen = false"
+                           @endif
+                           :class="activeCustomerTab === 'yield_calculator' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200'"
+                           class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all">
+                            <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                            <span class="truncate">Yield Cost Calculator</span>
+                        </a>
+
+                        <!-- 4. Receiving Reconciliation -->
+                        <a href="{{ route('customer.dashboard', ['activeTab' => 'reconciliation']) }}"
+                           @if(request()->routeIs('customer.dashboard'))
+                           @click.prevent="activeCustomerTab = 'reconciliation'; sidebarOpen = false; $dispatch('switch-customer-tab', 'reconciliation'); window.history.replaceState({}, '', '{{ route('customer.dashboard') }}?activeTab=reconciliation')"
+                           @else
+                           @click="sidebarOpen = false"
+                           @endif
+                           :class="activeCustomerTab === 'reconciliation' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200'"
+                           class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all">
+                            <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <span class="truncate">Receiving Reconciliation</span>
+                        </a>
+
+                        <!-- 5. Batch Traceability -->
+                        <a href="{{ route('customer.dashboard', ['activeTab' => 'traceability']) }}"
+                           @if(request()->routeIs('customer.dashboard'))
+                           @click.prevent="activeCustomerTab = 'traceability'; sidebarOpen = false; $dispatch('switch-customer-tab', 'traceability'); window.history.replaceState({}, '', '{{ route('customer.dashboard') }}?activeTab=traceability')"
+                           @else
+                           @click="sidebarOpen = false"
+                           @endif
+                           :class="activeCustomerTab === 'traceability' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200'"
+                           class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all">
+                            <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                            <span class="truncate">Batch Traceability</span>
+                        </a>
+
+                        <!-- 6. Certificates -->
+                        <a href="{{ route('customer.dashboard', ['activeTab' => 'certificates']) }}"
+                           @if(request()->routeIs('customer.dashboard'))
+                           @click.prevent="activeCustomerTab = 'certificates'; sidebarOpen = false; $dispatch('switch-customer-tab', 'certificates'); window.history.replaceState({}, '', '{{ route('customer.dashboard') }}?activeTab=certificates')"
+                           @else
+                           @click="sidebarOpen = false"
+                           @endif
+                           :class="activeCustomerTab === 'certificates' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200'"
+                           class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all">
+                            <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                            <span class="truncate">Certificates</span>
+                        </a>
+                    </div>
+                </div>
                 @endif
             </nav>
 

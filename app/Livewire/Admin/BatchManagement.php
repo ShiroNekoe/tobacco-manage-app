@@ -337,7 +337,24 @@ class BatchManagement extends Component
         $batch = Batch::findOrFail($id);
         $batch->approveBySupervisor($user);
 
-        session()->flash('message', 'Sertifikat Produk Batch ' . $batch->batch_code . ' berhasil di-ACC / Approved! Sertifikat resmi kini dipublikasikan ke Portal Customer.');
+        session()->flash('message', 'Sertifikat Produk Batch ' . $batch->batch_code . ' berhasil di-ACC / Approved oleh Supervisor! Status batch kini APPROVED BY SUPERVISOR.');
+    }
+
+    public function revokeCertificateApproval(int $id)
+    {
+        $user = Auth::user();
+        if (! $user || ! ($user->isSupervisor() || $user->isAdmin())) {
+            abort(403, 'Hanya Supervisor yang dapat membatalkan persetujuan ACC Sertifikat Produk.');
+        }
+
+        $batch = Batch::findOrFail($id);
+        $batch->update([
+            'supervisor_approval_status' => Batch::APPROVAL_PENDING,
+            'supervisor_approved_at' => null,
+            'supervisor_approved_by_user_id' => null,
+        ]);
+
+        session()->flash('message', 'Persetujuan ACC Batch ' . $batch->batch_code . ' berhasil dibatalkan (Pending).');
     }
 
     public function openPdfRemarksModal(int $id)

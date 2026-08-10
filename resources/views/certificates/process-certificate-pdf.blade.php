@@ -30,9 +30,12 @@
         .custom-remark-text { font-style: italic; margin-top: 2px; font-weight: bold; color: #15803d; }
         .grand-total-row td { font-weight: bold; background-color: #ffffff; border-top: 2px solid #000; border-bottom: 2px solid #000; }
         
-        .sig-container { width: 100%; margin-top: 25px; page-break-inside: avoid; }
-        .sig-box { float: right; width: 220px; text-align: center; font-size: 8.5pt; }
+        .sig-container { width: 100%; margin-top: 20px; page-break-inside: avoid; clear: both; }
+        .sig-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+        .sig-table td { width: 50%; text-align: center; vertical-align: top; font-size: 8.5pt; border: none !important; padding: 0 15px; }
         .sig-space { height: 45px; }
+        .sig-name { font-weight: bold; text-decoration: underline; font-size: 8.5pt; }
+        .sig-title { font-size: 7.5pt; color: #444; margin-top: 2px; }
     </style>
 </head>
 <body>
@@ -281,13 +284,33 @@
         </div>
     @endforeach
 
-    <!-- Signature Sign-off -->
+    <!-- Signature Sign-off (Admin & Supervisor) -->
     <div class="sig-container">
-        <div class="sig-box">
-            <div>Authorized Signature,</div>
-            <div class="sig-space"></div>
-            <div><strong>({{ $batch->supervisorApprovedBy->name ?? ($batch->createdBy->name ?? 'Factory Quality Control') }})</strong></div>
-        </div>
+        <table class="sig-table">
+            <tr>
+                <td>
+                    <div style="font-size: 8.5pt;">Dibuat / Diverifikasi Oleh:</div>
+                    <div style="font-weight: bold; font-size: 7.5pt; color: #444; text-transform: uppercase;">(Admin / Operator QC)</div>
+                    <div class="sig-space"></div>
+                    <div class="sig-name">({{ $batch->createdBy->name ?? 'Administrator' }})</div>
+                    <div class="sig-title">Admin / Factory Production QC</div>
+                </td>
+                <td>
+                    <div style="font-size: 8.5pt;">Disetujui / Di-ACC Oleh:</div>
+                    <div style="font-weight: bold; font-size: 7.5pt; color: #444; text-transform: uppercase;">(Supervisor)</div>
+                    <div class="sig-space"></div>
+                    <div class="sig-name">({{ $batch->supervisorApprovedBy->name ?? ($batch->createdBy->name ?? 'Supervisor Produksi') }})</div>
+                    <div class="sig-title">
+                        Supervisor Produksi
+                        @if($batch->supervisor_approved_at)
+                            <div style="font-size: 7pt; color: #15803d; font-weight: bold; margin-top: 2px;">
+                                ACC: {{ $batch->supervisor_approved_at->format('d/m/Y H:i') }}
+                            </div>
+                        @endif
+                    </div>
+                </td>
+            </tr>
+        </table>
     </div>
 
 </body>

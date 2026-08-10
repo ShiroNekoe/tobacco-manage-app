@@ -88,17 +88,36 @@
                             <!-- Supervisor Approval Status -->
                             <td class="px-4 py-4 text-center whitespace-nowrap">
                                 @if($b->isApprovedBySupervisor())
-                                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-950 text-emerald-300 border border-emerald-800">
-                                        ✅ APPROVED BY SUPERVISOR
-                                    </span>
+                                    <div class="inline-flex flex-col items-center">
+                                        <span class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase bg-emerald-950 text-emerald-300 border border-emerald-800 flex items-center gap-1 shadow-sm">
+                                            <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                            APPROVED BY SUPERVISOR
+                                        </span>
+                                        @if($b->supervisorApprovedBy)
+                                            <span class="text-[9px] text-zinc-400 font-mono mt-1 block">
+                                                ACC: {{ $b->supervisorApprovedBy->name }} ({{ $b->supervisor_approved_at ? $b->supervisor_approved_at->format('d/m/y H:i') : '-' }})
+                                            </span>
+                                        @endif
+                                    </div>
                                 @else
-                                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-amber-950 text-amber-300 border border-amber-800 animate-pulse">
-                                        ⏳ PENDING SUPERVISOR ACC
-                                    </span>
+                                    @if(auth()->user() && (auth()->user()->isSupervisor() || auth()->user()->isAdmin()))
+                                        <button type="button" 
+                                                wire:click="approveCertificate({{ $b->id }})"
+                                                wire:loading.attr="disabled"
+                                                title="Klik untuk ACC Batch ini oleh Supervisor"
+                                                class="px-3.5 py-1.5 rounded-full text-[11px] font-black uppercase bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-500 hover:to-emerald-600 shadow-lg shadow-emerald-950/60 border border-emerald-500/40 transition-all inline-flex items-center gap-1.5 cursor-pointer transform hover:scale-105 active:scale-95">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                            ACC SUPERVISOR
+                                        </button>
+                                    @else
+                                        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-amber-950 text-amber-300 border border-amber-800 animate-pulse">
+                                            ⏳ PENDING SUPERVISOR ACC
+                                        </span>
+                                    @endif
                                 @endif
                             </td>
                             <td class="px-3 py-3 text-center">
-                                <div class="flex flex-wrap items-center justify-center gap-1.5 max-w-[195px] mx-auto">
+                                <div class="flex flex-wrap items-center justify-center gap-1.5 max-w-[210px] mx-auto">
                                     <a href="{{ route('karyawan.weighing', ['batch_id' => $b->id]) }}" 
                                        title="Buka Lembar Timbangan Lapangan"
                                        class="px-2.5 py-1.5 text-xs font-bold rounded-lg bg-zinc-800 text-zinc-200 hover:bg-zinc-700 border border-zinc-700 transition-colors inline-flex items-center gap-1 shrink-0">
@@ -111,12 +130,20 @@
                                         👁️ Preview PDF
                                     </button>
 
-                                    @if(auth()->user() && (auth()->user()->isSupervisor() || auth()->user()->isAdmin()) && !$b->isApprovedBySupervisor() && in_array($b->status, ['CLOSED', 'locked', 'WAITING']))
-                                        <button wire:click="approveCertificate({{ $b->id }})" 
-                                                title="ACC / Setujui Sertifikat Process Certificate"
-                                                class="px-2.5 py-1.5 text-xs font-bold rounded-lg bg-emerald-950/80 text-emerald-300 border border-emerald-800/80 hover:bg-emerald-900 shadow transition-colors inline-flex items-center gap-1 shrink-0">
-                                            ✅ ACC
-                                        </button>
+                                    @if(auth()->user() && (auth()->user()->isSupervisor() || auth()->user()->isAdmin()))
+                                        @if(!$b->isApprovedBySupervisor())
+                                            <button wire:click="approveCertificate({{ $b->id }})" 
+                                                    title="ACC / Setujui Sertifikat Process Certificate"
+                                                    class="px-2.5 py-1.5 text-xs font-bold rounded-lg bg-emerald-950/80 text-emerald-300 border border-emerald-800/80 hover:bg-emerald-900 shadow transition-colors inline-flex items-center gap-1 shrink-0">
+                                                ✅ ACC
+                                            </button>
+                                        @else
+                                            <button wire:click="revokeCertificateApproval({{ $b->id }})" 
+                                                    title="Batalkan ACC Supervisor"
+                                                    class="px-2 py-1.5 text-[10px] font-bold rounded-lg bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-amber-950 hover:text-amber-300 hover:border-amber-800 shadow transition-colors inline-flex items-center gap-1 shrink-0">
+                                                ↩️ Batal ACC
+                                            </button>
+                                        @endif
                                     @endif
 
                                     @if(auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isSupervisor()))

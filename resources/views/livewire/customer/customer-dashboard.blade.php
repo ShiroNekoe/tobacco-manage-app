@@ -32,10 +32,11 @@ class="space-y-6">
                 <span class="text-xs font-mono font-bold text-amber-400" x-text="
                     activeTab === 'batch_overview' ? 'Batch Overview' :
                     activeTab === 'historical_analytics' ? 'Historical Analytics' :
-                    activeTab === 'yield_calculator' ? 'Yield Cost Calculator' :
                     activeTab === 'reconciliation' ? 'Receiving Reconciliation' :
                     activeTab === 'traceability' ? 'Batch Traceability' :
-                    activeTab === 'certificates' ? 'Certificates' : 'Batch Overview'
+                    activeTab === 'certificates' ? 'Certificates' :
+                    activeTab === 'yield_calculator' ? 'Yield Cost Calculator' :
+                    activeTab === 'dn_shipments' ? 'DN Shipment (Surat Jalan)' : 'Batch Overview'
                 ">Batch Overview</span>
             </div>
         </div>
@@ -74,7 +75,7 @@ class="space-y-6">
         </div>
 
         <!-- FILTER CONTROLS BAR -->
-        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-4 sm:p-5 shadow-xl grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 items-end">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-4 sm:p-5 shadow-xl grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 items-end">
             <div>
                 <label class="block text-[10px] font-bold uppercase text-zinc-400 mb-1">Batch</label>
                 <select wire:model.live="selectedBatchId" class="w-full px-3 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-amber-400 font-mono font-bold text-xs focus:border-amber-500 outline-none">
@@ -85,8 +86,24 @@ class="space-y-6">
             </div>
 
             <div>
-                <label class="block text-[10px] font-bold uppercase text-zinc-400 mb-1">Delivery Note</label>
-                <input type="text" value="{{ $batchOverviewData['deliveryNote'] ?? '-' }}" readonly class="w-full px-3 py-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800 text-zinc-300 font-mono text-xs outline-none">
+                <label class="block text-[10px] font-bold uppercase text-amber-400 mb-1 flex items-center gap-1">
+                    <span>📥 DN Received</span>
+                </label>
+                <input type="text" value="{{ $batchOverviewData['dnReceived']['dn_number'] ?? ($batchOverviewData['deliveryNote'] ?? '-') }}" readonly class="w-full px-3 py-2.5 rounded-xl bg-zinc-950/80 border border-amber-500/40 text-amber-300 font-mono font-bold text-xs outline-none" title="Surat Jalan Penerimaan Bahan Baku">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-cyan-400 mb-1 flex items-center gap-1">
+                    <span>🚚 DN Shipped</span>
+                </label>
+                <div class="px-3 py-2 rounded-xl bg-zinc-950/80 border {{ !empty($batchOverviewData['dnShipped']['has_shipment']) ? 'border-cyan-500/40 text-cyan-300' : 'border-zinc-800 text-zinc-500' }} font-mono font-bold text-xs truncate flex items-center justify-between">
+                    <span class="truncate">{{ $batchOverviewData['dnShipped']['dn_number'] ?? '-' }}</span>
+                    @if(!empty($batchOverviewData['dnShipped']['has_shipment']))
+                        <span class="px-1.5 py-0.2 rounded text-[9px] font-black {{ ($batchOverviewData['dnShipped']['status'] ?? '') === 'Approved' ? 'bg-emerald-950 text-emerald-400' : 'bg-amber-950 text-amber-400' }}">
+                            {{ $batchOverviewData['dnShipped']['status'] ?? 'Shipped' }}
+                        </span>
+                    @endif
+                </div>
             </div>
 
             <div>
@@ -126,6 +143,118 @@ class="space-y-6">
                 <button class="w-1/2 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-black transition-all shadow-md shadow-amber-900/30">
                     Apply
                 </button>
+            </div>
+        </div>
+
+        <!-- DUAL DELIVERY NOTE PIPELINE CARD: DN RECEIVED (INBOUND) vs DN SHIPPED (OUTBOUND) -->
+        <div class="bg-gradient-to-r from-zinc-900 via-zinc-900 to-zinc-950 border border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-xl relative overflow-hidden">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800 pb-4 mb-4">
+                <div>
+                    <h3 class="text-sm font-black text-zinc-100 uppercase tracking-wider flex items-center gap-2">
+                        <span>📑 Delivery Note Reconciliation Pipeline (DN Received vs DN Shipped)</span>
+                    </h3>
+                    <p class="text-xs text-zinc-400 mt-0.5">Pelacakan siklus surat jalan lengkap dari penerimaan bahan mentah (Inbound) hingga pengiriman produk jadi (Outbound)</p>
+                </div>
+                
+                @if(!empty($batchOverviewData['dnShipped']['has_shipment']))
+                    <div class="flex items-center gap-2 self-start md:self-auto">
+                        @if(!empty($batchOverviewData['dnShipped']['id']))
+                            <button wire:click="openShipmentPreview({{ $batchOverviewData['dnShipped']['id'] }})" class="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-cyan-300 border border-cyan-500/30 text-xs font-bold transition-all flex items-center gap-1.5 shadow">
+                                <span>📄 PDF Surat Jalan Pengiriman</span>
+                            </button>
+                            @if(empty($batchOverviewData['dnShipped']['is_approved']))
+                                <button wire:click="openApprovalModal({{ $batchOverviewData['dnShipped']['id'] }})" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-900/50 animate-pulse">
+                                    <span>✅ Setujui DN Pengiriman</span>
+                                </button>
+                            @endif
+                        @endif
+                    </div>
+                @endif
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                <!-- 1. DN RECEIVED (INBOUND) -->
+                <div class="bg-zinc-950/80 border border-amber-500/30 rounded-2xl p-4 space-y-2 relative shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-950 text-amber-300 border border-amber-800 flex items-center gap-1">
+                            <span>📥 1. DN Received (Masuk)</span>
+                        </span>
+                        <span class="text-[10px] font-mono text-zinc-400">{{ $batchOverviewData['dnReceived']['receipt_date'] ?? '-' }}</span>
+                    </div>
+                    <div class="pt-1">
+                        <div class="text-xs text-zinc-400">No. Surat Jalan Inbound:</div>
+                        <div class="text-base font-mono font-black text-amber-400">{{ $batchOverviewData['dnReceived']['dn_number'] ?? '-' }}</div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-800/80 text-xs font-mono">
+                        <div>
+                            <span class="text-[10px] text-zinc-500 block font-sans">Total Kemasan</span>
+                            <span class="font-bold text-zinc-200">{{ $batchOverviewData['dnReceived']['packs'] ?? '-' }} Packs</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-zinc-500 block font-sans">DN Gross</span>
+                            <span class="font-bold text-amber-300">{{ number_format($batchOverviewData['dnReceived']['gross_kg'] ?? 0, 2) }} kg</span>
+                        </div>
+                    </div>
+                    <div class="pt-1 text-[11px] text-emerald-400 font-bold flex items-center gap-1">
+                        <span>✓ {{ $batchOverviewData['dnReceived']['status'] ?? 'Diverifikasi Pabrik' }}</span>
+                    </div>
+                </div>
+
+                <!-- 2. TRANSITION / PROCESSING STAGE -->
+                <div class="bg-zinc-950/50 border border-zinc-800 rounded-2xl p-4 space-y-2 text-center relative">
+                    <div class="text-xs font-bold text-zinc-400 uppercase tracking-wider">⚡ Pemrosesan Batch</div>
+                    <div class="font-mono font-black text-lg text-emerald-400">
+                        {{ number_format($batchOverviewData['productOutput'] ?? 0, 2) }} <span class="text-xs font-normal text-zinc-400">kg Output</span>
+                    </div>
+                    <div class="text-xs text-zinc-400">
+                        Yield Produk: <strong class="text-emerald-400 font-mono">{{ number_format($batchOverviewData['weightedProductYield'] ?? 0, 2) }}%</strong>
+                    </div>
+                    <div class="w-full bg-zinc-800 h-2 rounded-full overflow-hidden mt-2">
+                        <div class="bg-gradient-to-r from-amber-500 via-emerald-500 to-cyan-500 h-full rounded-full" style="width: 100%"></div>
+                    </div>
+                    <div class="text-[10px] text-zinc-500 font-mono">Proses 1 & Proses 2 Selesai</div>
+                </div>
+
+                <!-- 3. DN SHIPPED (OUTBOUND) -->
+                <div class="bg-zinc-950/80 border {{ !empty($batchOverviewData['dnShipped']['has_shipment']) ? 'border-cyan-500/30' : 'border-zinc-800' }} rounded-2xl p-4 space-y-2 relative shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider {{ !empty($batchOverviewData['dnShipped']['has_shipment']) ? 'bg-cyan-950 text-cyan-300 border border-cyan-800' : 'bg-zinc-900 text-zinc-500 border border-zinc-800' }} flex items-center gap-1">
+                            <span>🚚 2. DN Shipped (Keluar)</span>
+                        </span>
+                        @if(!empty($batchOverviewData['dnShipped']['has_shipment']))
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase {{ ($batchOverviewData['dnShipped']['status'] ?? '') === 'Approved' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-amber-950 text-amber-300 border border-amber-800' }}">
+                                {{ ($batchOverviewData['dnShipped']['status'] ?? '') === 'Approved' ? '✅ Approved' : '🚚 Shipped' }}
+                            </span>
+                        @else
+                            <span class="text-[10px] text-zinc-500 font-bold">Pending</span>
+                        @endif
+                    </div>
+                    <div class="pt-1">
+                        <div class="text-xs text-zinc-400">No. Surat Jalan Pengiriman:</div>
+                        <div class="text-base font-mono font-black {{ !empty($batchOverviewData['dnShipped']['has_shipment']) ? 'text-cyan-300' : 'text-zinc-500' }}">
+                            {{ $batchOverviewData['dnShipped']['dn_number'] ?? '-' }}
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-800/80 text-xs font-mono">
+                        <div>
+                            <span class="text-[10px] text-zinc-500 block font-sans">Total Karung Kirim</span>
+                            <span class="font-bold text-zinc-200">{{ !empty($batchOverviewData['dnShipped']['total_sacks']) ? $batchOverviewData['dnShipped']['total_sacks'] . ' Krg' : '-' }}</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-zinc-500 block font-sans">Netto Terkirim</span>
+                            <span class="font-bold text-cyan-300">{{ !empty($batchOverviewData['dnShipped']['total_netto_kg']) ? number_format($batchOverviewData['dnShipped']['total_netto_kg'], 2) . ' kg' : '-' }}</span>
+                        </div>
+                    </div>
+                    <div class="pt-1 text-[11px] {{ !empty($batchOverviewData['dnShipped']['is_approved']) ? 'text-emerald-400' : 'text-amber-400' }} font-bold flex items-center gap-1">
+                        @if(!empty($batchOverviewData['dnShipped']['is_approved']))
+                            <span>✓ Disetujui Customer ({{ $batchOverviewData['dnShipped']['approved_at'] }})</span>
+                        @elseif(!empty($batchOverviewData['dnShipped']['has_shipment']))
+                            <span>⏳ Menunggu Approval Customer</span>
+                        @else
+                            <span class="text-zinc-500">Belum ada pengiriman untuk batch ini</span>
+                        @endif
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -574,48 +703,102 @@ class="space-y-6">
             </div>
         </div>
 
-        <!-- 8 TOP AGGREGATE KPI CARDS -->
+        <!-- 8 TOP AGGREGATE KPI CARDS (CENTERED, MODERN & BALANCED HIERARCHY) -->
         <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-            <div class="bg-zinc-900 border border-zinc-800/80 rounded-2xl p-3.5 space-y-1 shadow-lg">
-                <div class="text-[11px] font-bold text-zinc-400 uppercase">Total Batches</div>
-                <div class="font-mono font-black text-xl text-amber-400">{{ $historicalData['totalBatches'] ?? 25 }}</div>
-            </div>
-
-            <div class="bg-zinc-900 border border-zinc-800/80 rounded-2xl p-3.5 space-y-1 shadow-lg">
-                <div class="text-[11px] font-bold text-zinc-400 uppercase">Processed Input</div>
-                <div class="font-mono font-black text-xl text-amber-400">{{ $historicalData['processedInputTon'] ?? 53.8 }} <span class="text-xs font-normal text-zinc-400">t</span></div>
-            </div>
-
-            <div class="bg-zinc-900 border border-zinc-800/80 rounded-2xl p-3.5 space-y-1 shadow-lg">
-                <div class="text-[11px] font-bold text-zinc-400 uppercase">Product Output</div>
-                <div class="font-mono font-black text-xl text-amber-400">{{ $historicalData['productOutputTon'] ?? 38.9 }} <span class="text-xs font-normal text-zinc-400">t</span></div>
-            </div>
-
-            <div class="bg-zinc-900 border border-zinc-800/80 rounded-2xl p-3.5 space-y-1 shadow-lg">
-                <div class="text-[11px] font-bold text-zinc-400 uppercase">Weighted Yield</div>
-                <div class="font-mono font-black text-xl text-emerald-400">{{ number_format($historicalData['weightedProductYield'] ?? 72.31, 2) }}%</div>
-            </div>
-
-            <div class="bg-zinc-900 border border-zinc-800/80 rounded-2xl p-3.5 space-y-1 shadow-lg">
-                <div class="text-[11px] font-bold text-zinc-400 uppercase">Bits Stem</div>
-                <div class="font-mono font-black text-xl text-amber-400">{{ number_format($historicalData['bitsStemPct'] ?? 24.60, 2) }}%</div>
-            </div>
-
-            <div class="bg-zinc-900 border border-zinc-800/80 rounded-2xl p-3.5 space-y-1 shadow-lg">
-                <div class="text-[11px] font-bold text-zinc-400 uppercase">Dust</div>
-                <div class="font-mono font-black text-xl text-blue-400">{{ number_format($historicalData['dustPct'] ?? 1.78, 2) }}%</div>
-            </div>
-
-            <div class="bg-zinc-900 border border-zinc-800/80 rounded-2xl p-3.5 space-y-1 shadow-lg">
-                <div class="text-[11px] font-bold text-zinc-400 uppercase">Variance</div>
-                <div class="font-mono font-black text-xl text-zinc-300">{{ number_format($historicalData['variancePct'] ?? 1.31, 2) }}%</div>
-            </div>
-
-            <div class="bg-zinc-900 border border-zinc-800/80 rounded-2xl p-3.5 space-y-1 shadow-lg">
-                <div class="text-[11px] font-bold text-zinc-400 uppercase">Consistency</div>
-                <div class="font-mono font-black text-sm text-amber-400 flex items-center mt-1">
-                    <span class="mr-1">🛡️</span> {{ $historicalData['consistency'] ?? 'Moderate' }}
+            <!-- 1. Total Batches -->
+            <div class="bg-zinc-900/90 border border-zinc-800/80 hover:border-amber-500/40 rounded-2xl p-3.5 flex flex-col items-center justify-between text-center shadow-lg transition-all group relative overflow-hidden min-h-[96px]">
+                <div class="w-full flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+                    <span>📋</span>
+                    <span>Total Batches</span>
                 </div>
+                <div class="font-mono font-black text-xl lg:text-2xl text-amber-400 my-0.5">
+                    {{ $historicalData['totalBatches'] ?? 25 }}
+                </div>
+                <div class="text-[10px] text-zinc-500 font-medium">Validated</div>
+            </div>
+
+            <!-- 2. Processed Input -->
+            <div class="bg-zinc-900/90 border border-zinc-800/80 hover:border-amber-500/40 rounded-2xl p-3.5 flex flex-col items-center justify-between text-center shadow-lg transition-all group relative overflow-hidden min-h-[96px]">
+                <div class="w-full flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+                    <span>📥</span>
+                    <span>Processed Input</span>
+                </div>
+                <div class="font-mono font-black text-base lg:text-lg text-amber-300 my-0.5">
+                    {{ number_format($historicalData['processedInputKg'] ?? 0, 0, '.', ',') }}
+                </div>
+                <div class="text-[10px] text-zinc-500 font-bold font-mono">kg</div>
+            </div>
+
+            <!-- 3. Product Output -->
+            <div class="bg-zinc-900/90 border border-zinc-800/80 hover:border-emerald-500/40 rounded-2xl p-3.5 flex flex-col items-center justify-between text-center shadow-lg transition-all group relative overflow-hidden min-h-[96px]">
+                <div class="w-full flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+                    <span>📦</span>
+                    <span>Product Output</span>
+                </div>
+                <div class="font-mono font-black text-base lg:text-lg text-emerald-400 my-0.5">
+                    {{ number_format($historicalData['productOutputKg'] ?? 0, 0, '.', ',') }}
+                </div>
+                <div class="text-[10px] text-zinc-500 font-bold font-mono">kg</div>
+            </div>
+
+            <!-- 4. Weighted Yield -->
+            <div class="bg-zinc-900/90 border border-emerald-500/40 bg-gradient-to-b from-emerald-950/20 to-zinc-900 rounded-2xl p-3.5 flex flex-col items-center justify-between text-center shadow-lg transition-all group relative overflow-hidden min-h-[96px]">
+                <div class="w-full flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
+                    <span>⚡</span>
+                    <span>Weighted Yield</span>
+                </div>
+                <div class="font-mono font-black text-lg lg:text-xl text-emerald-300 my-0.5">
+                    {{ number_format($historicalData['weightedProductYield'] ?? 72.31, 2) }}%
+                </div>
+                <div class="text-[10px] text-emerald-500/80 font-bold">Product Rendemen</div>
+            </div>
+
+            <!-- 5. Bits Stem -->
+            <div class="bg-zinc-900/90 border border-zinc-800/80 hover:border-amber-500/40 rounded-2xl p-3.5 flex flex-col items-center justify-between text-center shadow-lg transition-all group relative overflow-hidden min-h-[96px]">
+                <div class="w-full flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+                    <span>🌿</span>
+                    <span>Bits Stem</span>
+                </div>
+                <div class="font-mono font-black text-base lg:text-lg text-amber-400 my-0.5">
+                    {{ number_format($historicalData['bitsStemPct'] ?? 24.60, 2) }}%
+                </div>
+                <div class="text-[10px] text-zinc-500 font-medium">Gagang</div>
+            </div>
+
+            <!-- 6. Dust -->
+            <div class="bg-zinc-900/90 border border-zinc-800/80 hover:border-cyan-500/40 rounded-2xl p-3.5 flex flex-col items-center justify-between text-center shadow-lg transition-all group relative overflow-hidden min-h-[96px]">
+                <div class="w-full flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+                    <span>💨</span>
+                    <span>Dust</span>
+                </div>
+                <div class="font-mono font-black text-base lg:text-lg text-cyan-400 my-0.5">
+                    {{ number_format($historicalData['dustPct'] ?? 1.78, 2) }}%
+                </div>
+                <div class="text-[10px] text-zinc-500 font-medium">Debu</div>
+            </div>
+
+            <!-- 7. Variance / Waste -->
+            <div class="bg-zinc-900/90 border border-zinc-800/80 hover:border-purple-500/40 rounded-2xl p-3.5 flex flex-col items-center justify-between text-center shadow-lg transition-all group relative overflow-hidden min-h-[96px]">
+                <div class="w-full flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+                    <span>🗑️</span>
+                    <span>Waste</span>
+                </div>
+                <div class="font-mono font-black text-base lg:text-lg text-purple-400 my-0.5">
+                    {{ number_format($historicalData['variancePct'] ?? 1.31, 2) }}%
+                </div>
+                <div class="text-[10px] text-zinc-500 font-medium">Susut Proses</div>
+            </div>
+
+            <!-- 8. Consistency -->
+            <div class="bg-zinc-900/90 border border-zinc-800/80 hover:border-emerald-500/40 rounded-2xl p-3.5 flex flex-col items-center justify-between text-center shadow-lg transition-all group relative overflow-hidden min-h-[96px]">
+                <div class="w-full flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+                    <span>🛡️</span>
+                    <span>Consistency</span>
+                </div>
+                <div class="font-mono font-black text-xs sm:text-sm text-emerald-400 px-2 py-0.5 rounded-lg bg-emerald-950/60 border border-emerald-800/60 my-0.5">
+                    {{ $historicalData['consistency'] ?? 'Moderate' }}
+                </div>
+                <div class="text-[10px] text-zinc-500 font-medium">Mutu Terjaga</div>
             </div>
         </div>
 
@@ -624,6 +807,7 @@ class="space-y-6">
              x-data="historicalYieldChart({
                  labels: @js($historicalData['chartLabels'] ?? []),
                  yieldSeries: @js($historicalData['yieldSeries'] ?? []),
+                 movingAvgSeries: @js($historicalData['movingAvgSeries'] ?? []),
                  stemSeries: @js($historicalData['stemSeries'] ?? []),
                  dustSeries: @js($historicalData['dustSeries'] ?? []),
                  wasteSeries: @js($historicalData['wasteSeries'] ?? []),
@@ -647,7 +831,7 @@ class="space-y-6">
                     </div>
                     <p class="text-xs text-zinc-400 mt-1">
                         <span x-show="selectedMetric === 'all'">Perbandingan 4 output separasi (Product, Bits/Stem, Dust, Waste) per batch</span>
-                        <span x-show="selectedMetric === 'product'">Tren hasil Product Yield per batch dengan garis rata-rata tertimbang & deteksi outlier</span>
+                        <span x-show="selectedMetric === 'product'">Tren hasil Product Yield per batch dengan Moving Average (MA-5), rata-rata tertimbang & deteksi outlier</span>
                         <span x-show="selectedMetric === 'stem'">Tren perolehan Bits & Stem per batch dengan garis rata-rata tertimbang</span>
                         <span x-show="selectedMetric === 'dust'">Tren partikel debu / dust per batch dengan garis rata-rata tertimbang</span>
                         <span x-show="selectedMetric === 'waste'">Tren susut / uncountable waste per batch dengan garis rata-rata tertimbang</span>
@@ -717,10 +901,13 @@ class="space-y-6">
 
                     <!-- When PRODUCT is selected -->
                     <template x-if="selectedMetric === 'product'">
-                        <div class="flex items-center flex-wrap gap-3 sm:gap-5">
-                            <span class="flex items-center text-emerald-400"><span class="w-3 h-3 rounded-full bg-emerald-500 mr-2 shadow-sm shadow-emerald-500/50"></span> Product Yield (%)</span>
-                            <span class="flex items-center text-amber-400"><span class="w-4 h-0.5 border-t-2 border-dashed border-amber-400 mr-2"></span> Weighted Avg ({{ number_format($historicalData['weightedProductYield'] ?? 72.31, 2) }}%)</span>
-                            <span class="flex items-center text-red-400"><span class="w-3 h-3 rounded-full bg-red-500 mr-2 shadow-sm shadow-red-500/50"></span> Outlier (&plusmn;5%)</span>
+                        <div class="flex items-center flex-wrap gap-2.5 sm:gap-4">
+                            <span class="flex items-center text-emerald-400"><span class="w-3 h-3 rounded-full bg-emerald-500 mr-1.5 shadow-sm shadow-emerald-500/50"></span> &ge;70% (Hijau - Optimal)</span>
+                            <span class="flex items-center text-amber-400"><span class="w-3 h-3 rounded-full bg-amber-500 mr-1.5 shadow-sm shadow-amber-500/50"></span> 65-70% (Kuning - Waspada)</span>
+                            <span class="flex items-center text-red-400"><span class="w-3 h-3 rounded-full bg-red-500 mr-1.5 shadow-sm shadow-red-500/50"></span> &lt;65% (Merah - Kritis)</span>
+                            <span class="flex items-center text-sky-400"><span class="w-4 h-0.5 border-t-2 border-solid border-sky-400 mr-1.5"></span> Moving Avg (MA-5)</span>
+                            <span class="flex items-center text-amber-400/90"><span class="w-4 h-0.5 border-t-2 border-dashed border-amber-400 mr-1.5"></span> Weighted Avg ({{ number_format($historicalData['weightedProductYield'] ?? 72.31, 2) }}%)</span>
+                            <span class="flex items-center text-red-400"><span class="w-3 h-3 rounded-full bg-red-500 mr-1.5 shadow-sm shadow-red-500/50"></span> Outlier</span>
                         </div>
                     </template>
 
@@ -820,82 +1007,79 @@ class="space-y-6">
             </div>
         </div>
 
-        <!-- MIDDLE SECTION: OUTPUT COMPOSITION, WEIGHTED YIELD BY ORIGIN, ORIGIN CODE MATRIX -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- MIDDLE SECTION: WEIGHTED YIELD BY ORIGIN & ORIGIN CODE PERFORMANCE (2-COLUMN BALANCED VIEW) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-            <!-- 1. Output Composition Trend (Stacked Bars) -->
-            <div wire:key="composition-chart-{{ md5(json_encode($historicalData['chartLabels'] ?? [])) }}"
-                 x-data="historicalCompositionChart({
-                     labels: @js($historicalData['chartLabels'] ?? []),
-                     prod: @js($historicalData['compProduct'] ?? []),
-                     stem: @js($historicalData['compStem'] ?? []),
-                     dust: @js($historicalData['compDust'] ?? []),
-                     variance: @js($historicalData['compVariance'] ?? []),
-                     batchDetails: @js($historicalData['batchDetails'] ?? [])
-                 })"
-                 x-init="initChart()"
-                 class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
-                
-                <h3 class="text-sm font-black text-zinc-100 uppercase tracking-wide">Output Composition Trend</h3>
-                <div class="relative w-full h-[220px] bg-zinc-950 p-2 rounded-2xl border border-zinc-800">
-                    <canvas x-ref="canvas" class="w-full h-full"></canvas>
-                </div>
-            </div>
-
-            <!-- 2. Weighted Yield by Origin -->
+            <!-- 1. Weighted Yield by Origin -->
             <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-sm font-black text-zinc-100 uppercase tracking-wide">Weighted Yield by Origin</h3>
-                    <span class="text-[10px] font-bold text-zinc-400"># Batches</span>
+                <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                    <div>
+                        <h3 class="text-sm font-black text-zinc-100 uppercase tracking-wide">Weighted Yield by Origin</h3>
+                        <p class="text-xs text-zinc-400 mt-0.5">Rata-rata rendemen per wilayah asal tembakau</p>
+                    </div>
+                    <span class="text-[10px] font-bold text-zinc-400 px-2.5 py-1 rounded-lg bg-zinc-950 border border-zinc-800">Batch Count</span>
                 </div>
 
-                <div class="space-y-3 pt-2">
+                <div class="space-y-3.5 pt-1">
                     @foreach($historicalData['originYieldBars'] ?? [] as $oyb)
-                        <div class="space-y-1">
-                            <div class="flex justify-between text-xs font-bold">
-                                <span class="text-zinc-200">{{ $oyb['origin'] }}</span>
-                                <span class="font-mono text-emerald-400">{{ number_format($oyb['yieldPct'], 2) }}% ({{ $oyb['batchCount'] }})</span>
+                        <div class="space-y-1.5 p-2 rounded-2xl bg-zinc-950/50 border border-zinc-800/60">
+                            <div class="flex justify-between items-center text-xs font-bold">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm shadow-amber-500/50"></span>
+                                    <span class="text-zinc-200 text-sm">{{ $oyb['origin'] }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 font-mono">
+                                    <span class="text-emerald-400 font-black text-sm">{{ number_format($oyb['yieldPct'], 2) }}%</span>
+                                    <span class="text-[11px] text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded-md border border-zinc-800">{{ $oyb['batchCount'] }} batch</span>
+                                </div>
                             </div>
-                            <div class="h-3 w-full bg-zinc-950 rounded-full overflow-hidden border border-zinc-800">
-                                <div style="width: {{ min(100, max(10, $oyb['yieldPct'])) }}%" class="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full"></div>
+                            <div class="h-3 w-full bg-zinc-900 rounded-full overflow-hidden border border-zinc-800/80">
+                                <div style="width: {{ min(100, max(10, $oyb['yieldPct'])) }}%" class="h-full bg-gradient-to-r from-amber-500 via-emerald-500 to-emerald-400 rounded-full transition-all duration-500"></div>
                             </div>
                         </div>
                     @endforeach
                 </div>
             </div>
 
-            <!-- 3. Origin Code Performance Matrix -->
-            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-3">
-                <h3 class="text-sm font-black text-zinc-100 uppercase tracking-wide">Origin Code Performance</h3>
+            <!-- 2. Origin Code Performance Matrix -->
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
+                <div class="border-b border-zinc-800 pb-3">
+                    <h3 class="text-sm font-black text-zinc-100 uppercase tracking-wide">Origin Code Performance</h3>
+                    <p class="text-xs text-zinc-400 mt-0.5">Distribusi hasil separasi per kode spesifik</p>
+                </div>
+
                 <div class="overflow-x-auto">
                     <table class="w-full text-center text-xs font-mono">
                         <thead class="bg-zinc-950 text-zinc-400 font-bold uppercase text-[10px] border-b border-zinc-800">
                             <tr>
-                                <th class="px-2 py-2 text-left">Code</th>
-                                <th class="px-2 py-2">&lt;68%</th>
-                                <th class="px-2 py-2">68-71%</th>
-                                <th class="px-2 py-2">71-74%</th>
-                                <th class="px-2 py-2">74-77%</th>
-                                <th class="px-2 py-2">&ge;77%</th>
-                                <th class="px-2 py-2">Total</th>
+                                <th class="px-3 py-2.5 text-left text-zinc-300">Code</th>
+                                <th class="px-2.5 py-2.5 text-red-400">&lt;68%</th>
+                                <th class="px-2.5 py-2.5 text-amber-400">68-71%</th>
+                                <th class="px-2.5 py-2.5 text-emerald-400">71-74%</th>
+                                <th class="px-2.5 py-2.5 text-emerald-300">74-77%</th>
+                                <th class="px-2.5 py-2.5 text-emerald-200">&ge;77%</th>
+                                <th class="px-3 py-2.5 text-zinc-300">Total</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-zinc-800/60">
                             @foreach($historicalData['codeMatrix'] ?? [] as $cm)
-                                <tr>
-                                    <td class="px-2 py-2 text-left font-bold text-zinc-200">{{ $cm['code'] }}</td>
-                                    <td class="px-2 py-2 bg-red-950/40 text-red-300 font-bold">{{ $cm['c1'] }}</td>
-                                    <td class="px-2 py-2 bg-amber-950/40 text-amber-300 font-bold">{{ $cm['c2'] }}</td>
-                                    <td class="px-2 py-2 bg-emerald-950/40 text-emerald-300 font-bold">{{ $cm['c3'] }}</td>
-                                    <td class="px-2 py-2 bg-emerald-900/60 text-emerald-200 font-bold">{{ $cm['c4'] }}</td>
-                                    <td class="px-2 py-2 bg-emerald-800/80 text-emerald-100 font-bold">{{ $cm['c5'] }}</td>
-                                    <td class="px-2 py-2 font-bold text-zinc-200">{{ $cm['total'] }}</td>
+                                <tr class="hover:bg-zinc-800/30 transition-colors">
+                                    <td class="px-3 py-2.5 text-left font-bold text-cyan-300 bg-zinc-950/40">{{ $cm['code'] }}</td>
+                                    <td class="px-2.5 py-2.5 {{ $cm['c1'] > 0 ? 'bg-red-950/40 text-red-300 font-bold' : 'text-zinc-600' }}">{{ $cm['c1'] }}</td>
+                                    <td class="px-2.5 py-2.5 {{ $cm['c2'] > 0 ? 'bg-amber-950/40 text-amber-300 font-bold' : 'text-zinc-600' }}">{{ $cm['c2'] }}</td>
+                                    <td class="px-2.5 py-2.5 {{ $cm['c3'] > 0 ? 'bg-emerald-950/40 text-emerald-300 font-bold' : 'text-zinc-600' }}">{{ $cm['c3'] }}</td>
+                                    <td class="px-2.5 py-2.5 {{ $cm['c4'] > 0 ? 'bg-emerald-900/60 text-emerald-200 font-bold' : 'text-zinc-600' }}">{{ $cm['c4'] }}</td>
+                                    <td class="px-2.5 py-2.5 {{ $cm['c5'] > 0 ? 'bg-emerald-800/80 text-emerald-100 font-bold' : 'text-zinc-600' }}">{{ $cm['c5'] }}</td>
+                                    <td class="px-3 py-2.5 font-black text-amber-400 bg-zinc-950/40">{{ $cm['total'] }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
-                <div class="text-[10px] text-zinc-500">⚠️ Interpret carefully when fewer than 3 batches.</div>
+                <div class="text-[10px] text-zinc-500 flex items-center gap-1.5 pt-1">
+                    <span>ℹ️</span>
+                    <span>Interpretasi akurat optimal ketika sampel data &ge; 3 batch per origin code.</span>
+                </div>
             </div>
         </div>
 
@@ -971,7 +1155,77 @@ class="space-y-6">
     </div>
 
     <!-- ========================================================================= -->
-    <!-- HALAMAN 3: PRIVATE YIELD COST CALCULATOR (CLIENT-SIDE ONLY) -->
+    <!-- HALAMAN 3: CERTIFICATES & DOWNLOADS -->
+    <!-- ========================================================================= -->
+    <div x-show="activeTab === 'certificates'" class="space-y-6">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
+            <div class="border-b border-zinc-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                    <h3 class="text-base font-black text-amber-400 uppercase tracking-wide">Daftar Sertifikat Produk Resmi (ACC Supervisor)</h3>
+                    <p class="text-xs text-zinc-400">Pilih 'Preview Certificate' untuk melihat dokumen pratinjau sebelum mengunduh file sertifikat resmi PDF</p>
+                </div>
+                <span class="text-xs font-mono font-bold text-zinc-400">Total: {{ $approvedBatches->total() }} Sertifikat</span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-zinc-300">
+                    <thead class="bg-zinc-950 text-zinc-400 font-bold uppercase border-b border-zinc-800">
+                        <tr>
+                            <th class="px-4 py-3">Kode Batch</th>
+                            <th class="px-4 py-3">Pelanggan</th>
+                            <th class="px-4 py-3">Nomor Surat Jalan (DN)</th>
+                            <th class="px-4 py-3">Jenis Produk & Asal</th>
+                            <th class="px-4 py-3 text-right">Produk Jadi (kg)</th>
+                            <th class="px-4 py-3 text-right">Yield (%)</th>
+                            <th class="px-4 py-3 text-center">Tanggal Disetujui</th>
+                            <th class="px-4 py-3 text-center">Aksi / Dokumen</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-zinc-800/80">
+                        @forelse($approvedBatches as $b)
+                            <tr class="hover:bg-zinc-800/40 transition-colors">
+                                <td class="px-4 py-3.5 font-mono font-bold text-amber-400">{{ $b->batch_code }}</td>
+                                <td class="px-4 py-3.5 font-bold text-zinc-100">{{ $b->customer->name ?? '-' }}</td>
+                                <td class="px-4 py-3.5 font-mono text-zinc-400">{{ $b->deliveryNote->dn_number ?? '-' }}</td>
+                                <td class="px-4 py-3.5">
+                                    <span class="font-bold text-zinc-200 block">{{ $b->productType->name ?? '-' }}</span>
+                                    <span class="text-[10px] text-amber-400 font-semibold">{{ $b->origin->region_name ?? '-' }}</span>
+                                </td>
+                                <td class="px-4 py-3.5 text-right font-mono font-bold text-emerald-400 text-sm">
+                                    {{ number_format($b->separation_product_kg, 2, ',', '.') }} kg
+                                </td>
+                                <td class="px-4 py-3.5 text-right font-mono font-bold text-emerald-300">
+                                    {{ number_format($b->yield_product_pct, 2, ',', '.') }}%
+                                </td>
+                                <td class="px-4 py-3.5 text-center font-mono text-zinc-400">
+                                    {{ $b->supervisor_approved_at ? $b->supervisor_approved_at->format('d/m/Y H:i') : '-' }}
+                                </td>
+                                <td class="px-4 py-3.5 text-center whitespace-nowrap space-x-2">
+                                    <button wire:click="openPreviewModal({{ $b->id }})" class="px-3.5 py-2 min-h-[38px] inline-flex items-center text-xs font-black rounded-xl bg-amber-950 text-amber-300 border border-amber-800 hover:bg-amber-900 shadow">
+                                        👁️ Preview
+                                    </button>
+                                    <a href="{{ route('certificate.pdf', $b->id) }}" target="_blank" class="px-3.5 py-2 min-h-[38px] inline-flex items-center text-xs font-black rounded-xl bg-emerald-950 text-emerald-300 border border-emerald-800 hover:bg-emerald-900 shadow">
+                                        📥 Download PDF
+                                    </a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="8" class="px-4 py-8 text-center text-zinc-500">Belum ada Sertifikat Produk yang disetujui.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pt-3 border-t border-zinc-800/80">
+                {{ $approvedBatches->links() }}
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- HALAMAN 4: PRIVATE YIELD COST CALCULATOR (CLIENT-SIDE ONLY) -->
     <!-- ========================================================================= -->
     <div x-show="activeTab === 'yield_calculator'"
          x-data="privateYieldCostCalculator({
@@ -1262,71 +1516,169 @@ class="space-y-6">
     </div>
 
     <!-- ========================================================================= -->
-    <!-- HALAMAN 4: CERTIFICATES & DOWNLOADS -->
+    <!-- HALAMAN 5: SURAT JALAN PENGIRIMAN (DN SHIPMENT & CUSTOMER APPROVAL) -->
     <!-- ========================================================================= -->
-    <div x-show="activeTab === 'certificates'" class="space-y-6">
-        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
-            <div class="border-b border-zinc-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                    <h3 class="text-base font-black text-amber-400 uppercase tracking-wide">Daftar Sertifikat Produk Resmi (ACC Supervisor)</h3>
-                    <p class="text-xs text-zinc-400">Pilih 'Preview Certificate' untuk melihat dokumen pratinjau sebelum mengunduh file sertifikat resmi PDF</p>
-                </div>
-                <span class="text-xs font-mono font-bold text-zinc-400">Total: {{ $approvedBatches->total() }} Sertifikat</span>
+    <div x-show="activeTab === 'dn_shipments'" class="space-y-6">
+
+        <!-- HEADER & STATUS SUMMARY -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h2 class="text-2xl font-black text-zinc-100 tracking-wide">Surat Jalan Pengiriman (DN Shipment)</h2>
+                <p class="text-xs text-zinc-400 mt-1">Daftar surat jalan resmi pengiriman tembakau jadi. Lakukan verifikasi dan persetujuan (Approval) penerimaan barang di sini.</p>
             </div>
 
+            <div class="flex items-center gap-2">
+                @if($pendingShipmentsCount > 0)
+                    <span class="px-3 py-1.5 rounded-xl bg-amber-950/80 border border-amber-500/50 text-amber-300 font-bold text-xs flex items-center gap-1.5 animate-pulse">
+                        <span>⏳ {{ $pendingShipmentsCount }} Menunggu Persetujuan</span>
+                    </span>
+                @else
+                    <span class="px-3 py-1.5 rounded-xl bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 font-bold text-xs flex items-center gap-1.5">
+                        <span>✅ Semua Surat Jalan Disetujui</span>
+                    </span>
+                @endif
+            </div>
+        </div>
+
+        <!-- 3 SUMMARY KPI CARDS -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 shadow-xl flex items-center justify-between">
+                <div>
+                    <div class="text-[10px] font-black uppercase tracking-wider text-zinc-400">Total Surat Jalan</div>
+                    <div class="text-2xl font-black text-zinc-100 mt-1">{{ $customerShipments->count() }} Dokumen</div>
+                    <div class="text-[11px] text-zinc-500 mt-0.5">Pengiriman terdaftar untuk customer ini</div>
+                </div>
+                <div class="w-12 h-12 rounded-2xl bg-zinc-800 flex items-center justify-center text-xl">📦</div>
+            </div>
+
+            <div class="bg-zinc-900 border border-amber-500/30 rounded-3xl p-5 shadow-xl flex items-center justify-between">
+                <div>
+                    <div class="text-[10px] font-black uppercase tracking-wider text-amber-400">Menunggu Approval (Shipped)</div>
+                    <div class="text-2xl font-black text-amber-400 mt-1">{{ $pendingShipmentsCount }} Pengiriman</div>
+                    <div class="text-[11px] text-amber-500/80 mt-0.5">Perlu konfirmasi persetujuan</div>
+                </div>
+                <div class="w-12 h-12 rounded-2xl bg-amber-950/50 border border-amber-800/80 flex items-center justify-center text-xl">⏳</div>
+            </div>
+
+            <div class="bg-zinc-900 border border-emerald-500/30 rounded-3xl p-5 shadow-xl flex items-center justify-between">
+                <div>
+                    <div class="text-[10px] font-black uppercase tracking-wider text-emerald-400">Disetujui (Approved)</div>
+                    <div class="text-2xl font-black text-emerald-400 mt-1">{{ $approvedShipmentsCount }} Selesai</div>
+                    <div class="text-[11px] text-emerald-500/80 mt-0.5">Telah diterima & di-ACC customer</div>
+                </div>
+                <div class="w-12 h-12 rounded-2xl bg-emerald-950/50 border border-emerald-800/80 flex items-center justify-center text-xl">✅</div>
+            </div>
+        </div>
+
+        <!-- SEARCH & FILTER BAR -->
+        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-4 sm:p-5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div class="flex-1 relative">
+                <input type="text" wire:model.live.debounce.300ms="dnSearch" placeholder="Cari No. DN, Driver, Plat Kendaraan, Origin..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-500 text-xs focus:border-amber-500 outline-none">
+                <svg class="w-4 h-4 text-zinc-500 absolute left-3.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <select wire:model.live="dnStatusFilter" class="px-3 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-amber-500 outline-none">
+                    <option value="">Semua Status</option>
+                    <option value="Shipped">Menunggu Persetujuan (Shipped)</option>
+                    <option value="Approved">Disetujui (Approved)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- SHIPMENTS DATA TABLE -->
+        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-xl">
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs text-zinc-300">
-                    <thead class="bg-zinc-950 text-zinc-400 font-bold uppercase border-b border-zinc-800">
+                    <thead class="bg-zinc-950 text-zinc-400 font-black uppercase text-[10px] tracking-wider border-b border-zinc-800">
                         <tr>
-                            <th class="px-4 py-3">Kode Batch</th>
-                            <th class="px-4 py-3">Pelanggan</th>
-                            <th class="px-4 py-3">Nomor Surat Jalan (DN)</th>
-                            <th class="px-4 py-3">Jenis Produk & Asal</th>
-                            <th class="px-4 py-3 text-right">Produk Jadi (kg)</th>
-                            <th class="px-4 py-3 text-right">Yield (%)</th>
-                            <th class="px-4 py-3 text-center">Tanggal Disetujui</th>
-                            <th class="px-4 py-3 text-center">Aksi / Dokumen</th>
+                            <th class="px-4 py-3.5">No. Surat Jalan</th>
+                            <th class="px-4 py-3.5">Tanggal Kirim</th>
+                            <th class="px-4 py-3.5">Kendaraan & Sopir</th>
+                            <th class="px-4 py-3.5">Rincian Lot / Origin</th>
+                            <th class="px-4 py-3.5 text-right">Total Karung</th>
+                            <th class="px-4 py-3.5 text-right">Netto (kg)</th>
+                            <th class="px-4 py-3.5 text-center">Status</th>
+                            <th class="px-4 py-3.5 text-center">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-zinc-800/80">
-                        @forelse($approvedBatches as $b)
+                    <tbody class="divide-y divide-zinc-800/60 font-sans">
+                        @forelse($customerShipments as $s)
                             <tr class="hover:bg-zinc-800/40 transition-colors">
-                                <td class="px-4 py-3.5 font-mono font-bold text-amber-400">{{ $b->batch_code }}</td>
-                                <td class="px-4 py-3.5 font-bold text-zinc-100">{{ $b->customer->name ?? '-' }}</td>
-                                <td class="px-4 py-3.5 font-mono text-zinc-400">{{ $b->deliveryNote->dn_number ?? '-' }}</td>
+                                <td class="px-4 py-3.5 font-mono font-black text-amber-400">
+                                    {{ $s->dn_number }}
+                                </td>
+                                <td class="px-4 py-3.5 text-zinc-300 font-mono">
+                                    {{ $s->shipment_date ? $s->shipment_date->format('d M Y') : '-' }}
+                                </td>
+                                <td class="px-4 py-3.5 text-zinc-300">
+                                    <div class="font-bold text-zinc-200">{{ $s->vehicle_number ?: '-' }}</div>
+                                    <div class="text-[11px] text-zinc-400">{{ $s->driver_name ?: '-' }}</div>
+                                </td>
                                 <td class="px-4 py-3.5">
-                                    <span class="font-bold text-zinc-200 block">{{ $b->productType->name ?? '-' }}</span>
-                                    <span class="text-[10px] text-amber-400 font-semibold">{{ $b->origin->region_name ?? '-' }}</span>
+                                    <div class="space-y-1">
+                                        @foreach($s->items as $it)
+                                            <div class="flex items-center gap-1.5 text-[11px]">
+                                                <span class="px-1.5 py-0.5 rounded bg-zinc-800 text-amber-300 font-bold">#{{ $it->item_no }}</span>
+                                                <span class="px-1.5 py-0.2 rounded text-[9px] font-bold {{ ($it->material_type ?? 'Product') === 'Product' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800/80' : (($it->material_type ?? '') === 'Bits / Stem' ? 'bg-amber-950 text-amber-300 border border-amber-800/80' : 'bg-zinc-800 text-cyan-300 border border-zinc-700') }}">
+                                                    {{ ($it->material_type ?? 'Product') === 'Product' ? '🍃 Produk' : (($it->material_type ?? '') === 'Bits / Stem' ? '🌿 Bits/Stem' : '💨 Dust') }}
+                                                </span>
+                                                <span class="font-bold text-zinc-200">{{ $it->origin }}</span>
+                                                <span class="text-cyan-400 font-mono">({{ $it->origin_code }})</span>
+                                                <span class="text-zinc-400 font-mono">• {{ $it->total_sacks }} Krg ({{ number_format($it->total_netto_kg, 2) }} kg)</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
                                 </td>
-                                <td class="px-4 py-3.5 text-right font-mono font-bold text-emerald-400 text-sm">
-                                    {{ number_format($b->separation_product_kg, 2, ',', '.') }} kg
+                                <td class="px-4 py-3.5 text-right font-mono font-bold text-zinc-200">
+                                    {{ $s->total_sacks }} Krg
                                 </td>
-                                <td class="px-4 py-3.5 text-right font-mono font-bold text-emerald-300">
-                                    {{ number_format($b->yield_product_pct, 2, ',', '.') }}%
+                                <td class="px-4 py-3.5 text-right font-mono font-bold text-emerald-400">
+                                    {{ number_format($s->total_netto_kg, 2, ',', '.') }} kg
                                 </td>
-                                <td class="px-4 py-3.5 text-center font-mono text-zinc-400">
-                                    {{ $b->supervisor_approved_at ? $b->supervisor_approved_at->format('d/m/Y H:i') : '-' }}
+                                <td class="px-4 py-3.5 text-center">
+                                    @if($s->isApprovedByCustomer())
+                                        <div class="inline-flex flex-col items-center">
+                                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-950 text-emerald-300 border border-emerald-600/80 shadow">
+                                                ✅ Approved
+                                            </span>
+                                            @if($s->customer_approved_at)
+                                                <span class="text-[9px] text-zinc-400 font-mono mt-0.5">{{ $s->customer_approved_at->format('d/m/y H:i') }}</span>
+                                            @endif
+                                        </div>
+                                    @else
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-950 text-amber-300 border border-amber-600/80 shadow">
+                                            🚚 Shipped
+                                        </span>
+                                    @endif
                                 </td>
-                                <td class="px-4 py-3.5 text-center whitespace-nowrap space-x-2">
-                                    <button wire:click="openPreviewModal({{ $b->id }})" class="px-3.5 py-2 min-h-[38px] inline-flex items-center text-xs font-black rounded-xl bg-amber-950 text-amber-300 border border-amber-800 hover:bg-amber-900 shadow">
-                                        👁️ Preview
-                                    </button>
-                                    <a href="{{ route('certificate.pdf', $b->id) }}" target="_blank" class="px-3.5 py-2 min-h-[38px] inline-flex items-center text-xs font-black rounded-xl bg-emerald-950 text-emerald-300 border border-emerald-800 hover:bg-emerald-900 shadow">
-                                        📥 Download PDF
-                                    </a>
+                                <td class="px-4 py-3.5 text-center">
+                                    <div class="flex items-center justify-center gap-1.5">
+                                        <button wire:click="openShipmentPreview({{ $s->id }})" class="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white transition-all text-xs font-bold flex items-center gap-1" title="Lihat PDF Surat Jalan">
+                                            <span>📄 PDF</span>
+                                        </button>
+
+                                        @if(! $s->isApprovedByCustomer())
+                                            <button wire:click="openApprovalModal({{ $s->id }})" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-all text-xs font-black flex items-center gap-1 shadow-lg shadow-emerald-900/40" title="Setujui dan Terima Surat Jalan">
+                                                <span>✅ Setujui</span>
+                                            </button>
+                                        @else
+                                            <span class="px-2 py-1 rounded-xl bg-emerald-950/60 border border-emerald-800/80 text-emerald-400 text-[10px] font-bold">
+                                                ✓ Terverifikasi
+                                            </span>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-4 py-8 text-center text-zinc-500">Belum ada Sertifikat Produk yang disetujui.</td>
+                                <td colspan="8" class="px-4 py-12 text-center text-zinc-500 text-xs">
+                                    Tidak ada dokumen surat jalan pengiriman ditemukan.
+                                </td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
-            </div>
-
-            <div class="pt-3 border-t border-zinc-800/80">
-                {{ $approvedBatches->links() }}
             </div>
         </div>
     </div>
@@ -1353,9 +1705,11 @@ class="space-y-6">
                 <button @click="showPreviewModal = false" class="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 text-lg">&times;</button>
             </div>
 
-            <div class="flex-1 p-4 overflow-y-auto bg-zinc-950/60">
+            <div class="flex-1 p-3 sm:p-5 overflow-y-auto bg-zinc-950/80 flex justify-center items-start">
                 @if($previewBatchId)
-                    <iframe src="{{ route('certificate.show', $previewBatchId) }}" class="w-full h-[600px] rounded-2xl border border-zinc-800 shadow-inner"></iframe>
+                    <div class="w-full bg-white rounded-2xl overflow-hidden shadow-2xl border border-zinc-700">
+                        <iframe src="{{ route('certificate.show', $previewBatchId) }}" class="w-full h-[650px] bg-white border-0"></iframe>
+                    </div>
                 @else
                     <div class="h-64 flex items-center justify-center text-zinc-500 text-xs">Memuat dokumen sertifikat...</div>
                 @endif
@@ -1371,6 +1725,95 @@ class="space-y-6">
             </div>
         </div>
     </div>
+
+    <!-- ========================================================================= -->
+    <!-- PREVIEW DN SHIPMENT MODAL (CUSTOMER PORTAL) -->
+    <!-- ========================================================================= -->
+    @if($showShipmentPreviewModal && $previewShipmentId)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div class="bg-zinc-900 border border-zinc-700 rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+                <div class="p-4 sm:p-5 border-b border-zinc-800 flex items-center justify-between bg-zinc-950">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xl">🚚</span>
+                        <h3 class="text-base font-black text-amber-400">Pratinjau Surat Jalan Pengiriman (DN Shipment)</h3>
+                    </div>
+                    <button wire:click="closeShipmentPreview" class="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 text-lg">&times;</button>
+                </div>
+
+                <div class="flex-1 p-3 sm:p-5 overflow-y-auto bg-zinc-950/80 flex justify-center items-start">
+                    <div class="w-full bg-white rounded-2xl overflow-hidden shadow-2xl border border-zinc-700">
+                        <iframe src="{{ route('dn-shipments.preview', $previewShipmentId) }}" class="w-full h-[650px] bg-white border-0"></iframe>
+                    </div>
+                </div>
+
+                <div class="p-4 border-t border-zinc-800 bg-zinc-950 flex items-center justify-between">
+                    <button wire:click="closeShipmentPreview" class="px-4 py-2.5 rounded-xl bg-zinc-800 text-zinc-300 font-bold text-xs">Tutup</button>
+                    <div class="flex items-center gap-2">
+                        <a href="{{ route('dn-shipments.pdf', $previewShipmentId) }}" target="_blank" class="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs flex items-center shadow-lg shadow-amber-900/30">
+                            📥 Download PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- ========================================================================= -->
+    <!-- CUSTOMER APPROVAL CONFIRMATION MODAL -->
+    <!-- ========================================================================= -->
+    @if($showApprovalModal && $approvingShipmentId)
+        @php
+            $targetShipment = ($customerShipments ? $customerShipments->firstWhere('id', $approvingShipmentId) : null) ?? \App\Models\DnShipment::find($approvingShipmentId);
+        @endphp
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div class="bg-zinc-900 border border-emerald-500/50 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
+                <div class="p-5 border-b border-zinc-800 bg-zinc-950 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xl">✅</span>
+                        <h3 class="text-base font-black text-emerald-400">Konfirmasi Persetujuan Surat Jalan</h3>
+                    </div>
+                    <button wire:click="closeApprovalModal" class="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800">&times;</button>
+                </div>
+
+                <div class="p-5 space-y-4 text-xs text-zinc-300">
+                    <div class="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-zinc-400">No. Surat Jalan:</span>
+                            <span class="font-mono font-bold text-amber-400">{{ $targetShipment->dn_number ?? '-' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-zinc-400">Tanggal Kirim:</span>
+                            <span class="text-zinc-200">{{ $targetShipment->shipment_date ? $targetShipment->shipment_date->format('d F Y') : '-' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-zinc-400">Total Kemasan:</span>
+                            <span class="font-bold text-zinc-100">{{ $targetShipment->total_sacks ?? 0 }} Karung</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-zinc-400">Total Berat Netto:</span>
+                            <span class="font-bold text-emerald-400">{{ number_format($targetShipment->total_netto_kg ?? 0, 2, ',', '.') }} kg</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase text-zinc-400 mb-1.5">Catatan Persetujuan / Bukti Terima (Opsional)</label>
+                        <textarea wire:model="approvalNote" rows="3" class="w-full p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-emerald-500 outline-none placeholder-zinc-600" placeholder="Contoh: Barang telah diterima lengkap & sesuai standar timbangan."></textarea>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-emerald-950/40 border border-emerald-800/80 text-[11px] text-emerald-300">
+                        🛡️ Dengan menyetujui, status surat jalan akan berubah menjadi <strong>Approved (Disetujui)</strong> dan tercatat pada sistem pabrik & admin secara permanen.
+                    </div>
+                </div>
+
+                <div class="p-4 border-t border-zinc-800 bg-zinc-950 flex items-center justify-end gap-3">
+                    <button wire:click="closeApprovalModal" class="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold text-xs transition-all">Batal</button>
+                    <button wire:click="approveShipment({{ $approvingShipmentId }})" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs transition-all shadow-lg shadow-emerald-900/40">
+                        ✓ Setujui & Terima Pengiriman
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
 
 </div>
 
@@ -1480,31 +1923,64 @@ function historicalYieldChart(data) {
                 stepSize = 10;
             } else if (this.selectedMetric === 'product') {
                 const values = prodSeries.filter(v => v !== null && v !== undefined && !isNaN(v));
-                const minVal = values.length > 0 ? Math.min(...values, avgProd) : 0;
-                const maxVal = values.length > 0 ? Math.max(...values, avgProd) : 100;
+                const minVal = values.length > 0 ? Math.min(...values, avgProd, 65) : 60;
+                const maxVal = values.length > 0 ? Math.max(...values, avgProd, 70) : 100;
                 const hasZero = values.some(v => v <= 5);
 
-                yMin = hasZero ? 0 : Math.max(0, Math.floor((minVal - 10) / 10) * 10);
+                yMin = hasZero ? 0 : Math.max(0, Math.floor((minVal - 8) / 10) * 10);
                 yMax = Math.min(100, Math.ceil((maxVal + 8) / 10) * 10);
                 if (maxVal > 85 || yMax < 100) yMax = 100;
                 if (yMin >= yMax) { yMin = 0; yMax = 100; }
                 stepSize = 10;
 
                 const avgArray = new Array(labels.length).fill(avgProd);
+                const movingAvgData = data.movingAvgSeries || [];
+                const line70 = new Array(labels.length).fill(70);
+                const line65 = new Array(labels.length).fill(65);
+
+                // Dynamic point coloring per threshold:
+                // >= 70% -> Hijau (#10b981)
+                // 65% - 70% -> Kuning (#f59e0b)
+                // < 65% -> Merah (#ef4444)
+                const pointColors = prodSeries.map(val => {
+                    if (val === null || val === undefined || isNaN(val)) return '#10b981';
+                    if (val >= 70) return '#10b981';
+                    if (val >= 65) return '#f59e0b';
+                    return '#ef4444';
+                });
+                const pointBorders = prodSeries.map(val => {
+                    if (val === null || val === undefined || isNaN(val)) return '#064e3b';
+                    if (val >= 70) return '#064e3b';
+                    if (val >= 65) return '#78350f';
+                    return '#7f1d1d';
+                });
 
                 datasets = [
                     {
                         label: 'Product Yield (%)',
                         data: prodSeries,
                         borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                        pointBackgroundColor: '#10b981',
-                        pointBorderColor: '#064e3b',
-                        pointRadius: 5,
-                        pointHoverRadius: 8,
+                        backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                        pointBackgroundColor: pointColors,
+                        pointBorderColor: pointBorders,
+                        pointRadius: 6,
+                        pointHoverRadius: 9,
                         tension: 0.25,
                         borderWidth: 3,
                         fill: true
+                    },
+                    {
+                        label: '5-Batch Moving Avg (MA-5)',
+                        data: movingAvgData,
+                        borderColor: '#38bdf8',
+                        backgroundColor: 'transparent',
+                        pointBackgroundColor: '#38bdf8',
+                        pointBorderColor: '#0369a1',
+                        pointRadius: 3,
+                        pointHoverRadius: 6,
+                        tension: 0.35,
+                        borderWidth: 2.5,
+                        fill: false
                     },
                     {
                         label: 'Weighted Average (' + avgProd.toFixed(2) + '%)',
@@ -1516,14 +1992,32 @@ function historicalYieldChart(data) {
                         borderWidth: 2.5
                     },
                     {
+                        label: 'Batas Optimal (≥70%)',
+                        data: line70,
+                        borderColor: 'rgba(16, 185, 129, 0.7)',
+                        borderDash: [5, 5],
+                        borderWidth: 1.5,
+                        pointRadius: 0,
+                        fill: false
+                    },
+                    {
+                        label: 'Batas Minimum (65%)',
+                        data: line65,
+                        borderColor: 'rgba(245, 158, 11, 0.7)',
+                        borderDash: [5, 5],
+                        borderWidth: 1.5,
+                        pointRadius: 0,
+                        fill: false
+                    },
+                    {
                         label: 'Outlier',
                         data: data.outlierPoints || [],
                         borderColor: '#ffffff',
                         borderWidth: 2,
                         backgroundColor: '#ef4444',
                         pointBackgroundColor: '#ef4444',
-                        pointRadius: 7,
-                        pointHoverRadius: 10,
+                        pointRadius: 8,
+                        pointHoverRadius: 11,
                         pointStyle: 'circle',
                         showLine: false
                     }
@@ -1634,12 +2128,49 @@ function historicalYieldChart(data) {
                 ];
             }
 
+            const selectedMetricMode = this.selectedMetric;
+
+            const thresholdZonesPlugin = {
+                id: 'thresholdZones',
+                beforeDraw(chart) {
+                    if (selectedMetricMode !== 'product') return;
+                    const { ctx, chartArea, scales: { y } } = chart;
+                    if (!chartArea || !y) return;
+                    const { left, top, right, bottom } = chartArea;
+                    
+                    ctx.save();
+                    
+                    // Zone 1: Hijau (>= 70%)
+                    const y70 = y.getPixelForValue(70);
+                    if (y70 >= top) {
+                        ctx.fillStyle = 'rgba(16, 185, 129, 0.04)';
+                        ctx.fillRect(left, top, right - left, Math.max(0, y70 - top));
+                    }
+
+                    // Zone 2: Kuning (65% - 70%)
+                    const y65 = y.getPixelForValue(65);
+                    if (y65 > y70) {
+                        ctx.fillStyle = 'rgba(245, 158, 11, 0.045)';
+                        ctx.fillRect(left, y70, right - left, y65 - y70);
+                    }
+
+                    // Zone 3: Merah (< 65%)
+                    if (bottom > y65) {
+                        ctx.fillStyle = 'rgba(239, 68, 68, 0.05)';
+                        ctx.fillRect(left, y65, right - left, bottom - y65);
+                    }
+
+                    ctx.restore();
+                }
+            };
+
             this.chart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: datasets
                 },
+                plugins: [thresholdZonesPlugin],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
@@ -1706,17 +2237,25 @@ function historicalYieldChart(data) {
                                 beforeBody: function(context) {
                                     const idx = context[0].dataIndex;
                                     const detail = (data.batchDetails && data.batchDetails[idx]) ? data.batchDetails[idx] : null;
+                                    const lines = [];
                                     if (detail) {
-                                        const lines = [
-                                            `📍 Origin: ${detail.origin}`,
-                                            `🏷️ Origin Code: ${detail.originCode}`
-                                        ];
+                                        lines.push(`📍 Origin: ${detail.origin}`);
+                                        lines.push(`🏷️ Origin Code: ${detail.originCode}`);
                                         if (detail.date && detail.date !== '-') {
                                             lines.push(`📅 Tanggal: ${detail.date}`);
                                         }
-                                        return lines;
+                                        if (detail.yieldPct !== undefined) {
+                                            const yVal = parseFloat(detail.yieldPct);
+                                            if (yVal >= 70) {
+                                                lines.push(`🟢 Status: Optimal (≥70%)`);
+                                            } else if (yVal >= 65) {
+                                                lines.push(`🟡 Status: Waspada (65-70%)`);
+                                            } else {
+                                                lines.push(`🔴 Status: Di Bawah Standar (<65%)`);
+                                            }
+                                        }
                                     }
-                                    return [];
+                                    return lines;
                                 },
                                 label: function(context) {
                                     let label = context.dataset.label || '';

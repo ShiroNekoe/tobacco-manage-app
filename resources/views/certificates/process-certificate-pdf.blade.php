@@ -5,37 +5,64 @@
     <title>PROCESS CERTIFICATE - {{ $batch->batch_code }}</title>
     <style>
         @page { size: A4 portrait; margin: 12mm 10mm 12mm 10mm; }
-        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #000; font-size: 8.5pt; line-height: 1.25; }
+        * { box-sizing: border-box; }
+        html, body { 
+            background-color: #ffffff !important; 
+            background: #ffffff !important; 
+            color: #000000 !important; 
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+            font-size: 8.5pt; 
+            line-height: 1.25; 
+            margin: 0;
+            padding: 0;
+        }
         
-        .header-title { font-size: 15pt; font-weight: bold; text-align: center; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px; text-decoration: underline; }
+        .header-title { font-size: 15pt; font-weight: bold; text-align: center; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px; text-decoration: underline; color: #000000; }
         
-        .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 9pt; }
-        .meta-table td { padding: 2px 0; }
-        .meta-table td.label { font-weight: bold; width: 100px; }
+        .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 9pt; color: #000000; }
+        .meta-table td { padding: 2px 0; color: #000000; }
+        .meta-table td.label { font-weight: bold; width: 100px; color: #000000; }
         
-        .section-header { font-size: 9.5pt; font-weight: bold; text-transform: uppercase; margin-top: 14px; margin-bottom: 4px; text-decoration: underline; }
-        .material-title { font-size: 9pt; font-weight: bold; margin-top: 10px; margin-bottom: 4px; text-decoration: underline; }
+        .section-header { font-size: 9.5pt; font-weight: bold; text-transform: uppercase; margin-top: 14px; margin-bottom: 4px; text-decoration: underline; color: #000000; }
+        .material-title { font-size: 9pt; font-weight: bold; margin-top: 10px; margin-bottom: 4px; text-decoration: underline; color: #000000; }
         
-        table.pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 4px; font-size: 8pt; }
-        table.pdf-table th, table.pdf-table td { border: 1px solid #000; padding: 3px 4px; text-align: center; }
-        table.pdf-table th { background-color: #ffffff; font-weight: bold; text-transform: uppercase; font-size: 7.5pt; border-bottom: 2px solid #000; }
+        table.pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 4px; font-size: 8pt; background-color: #ffffff; color: #000000; }
+        table.pdf-table th, table.pdf-table td { border: 1px solid #000; padding: 3px 4px; text-align: center; color: #000000; background-color: #ffffff; }
+        table.pdf-table th { background-color: #ffffff; font-weight: bold; text-transform: uppercase; font-size: 7.5pt; border-bottom: 2px solid #000; color: #000000; }
         table.pdf-table td.text-left { text-align: left; }
         table.pdf-table td.text-right { text-align: right; }
         
-        .remarks-box { font-size: 7.5pt; color: red; font-style: italic; margin-bottom: 12px; }
-        .remarks-box strong { color: red; font-style: normal; text-decoration: underline; }
+        .remarks-box { font-size: 7.5pt; color: #dc2626; font-style: italic; margin-bottom: 12px; }
+        .remarks-box strong { color: #dc2626; font-style: normal; text-decoration: underline; }
         .remarks-box ol { margin: 1px 0 0 14px; padding: 0; }
         .remarks-box li { margin-bottom: 0px; }
 
         .custom-remark-text { font-style: italic; margin-top: 2px; font-weight: bold; color: #15803d; }
-        .grand-total-row td { font-weight: bold; background-color: #ffffff; border-top: 2px solid #000; border-bottom: 2px solid #000; }
+        .grand-total-row td { font-weight: bold; background-color: #ffffff; border-top: 2px solid #000; border-bottom: 2px solid #000; color: #000000; }
         
         .sig-container { width: 100%; margin-top: 20px; page-break-inside: avoid; clear: both; }
         .sig-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
-        .sig-table td { width: 50%; text-align: center; vertical-align: top; font-size: 8.5pt; border: none !important; padding: 0 15px; }
+        .sig-table td { width: 50%; text-align: center; vertical-align: top; font-size: 8.5pt; border: none !important; padding: 0 15px; color: #000000; }
         .sig-space { height: 45px; }
-        .sig-name { font-weight: bold; text-decoration: underline; font-size: 8.5pt; }
+        .sig-name { font-weight: bold; text-decoration: underline; font-size: 8.5pt; color: #000000; }
         .sig-title { font-size: 7.5pt; color: #444; margin-top: 2px; }
+
+        @media screen {
+            html {
+                background-color: #27272a !important;
+                padding: 16px 8px;
+            }
+            body {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                max-width: 210mm;
+                min-height: 297mm;
+                margin: 0 auto !important;
+                padding: 14mm 12mm !important;
+                box-shadow: 0 10px 35px rgba(0, 0, 0, 0.5);
+                border-radius: 4px;
+            }
+        }
     </style>
 </head>
 <body>

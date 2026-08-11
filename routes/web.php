@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\CertificateController;
+use App\Http\Controllers\DnShipmentController;
 use App\Livewire\Admin\AdminTracking;
 use App\Livewire\Admin\BatchManagement;
+use App\Livewire\Admin\DnShipmentManagement;
 use App\Livewire\Admin\MasterDataManagement;
 use App\Livewire\Admin\UserManagement;
 use App\Livewire\Auth\Login;
@@ -45,6 +47,7 @@ Route::middleware(['auth'])->group(function () {
     // 2. Admin & Supervisor Management Routes
     Route::middleware(['role:admin,supervisor'])->group(function () {
         Route::get('/admin/batches', BatchManagement::class)->name('admin.batches');
+        Route::get('/admin/dn-shipments', DnShipmentManagement::class)->name('admin.dn-shipments');
         Route::get('/admin/tracking', AdminTracking::class)->name('admin.tracking');
         Route::get('/admin/master-data', MasterDataManagement::class)->name('admin.master-data');
     });
@@ -72,4 +75,8 @@ Route::middleware(['auth'])->group(function () {
     // Process Certificate View & PDF Download Routes (Supervisor Approval Gated for Customer)
     Route::get('/certificate/{batch}', [CertificateController::class, 'show'])->name('certificate.show');
     Route::get('/certificate/{batch}/pdf', [CertificateController::class, 'downloadPdf'])->name('certificate.pdf');
+
+    // DN Shipment View & PDF Download Routes
+    Route::get('/admin/dn-shipments/{shipment}/preview', [DnShipmentController::class, 'show'])->name('dn-shipments.preview');
+    Route::get('/admin/dn-shipments/{shipment}/pdf', [DnShipmentController::class, 'downloadPdf'])->name('dn-shipments.pdf');
 });

@@ -3,6 +3,7 @@
 namespace App\Livewire\Customer;
 
 use App\Models\Batch;
+use App\Models\DnShipment;
 use App\Models\Origin;
 use App\Models\ProductType;
 use Carbon\Carbon;
@@ -15,7 +16,7 @@ class CustomerDashboard extends Component
     use WithPagination;
 
     // Navigation Tab
-    public string $activeTab = 'batch_overview'; // 'batch_overview', 'historical_analytics', 'yield_calculator', 'reconciliation', 'traceability', 'certificates'
+    public string $activeTab = 'batch_overview'; // 'batch_overview', 'historical_analytics', 'certificates', 'yield_calculator', 'dn_shipments'
 
     // ==========================================
     // 1. BATCH OVERVIEW STATE
@@ -42,6 +43,17 @@ class CustomerDashboard extends Component
     public string $histPackType = '';
     public string $histGrouping = 'by_batch';
     public string $histMetric = 'yield_pct'; // 'yield_pct' or 'weight_kg'
+
+    // ==========================================
+    // 3. DN SHIPMENT (SURAT JALAN PENGIRIMAN) STATE
+    // ==========================================
+    public string $dnSearch = '';
+    public string $dnStatusFilter = '';
+    public bool $showShipmentPreviewModal = false;
+    public ?int $previewShipmentId = null;
+    public bool $showApprovalModal = false;
+    public ?int $approvingShipmentId = null;
+    public string $approvalNote = '';
 
     // General Search & Filter for Table / Lists
     public string $search = '';
@@ -109,24 +121,47 @@ class CustomerDashboard extends Component
             ];
         }
 
-        // Pattern 1: Lombok'24 / LOMBOK '24 / Lombok 2024 / Lombok 24
-        if (preg_match("/^([A-Za-z\s]+)['’\s]*(\d{2,4})$/u", $raw, $m)) {
+        // Pattern 1: Parentheses code, e.g. "REMBANG (P8B4)" or "LOMBOK (P9K5)"
+        if (preg_match('/^([A-Za-z\s]+)\s*\(([^)]+)\)$/u', $raw, $m)) {
+            $base = ucwords(strtolower(trim($m[1])));
+            $code = strtoupper(trim($m[2]));
+            return [
+                'origin' => $base,
+                'originCode' => $code,
+                'baseOrigin' => self::extractBaseOrigin($base),
+            ];
+        }
+
+        // Pattern 2: Explicit Year with apostrophe, e.g. "Lombok'24", "LOMBOK '24", "MADURA'25", "LOMBOK '25"
+        if (preg_match("/^([A-Za-z\s]+)\s*['’]\s*(\d{2,4})$/u", $raw, $m)) {
             $base = ucwords(strtolower(trim($m[1])));
             $code = $base . "'" . substr($m[2], -2);
             return [
                 'origin' => $base,
                 'originCode' => $code,
-                'baseOrigin' => $baseOrigin,
+                'baseOrigin' => self::extractBaseOrigin($base),
             ];
         }
 
-        // Pattern 2: PAITON P10T5 / LOMBOK P9K5 / MADURA FN504
-        if (preg_match('/^([A-Za-z\s]+)\s+([A-Z0-9\'-]{2,})$/i', $raw, $m)) {
+        // Pattern 3: Origin with alphanumeric grade code, e.g. "TEMANGGUNG FN405", "TEMANGGUNG FN504", "KASTURI FN602", "PAITON P10T5", "LOMBOK P9K5", "PAITON P10", "PAITON P10-5", "LOMBOK P9", "MADURA P11"
+        if (preg_match('/^([A-Za-z]+)\s+([A-Za-z0-9\'-]+)$/u', $raw, $m)) {
             $base = ucwords(strtolower(trim($m[1])));
+            $code = strtoupper(trim($m[2]));
             return [
                 'origin' => $base,
-                'originCode' => strtoupper(trim($m[2])),
-                'baseOrigin' => $baseOrigin,
+                'originCode' => $code,
+                'baseOrigin' => self::extractBaseOrigin($base),
+            ];
+        }
+
+        // Pattern 4: Origin with 4-digit or 2-digit year at the end without apostrophe, e.g. "Lombok 2024", "Madura 24"
+        if (preg_match('/^([A-Za-z]+)\s+(\d{2,4})$/u', $raw, $m)) {
+            $base = ucwords(strtolower(trim($m[1])));
+            $code = $base . "'" . substr($m[2], -2);
+            return [
+                'origin' => $base,
+                'originCode' => $code,
+                'baseOrigin' => self::extractBaseOrigin($base),
             ];
         }
 
@@ -221,6 +256,11 @@ class CustomerDashboard extends Component
         ]);
     }
 
+    public function updatedHistBaseOrigin($value): void
+    {
+        $this->histOriginCode = '';
+    }
+
     public function resetFilters()
     {
         $this->reset(['search', 'filter_product_type_id', 'filter_origin_id', 'filter_base_origin']);
@@ -251,6 +291,47 @@ class CustomerDashboard extends Component
         }
 
         return $query;
+    }
+
+    public function openShipmentPreview(int $id): void
+    {
+        $this->previewShipmentId = $id;
+        $this->showShipmentPreviewModal = true;
+    }
+
+    public function closeShipmentPreview(): void
+    {
+        $this->showShipmentPreviewModal = false;
+        $this->previewShipmentId = null;
+    }
+
+    public function openApprovalModal(int $id): void
+    {
+        $this->approvingShipmentId = $id;
+        $this->approvalNote = '';
+        $this->showApprovalModal = true;
+    }
+
+    public function closeApprovalModal(): void
+    {
+        $this->showApprovalModal = false;
+        $this->approvingShipmentId = null;
+        $this->approvalNote = '';
+    }
+
+    public function approveShipment(int $id): void
+    {
+        $user = Auth::user();
+        $query = DnShipment::where('id', $id);
+        if ($user && $user->customer_id) {
+            $query->where('customer_id', $user->customer_id);
+        }
+        $shipment = $query->firstOrFail();
+
+        $shipment->approveByCustomer($user->id, $this->approvalNote);
+
+        session()->flash('message', "Surat Jalan Pengiriman {$shipment->dn_number} berhasil disetujui (Approved)!");
+        $this->closeApprovalModal();
     }
 
     public function render()
@@ -300,7 +381,9 @@ class CustomerDashboard extends Component
                 $distinctOrigins[$info['origin']] = $info['origin'];
             }
             if (! empty($info['originCode']) && $info['originCode'] !== '-') {
-                $distinctOriginCodes[$info['originCode']] = $info['originCode'];
+                if (empty($this->histBaseOrigin) || strcasecmp($info['origin'], $this->histBaseOrigin) === 0) {
+                    $distinctOriginCodes[$info['originCode']] = $info['originCode'];
+                }
             }
         }
         if (empty($distinctOrigins)) {
@@ -328,6 +411,33 @@ class CustomerDashboard extends Component
         }
         $approvedBatches = $paginatedBatchesQuery->paginate(10);
 
+        // ----------------------------------------------------
+        // 4. DATA FOR DN SHIPMENTS (SURAT JALAN PENGIRIMAN)
+        // ----------------------------------------------------
+        $customerShipmentsQuery = DnShipment::with(['customer', 'productType', 'items', 'customerApprovedBy']);
+        if ($user && $user->customer_id) {
+            $customerShipmentsQuery->where('customer_id', $user->customer_id);
+        }
+
+        if ($this->dnSearch) {
+            $s = '%' . trim($this->dnSearch) . '%';
+            $customerShipmentsQuery->where(function ($q) use ($s) {
+                $q->where('dn_number', 'like', $s)
+                    ->orWhere('vehicle_number', 'like', $s)
+                    ->orWhere('driver_name', 'like', $s)
+                    ->orWhere('destination', 'like', $s)
+                    ->orWhereHas('items', fn ($iq) => $iq->where('origin', 'like', $s)->orWhere('origin_code', 'like', $s)->orWhere('batch_code', 'like', $s));
+            });
+        }
+
+        if ($this->dnStatusFilter) {
+            $customerShipmentsQuery->where('status', $this->dnStatusFilter);
+        }
+
+        $customerShipments = $customerShipmentsQuery->orderBy('shipment_date', 'desc')->orderBy('id', 'desc')->get();
+        $pendingShipmentsCount = $customerShipments->where('status', '!=', 'Approved')->count();
+        $approvedShipmentsCount = $customerShipments->where('status', 'Approved')->count();
+
         return view('livewire.customer.customer-dashboard', compact(
             'allApprovedBatches',
             'currentBatch',
@@ -338,7 +448,10 @@ class CustomerDashboard extends Component
             'baseOrigins',
             'distinctOrigins',
             'distinctOriginCodes',
-            'approvedBatches'
+            'approvedBatches',
+            'customerShipments',
+            'pendingShipmentsCount',
+            'approvedShipmentsCount'
         ));
     }
 
@@ -459,12 +572,56 @@ class CustomerDashboard extends Component
         $baseDate = $batch->date_of_receipt ? $batch->date_of_receipt->copy() : now();
         $dateStr = $baseDate->format('d M Y');
 
+        // Outbound DN Shipment(s) linked to this batch
+        $linkedShipmentItems = \App\Models\DnShipmentItem::with('dnShipment.customerApprovedBy')
+            ->where(function ($q) use ($batch) {
+                $q->where('batch_id', $batch->id)
+                  ->orWhere('batch_code', $batch->batch_code);
+            })
+            ->get();
+
+        $dnShippedInfo = [
+            'has_shipment' => false,
+            'id' => null,
+            'dn_number' => '-',
+            'shipment_date' => '-',
+            'vehicle_number' => '-',
+            'driver_name' => '-',
+            'total_sacks' => 0,
+            'total_netto_kg' => 0,
+            'status' => 'Belum Dikirim',
+            'is_approved' => false,
+            'approved_at' => null,
+            'materials' => [],
+        ];
+
+        if ($linkedShipmentItems->isNotEmpty()) {
+            $firstItem = $linkedShipmentItems->first();
+            $shipment = $firstItem->dnShipment;
+            if ($shipment) {
+                $dnShippedInfo = [
+                    'has_shipment' => true,
+                    'id' => $shipment->id,
+                    'dn_number' => $shipment->dn_number,
+                    'shipment_date' => $shipment->shipment_date ? $shipment->shipment_date->format('d M Y') : '-',
+                    'vehicle_number' => $shipment->vehicle_number ?: '-',
+                    'driver_name' => $shipment->driver_name ?: '-',
+                    'total_sacks' => $linkedShipmentItems->sum('total_sacks'),
+                    'total_netto_kg' => (float) $linkedShipmentItems->sum('total_netto_kg'),
+                    'status' => $shipment->status,
+                    'is_approved' => $shipment->isApprovedByCustomer(),
+                    'approved_at' => $shipment->customer_approved_at ? $shipment->customer_approved_at->format('d M Y H:i') : null,
+                    'materials' => $linkedShipmentItems->pluck('material_type')->filter()->unique()->values()->all(),
+                ];
+            }
+        }
+
         $stepper = [
             ['title' => 'Material Arrived', 'time' => $dateStr . ' 07:12', 'done' => true],
-            ['title' => 'DN Recorded', 'time' => $dateStr . ' 07:35', 'done' => true],
-            ['title' => 'MRL Weighed', 'time' => $dateStr . ' 08:10', 'done' => true],
-            ['title' => 'Difference Reviewed', 'time' => $dateStr . ' 08:35', 'done' => true],
-            ['title' => 'Receiving Confirmed', 'time' => $dateStr . ' 08:45', 'done' => true],
+            ['title' => 'DN Received Recorded', 'time' => $dateStr . ' 07:35', 'done' => true],
+            ['title' => 'MRL Weighed & Diff Checked', 'time' => $dateStr . ' 08:35', 'done' => true],
+            ['title' => 'Product Output Separated', 'time' => $dateStr . ' 16:20', 'done' => (bool) $batch->separation_product_kg],
+            ['title' => 'DN Shipped & Customer Approval', 'time' => !empty($dnShippedInfo['has_shipment']) ? ($dnShippedInfo['shipment_date'] . ($dnShippedInfo['is_approved'] ? ' (Approved)' : ' (Shipped)')) : 'Pending', 'done' => !empty($dnShippedInfo['is_approved'])],
         ];
 
         return [
@@ -477,6 +634,17 @@ class CustomerDashboard extends Component
             'originName' => self::resolveOriginAndCode($batch)['origin'],
             'originCode' => self::resolveOriginAndCode($batch)['originCode'],
             'certificateStatus' => $batch->isApprovedBySupervisor() ? 'Released' : 'Pending',
+
+            // Inbound & Outbound DN Tracking
+            'dnReceived' => [
+                'dn_number' => $batch->deliveryNote->dn_number ?? 'DN-2026-0025',
+                'receipt_date' => $dateStr,
+                'gross_kg' => $dnGross,
+                'netto_kg' => (float) $batch->dn_netto_weight,
+                'packs' => (int) ($batch->dn_total_pack ?: 65),
+                'status' => 'Diterima & Diverifikasi MRL',
+            ],
+            'dnShipped' => $dnShippedInfo,
 
             // 8 Top KPI Cards
             'dnGross' => $dnGross,
@@ -752,6 +920,20 @@ class CustomerDashboard extends Component
             ];
         }
 
+        // 5-Batch Moving Average Series
+        $movingAvgSeries = [];
+        $window = 5;
+        for ($i = 0; $i < count($yieldSeries); $i++) {
+            $start = max(0, $i - $window + 1);
+            $slice = array_slice($yieldSeries, $start, $i - $start + 1);
+            $sliceValid = array_filter($slice, fn ($v) => $v !== null && is_numeric($v));
+            if (! empty($sliceValid)) {
+                $movingAvgSeries[] = round(array_sum($sliceValid) / count($sliceValid), 2);
+            } else {
+                $movingAvgSeries[] = null;
+            }
+        }
+
         return [
             'totalBatches' => $totalBatches ?: 25,
             'processedInputTon' => $totalInputKg > 0 ? round($totalInputKg / 1000, 1) : 53.8,
@@ -773,6 +955,7 @@ class CustomerDashboard extends Component
             // Timeseries Payload for Chart.js
             'chartLabels' => $chartLabels,
             'yieldSeries' => $yieldSeries,
+            'movingAvgSeries' => $movingAvgSeries,
             'stemSeries' => $compStem,
             'dustSeries' => $compDust,
             'wasteSeries' => $compVariance,

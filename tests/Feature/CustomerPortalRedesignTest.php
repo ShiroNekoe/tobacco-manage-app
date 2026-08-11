@@ -158,6 +158,9 @@ class CustomerPortalRedesignTest extends TestCase
             ->assertSee('3,173.80') // MRL Netto
             ->assertSee('2,442.50') // Product Output
             ->assertSee('76.96%')   // Product Yield
+            ->assertSee('DN Received')
+            ->assertSee('DN Shipped')
+            ->assertSee('Delivery Note Reconciliation Pipeline')
             ->assertSee('Material Receiving Reconciliation')
             ->assertSee('Receiving Confirmation Status')
             ->assertSee('Separation Result by Origin')
@@ -235,7 +238,8 @@ class CustomerPortalRedesignTest extends TestCase
             ->call('setTab', 'historical_analytics')
             ->assertSet('activeTab', 'historical_analytics')
             ->assertSee('Historical Product Yield Trend')
-            ->assertSee('Output Composition Trend')
+            ->assertSee('Weighted Yield by Origin')
+            ->assertSee('Origin Code Performance')
             ->assertSee('Paiton')
             ->assertSee('P10T5')
             ->set('histBaseOrigin', 'Paiton')

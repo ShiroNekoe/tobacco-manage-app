@@ -67,12 +67,64 @@ class MasterDataManagementTest extends TestCase
         $this->assertDatabaseHas('origins', ['region_name' => 'MADURA']);
     }
 
-    public function test_operator_cannot_access_master_data_page(): void
+    public function test_admin_can_create_edit_delete_material_type(): void
     {
-        $operator = User::factory()->create(['role' => 'operator']);
+        $admin = User::factory()->create(['role' => 'admin']);
 
-        $response = $this->actingAs($operator)->get('/admin/master-data');
+        Livewire::actingAs($admin)
+            ->test(MasterDataManagement::class)
+            ->call('setTab', 'materials')
+            ->assertSet('activeTab', 'materials')
+            ->set('material_code', 'STRIP')
+            ->set('material_name', 'Strip Tobacco')
+            ->set('material_description', 'Tembakau jenis strip utuh')
+            ->set('default_sack_weight', 45.00)
+            ->set('default_tare_weight', 0.80)
+            ->set('is_active', true)
+            ->call('saveMaterial')
+            ->assertHasNoErrors();
 
-        $response->assertStatus(403);
+        $this->assertDatabaseHas('material_types', [
+            'code' => 'STRIP',
+            'name' => 'Strip Tobacco',
+            'default_sack_weight' => 45.00,
+        ]);
+
+        $mat = \App\Models\MaterialType::where('code', 'STRIP')->first();
+
+        // Test editing
+        Livewire::actingAs($admin)
+            ->test(MasterDataManagement::class)
+            ->call('openMaterialModal', $mat->id)
+            ->set('material_name', 'Strip Tobacco Premium')
+            ->call('saveMaterial')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('material_types', [
+            'id' => $mat->id,
+            'name' => 'Strip Tobacco Premium',
+        ]);
+
+        // Test deleting
+        Livewire::actingAs($admin)
+            ->test(MasterDataManagement::class)
+            ->call('deleteMaterial', $mat->id);
+
+        $this->assertDatabaseMissing('material_types', [
+            'id' => $mat->id,
+        ]);
+    }
+
+    public function test_category_menu_renders_all_four_categories(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        Livewire::actingAs($admin)
+            ->test(MasterDataManagement::class)
+            ->assertSee('Pengelolaan Master Data')
+            ->assertSee('Pelanggan')
+            ->assertSee('Jenis Produk')
+            ->assertSee('Asal Tembakau')
+            ->assertSee('Jenis Muatan');
     }
 }

@@ -32,9 +32,12 @@
     <div x-data="{ 
         sidebarOpen: false, 
         customerSubmenuOpen: {{ request()->routeIs('customer.dashboard') ? 'true' : 'false' }}, 
-        activeCustomerTab: '{{ request('activeTab', 'batch_overview') }}' 
+        activeCustomerTab: '{{ request('activeTab', 'batch_overview') }}',
+        masterDataSubmenuOpen: {{ request()->routeIs('admin.master-data*') ? 'true' : 'false' }},
+        activeMasterDataTab: '{{ request('activeTab', 'customers') }}'
     }" 
     x-on:customer-tab-changed.window="activeCustomerTab = $event.detail"
+    x-on:master-data-tab-changed.window="activeMasterDataTab = $event.detail"
     class="min-h-screen flex flex-col md:flex-row bg-zinc-950">
         
         <!-- Mobile Header Bar -->
@@ -91,15 +94,91 @@
                     Manajemen Batch & MRL
                 </a>
 
+                <a href="{{ route('admin.dn-shipments') }}" class="flex items-center px-4 py-3 min-h-[48px] text-sm font-bold rounded-xl transition-all {{ request()->routeIs('admin.dn-shipments*') ? 'bg-amber-600 text-white shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200' }}">
+                    <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                    DN Shipment (Surat Jalan)
+                </a>
+
                 <a href="{{ route('admin.tracking') }}" class="flex items-center px-4 py-3 min-h-[48px] text-sm font-bold rounded-xl transition-all {{ request()->routeIs('admin.tracking') ? 'bg-amber-600 text-white shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200' }}">
                     <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                     Live Tracking Worker
                 </a>
 
-                <a href="{{ route('admin.master-data') }}" class="flex items-center px-4 py-3 min-h-[48px] text-sm font-bold rounded-xl transition-all {{ request()->routeIs('admin.master-data') ? 'bg-amber-600 text-white shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200' }}">
-                    <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
-                    Kelola Master Data
-                </a>
+                <!-- Kelola Master Data Menu with Nested Submenu -->
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between px-4 py-3 min-h-[48px] text-sm font-bold rounded-xl transition-all cursor-pointer select-none {{ request()->routeIs('admin.master-data*') ? 'bg-amber-600/20 text-amber-300 border border-amber-500/30' : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200' }}"
+                         @click="masterDataSubmenuOpen = !masterDataSubmenuOpen">
+                        <a href="{{ route('admin.master-data') }}" 
+                           class="flex items-center flex-1 text-inherit"
+                           @click.stop="masterDataSubmenuOpen = true">
+                            <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
+                            <span>Kelola Master Data</span>
+                        </a>
+                        <button type="button" class="p-1 text-zinc-400 hover:text-zinc-200">
+                            <svg :class="masterDataSubmenuOpen ? 'rotate-180' : ''" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                    </div>
+
+                    <!-- Collapsible Master Data Submenu Items -->
+                    <div x-show="masterDataSubmenuOpen" 
+                         x-transition:enter="transition ease-out duration-150"
+                         x-transition:enter-start="opacity-0 -translate-y-1"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         class="pl-3 pr-1 space-y-1 pt-1 border-l-2 border-amber-600/30 ml-4">
+                        
+                        <!-- 1. Pelanggan (Customer) -->
+                        <a href="{{ route('admin.master-data', ['activeTab' => 'customers']) }}"
+                           @if(request()->routeIs('admin.master-data*'))
+                           @click.prevent="activeMasterDataTab = 'customers'; sidebarOpen = false; $dispatch('switch-master-data-tab', 'customers'); window.history.replaceState({}, '', '{{ route('admin.master-data') }}?activeTab=customers')"
+                           @else
+                           @click="sidebarOpen = false"
+                           @endif
+                           :class="activeMasterDataTab === 'customers' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200'"
+                           class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all">
+                             <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            <span class="truncate">Pelanggan</span>
+                        </a>
+
+                        <!-- 2. Jenis Produk (Product Type) -->
+                        <a href="{{ route('admin.master-data', ['activeTab' => 'products']) }}"
+                           @if(request()->routeIs('admin.master-data*'))
+                           @click.prevent="activeMasterDataTab = 'products'; sidebarOpen = false; $dispatch('switch-master-data-tab', 'products'); window.history.replaceState({}, '', '{{ route('admin.master-data') }}?activeTab=products')"
+                           @else
+                           @click="sidebarOpen = false"
+                           @endif
+                           :class="activeMasterDataTab === 'products' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200'"
+                           class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all">
+                             <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"></path></svg>
+                            <span class="truncate">Jenis Produk</span>
+                        </a>
+
+                        <!-- 3. Asal Tembakau (Primary Origin) -->
+                        <a href="{{ route('admin.master-data', ['activeTab' => 'origins']) }}"
+                           @if(request()->routeIs('admin.master-data*'))
+                           @click.prevent="activeMasterDataTab = 'origins'; sidebarOpen = false; $dispatch('switch-master-data-tab', 'origins'); window.history.replaceState({}, '', '{{ route('admin.master-data') }}?activeTab=origins')"
+                           @else
+                           @click="sidebarOpen = false"
+                           @endif
+                           :class="activeMasterDataTab === 'origins' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200'"
+                           class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all">
+                             <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            <span class="truncate">Asal Tembakau</span>
+                        </a>
+
+                        <!-- 4. Jenis Muatan (Material Type) -->
+                        <a href="{{ route('admin.master-data', ['activeTab' => 'materials']) }}"
+                           @if(request()->routeIs('admin.master-data*'))
+                           @click.prevent="activeMasterDataTab = 'materials'; sidebarOpen = false; $dispatch('switch-master-data-tab', 'materials'); window.history.replaceState({}, '', '{{ route('admin.master-data') }}?activeTab=materials')"
+                           @else
+                           @click="sidebarOpen = false"
+                           @endif
+                           :class="activeMasterDataTab === 'materials' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200'"
+                           class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all">
+                             <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                            <span class="truncate">Jenis Muatan</span>
+                        </a>
+                    </div>
+                </div>
                 @endif
 
                 @if(auth()->user() && auth()->user()->isAdmin())
@@ -158,20 +237,7 @@
                             <span class="truncate">Historical Analytics</span>
                         </a>
 
-                        <!-- 3. Yield Cost Calculator -->
-                        <a href="{{ route('customer.dashboard', ['activeTab' => 'yield_calculator']) }}"
-                           @if(request()->routeIs('customer.dashboard'))
-                           @click.prevent="activeCustomerTab = 'yield_calculator'; sidebarOpen = false; $dispatch('switch-customer-tab', 'yield_calculator'); window.history.replaceState({}, '', '{{ route('customer.dashboard') }}?activeTab=yield_calculator')"
-                           @else
-                           @click="sidebarOpen = false"
-                           @endif
-                           :class="activeCustomerTab === 'yield_calculator' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200'"
-                           class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all">
-                            <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                            <span class="truncate">Yield Cost Calculator</span>
-                        </a>
-
-                        <!-- 4. Receiving Reconciliation -->
+                        <!-- 3. Receiving Reconciliation -->
                         <a href="{{ route('customer.dashboard', ['activeTab' => 'reconciliation']) }}"
                            @if(request()->routeIs('customer.dashboard'))
                            @click.prevent="activeCustomerTab = 'reconciliation'; sidebarOpen = false; $dispatch('switch-customer-tab', 'reconciliation'); window.history.replaceState({}, '', '{{ route('customer.dashboard') }}?activeTab=reconciliation')"
@@ -184,7 +250,7 @@
                             <span class="truncate">Receiving Reconciliation</span>
                         </a>
 
-                        <!-- 5. Batch Traceability -->
+                        <!-- 4. Batch Traceability -->
                         <a href="{{ route('customer.dashboard', ['activeTab' => 'traceability']) }}"
                            @if(request()->routeIs('customer.dashboard'))
                            @click.prevent="activeCustomerTab = 'traceability'; sidebarOpen = false; $dispatch('switch-customer-tab', 'traceability'); window.history.replaceState({}, '', '{{ route('customer.dashboard') }}?activeTab=traceability')"
@@ -197,7 +263,7 @@
                             <span class="truncate">Batch Traceability</span>
                         </a>
 
-                        <!-- 6. Certificates -->
+                        <!-- 5. Certificates -->
                         <a href="{{ route('customer.dashboard', ['activeTab' => 'certificates']) }}"
                            @if(request()->routeIs('customer.dashboard'))
                            @click.prevent="activeCustomerTab = 'certificates'; sidebarOpen = false; $dispatch('switch-customer-tab', 'certificates'); window.history.replaceState({}, '', '{{ route('customer.dashboard') }}?activeTab=certificates')"
@@ -208,6 +274,32 @@
                            class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all">
                             <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                             <span class="truncate">Certificates</span>
+                        </a>
+
+                        <!-- 6. Yield Cost Calculator (Placed below Certificates) -->
+                        <a href="{{ route('customer.dashboard', ['activeTab' => 'yield_calculator']) }}"
+                           @if(request()->routeIs('customer.dashboard'))
+                           @click.prevent="activeCustomerTab = 'yield_calculator'; sidebarOpen = false; $dispatch('switch-customer-tab', 'yield_calculator'); window.history.replaceState({}, '', '{{ route('customer.dashboard') }}?activeTab=yield_calculator')"
+                           @else
+                           @click="sidebarOpen = false"
+                           @endif
+                           :class="activeCustomerTab === 'yield_calculator' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200'"
+                           class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all">
+                            <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                            <span class="truncate">Yield Cost Calculator</span>
+                        </a>
+
+                        <!-- 7. DN Shipment (Surat Jalan Pengiriman & Approval) -->
+                        <a href="{{ route('customer.dashboard', ['activeTab' => 'dn_shipments']) }}"
+                           @if(request()->routeIs('customer.dashboard'))
+                           @click.prevent="activeCustomerTab = 'dn_shipments'; sidebarOpen = false; $dispatch('switch-customer-tab', 'dn_shipments'); window.history.replaceState({}, '', '{{ route('customer.dashboard') }}?activeTab=dn_shipments')"
+                           @else
+                           @click="sidebarOpen = false"
+                           @endif
+                           :class="activeCustomerTab === 'dn_shipments' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200'"
+                           class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all">
+                            <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                            <span class="truncate">DN Shipment (Surat Jalan)</span>
                         </a>
                     </div>
                 </div>

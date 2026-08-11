@@ -316,8 +316,8 @@ class WeighingSheet extends Component
             unset($this->items[$index]);
             $this->items = array_values($this->items);
 
-            foreach ($this->items as $idx => &$it) {
-                $it['sack_number'] = $idx + 1;
+            foreach ($this->items as $idx => $it) {
+                $this->items[$idx]['sack_number'] = $idx + 1;
             }
             $this->recalculateTotals();
         }
@@ -326,6 +326,20 @@ class WeighingSheet extends Component
     public function isReadOnly(): bool
     {
         return in_array($this->status, ['CLOSED', 'locked']);
+    }
+
+    public function updated($property = null)
+    {
+        if ($property === 'separation_product_sack') {
+            $this->p1_product_sack = (int) $this->separation_product_sack;
+        }
+        if ($property === 'separation_product_remnant_gross_kg') {
+            $this->p1_remnant_gross_kg = $this->separation_product_remnant_gross_kg;
+        }
+        if ($property === 'separation_product_remnant_tare_kg') {
+            $this->p1_remnant_tare_kg = $this->separation_product_remnant_tare_kg;
+        }
+        $this->recalculateTotals();
     }
 
     public function updatedItems()
@@ -408,9 +422,9 @@ class WeighingSheet extends Component
     public function updatedProductTarePerSack()
     {
         $newTare = $this->parseFloat($this->product_tare_per_sack);
-        foreach ($this->items as &$item) {
+        foreach ($this->items as $idx => $item) {
             if (empty($item['is_locked_for_user']) && (float)($item['gross_kg'] ?? 0) == 0) {
-                $item['tare_kg'] = $newTare;
+                $this->items[$idx]['tare_kg'] = $newTare;
             }
         }
         $this->recalculateTotals();
@@ -437,11 +451,11 @@ class WeighingSheet extends Component
         $this->totalTareKg = 0;
         $this->totalNettoKg = 0;
 
-        foreach ($this->items as &$item) {
+        foreach ($this->items as $idx => $item) {
             $gross = $this->parseFloat($item['gross_kg'] ?? 0);
             $tare = $this->parseFloat($item['tare_kg'] ?? 0);
             $netto = max(0, round($gross - $tare, 2));
-            $item['netto_kg'] = $netto;
+            $this->items[$idx]['netto_kg'] = $netto;
 
             if ($gross > 0) {
                 $this->totalPack++;
@@ -496,11 +510,11 @@ class WeighingSheet extends Component
         $stemTareSum = 0;
         $stemNettoSum = 0;
 
-        foreach ($this->bit_stem_items as &$item) {
+        foreach ($this->bit_stem_items as $idx => $item) {
             $g = $this->parseFloat($item['gross_kg'] ?? 0);
             $t = $this->parseFloat($item['tare_kg'] ?? 0);
             $n = max(0, round($g - $t, 2));
-            $item['netto_kg'] = $n;
+            $this->bit_stem_items[$idx]['netto_kg'] = $n;
             $stemGrossSum += $g;
             $stemTareSum += $t;
             $stemNettoSum += $n;
@@ -512,22 +526,22 @@ class WeighingSheet extends Component
 
         // 4. P1 Dust multi-row calculations
         $p1DustGross = 0; $p1DustTare = 0; $p1DustNetto = 0;
-        foreach ($this->p1_dust_items as &$item) {
+        foreach ($this->p1_dust_items as $idx => $item) {
             $g = $this->parseFloat($item['gross_kg'] ?? 0);
             $t = $this->parseFloat($item['tare_kg'] ?? 0);
             $n = max(0, round($g - $t, 2));
-            $item['netto_kg'] = $n;
+            $this->p1_dust_items[$idx]['netto_kg'] = $n;
             $p1DustGross += $g; $p1DustTare += $t; $p1DustNetto += $n;
         }
         $this->p1_dust_netto_kg = $p1DustNetto;
 
         // 5. P2 Dust multi-row calculations
         $p2DustGross = 0; $p2DustTare = 0; $p2DustNetto = 0;
-        foreach ($this->p2_dust_items as &$item) {
+        foreach ($this->p2_dust_items as $idx => $item) {
             $g = $this->parseFloat($item['gross_kg'] ?? 0);
             $t = $this->parseFloat($item['tare_kg'] ?? 0);
             $n = max(0, round($g - $t, 2));
-            $item['netto_kg'] = $n;
+            $this->p2_dust_items[$idx]['netto_kg'] = $n;
             $p2DustGross += $g; $p2DustTare += $t; $p2DustNetto += $n;
         }
         $this->p2_dust_netto_kg = $p2DustNetto;

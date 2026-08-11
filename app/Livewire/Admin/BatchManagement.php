@@ -126,8 +126,8 @@ class BatchManagement extends Component
         if (count($this->mrl_items) > 1) {
             unset($this->mrl_items[$index]);
             $this->mrl_items = array_values($this->mrl_items);
-            foreach ($this->mrl_items as $idx => &$item) {
-                $item['sack_number'] = $idx + 1;
+            foreach ($this->mrl_items as $idx => $item) {
+                $this->mrl_items[$idx]['sack_number'] = $idx + 1;
             }
             $this->target_sack_count = count($this->mrl_items);
             $this->recalculateMrlTotals();

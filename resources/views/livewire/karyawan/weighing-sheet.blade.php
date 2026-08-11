@@ -81,7 +81,7 @@
         <!-- Mobile Sack Cards View (Android & Small Screens < 640px) -->
         <div class="sm:hidden space-y-3">
             @foreach($items as $index => $item)
-                <div class="bg-zinc-950/90 border border-zinc-800/90 rounded-2xl p-4 space-y-3 shadow-lg {{ !empty($item['is_locked_for_user']) ? 'opacity-85 border-amber-900/50 bg-zinc-950/70' : '' }}">
+                <div wire:key="mobile-sack-row-{{ $index }}-{{ $item['id'] ?? 'temp' }}" class="bg-zinc-950/90 border border-zinc-800/90 rounded-2xl p-4 space-y-3 shadow-lg {{ !empty($item['is_locked_for_user']) ? 'opacity-85 border-amber-900/50 bg-zinc-950/70' : '' }}">
                     <!-- Header Bar: Sack No, Worker Status, and Delete Action -->
                     <div class="flex items-center justify-between pb-2 border-b border-zinc-800/80 gap-2">
                         <div class="flex items-center gap-2 flex-wrap">
@@ -182,7 +182,7 @@
                 </thead>
                 <tbody class="divide-y divide-zinc-800/80">
                     @foreach($items as $index => $item)
-                        <tr class="hover:bg-zinc-800/40 transition-colors {{ !empty($item['is_locked_for_user']) ? 'bg-zinc-950/60 opacity-80' : '' }}">
+                        <tr wire:key="desktop-sack-row-{{ $index }}-{{ $item['id'] ?? 'temp' }}" class="hover:bg-zinc-800/40 transition-colors {{ !empty($item['is_locked_for_user']) ? 'bg-zinc-950/60 opacity-80' : '' }}">
                             <!-- No -->
                             <td class="px-3 py-3 text-center font-mono font-bold text-amber-400 text-sm">
                                 {{ $item['sack_number'] }}
@@ -371,7 +371,7 @@
                             </thead>
                             <tbody class="divide-y divide-zinc-900">
                                 @foreach($p1_dust_items as $idx => $dItem)
-                                    <tr>
+                                    <tr wire:key="p1-dust-row-{{ $idx }}">
                                         <td class="py-2 text-zinc-400 font-bold">{{ $idx + 1 }}</td>
                                         <td class="py-2 pr-3">
                                             <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="p1_dust_items.{{ $idx }}.gross_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-orange-400 font-bold text-xs outline-none focus:border-orange-500" placeholder="0.00">
@@ -467,7 +467,7 @@
                             </thead>
                             <tbody class="divide-y divide-zinc-900">
                                 @foreach($bit_stem_items as $idx => $bItem)
-                                    <tr>
+                                    <tr wire:key="bit-stem-row-{{ $idx }}">
                                         <td class="py-2 text-zinc-400 font-bold">{{ $idx + 1 }}</td>
                                         <td class="py-2 pr-3">
                                             <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="bit_stem_items.{{ $idx }}.gross_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-amber-400 font-bold text-xs outline-none focus:border-amber-500" placeholder="0.00">
@@ -521,7 +521,7 @@
                                     </thead>
                                     <tbody class="divide-y divide-zinc-800/60">
                                         @foreach($p1_dust_items as $idx => $dItem)
-                                            <tr>
+                                            <tr wire:key="p1-dust-readonly-row-{{ $idx }}">
                                                 <td class="py-2 px-3 text-zinc-500 font-bold">{{ $idx + 1 }}</td>
                                                 <td class="py-2 px-3 text-orange-300 font-bold">{{ number_format((float) str_replace(',', '.', $dItem['gross_kg'] ?? 0), 2) }} kg</td>
                                                 <td class="py-2 px-3 text-orange-300 font-bold">{{ number_format((float) str_replace(',', '.', $dItem['tare_kg'] ?? 0), 2) }} kg</td>
@@ -562,7 +562,7 @@
                                     </thead>
                                     <tbody class="divide-y divide-zinc-900">
                                         @foreach($p2_dust_items as $idx => $dItem)
-                                            <tr>
+                                            <tr wire:key="p2-dust-row-{{ $idx }}">
                                                 <td class="py-2 text-zinc-400 font-bold">{{ $idx + 1 }}</td>
                                                 <td class="py-2 pr-3">
                                                     <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="p2_dust_items.{{ $idx }}.gross_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-orange-400 font-bold text-xs outline-none focus:border-orange-500" placeholder="0.00">

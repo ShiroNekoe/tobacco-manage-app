@@ -107,4 +107,55 @@ class ProcessStageSeparationTest extends TestCase
             // 10 sacks * (20.50 gross - 0.50 tare = 20.00 netto) = 200.00 kg
             ->assertSet('p1_product_kg', 200.00);
     }
+
+    public function test_adding_multiple_p2_dust_slots_preserves_previous_rows(): void
+    {
+        $worker = User::factory()->create(['role' => 'karyawan', 'shift' => 'Shift 1']);
+        $customer = Customer::create(['name' => 'PT P2 Dust Test', 'code' => 'CUST-DUST']);
+        $prodType = ProductType::create(['code' => 'P-DUST', 'name' => 'PAITON DUST']);
+        $origin = Origin::create(['region_name' => 'PAITON DUST']);
+        $dn = DeliveryNote::create(['dn_number' => 'DN-DUST-01', 'customer_id' => $customer->id, 'delivery_date' => Carbon::now()]);
+
+        $batch = Batch::create([
+            'batch_code' => 'BCH-DUST-001',
+            'customer_id' => $customer->id,
+            'delivery_note_id' => $dn->id,
+            'product_type_id' => $prodType->id,
+            'origin_id' => $origin->id,
+            'pack_type' => 'Bale',
+            'product_kg_per_sack' => 25.20,
+            'product_tare_per_sack' => 0.20,
+            'date_of_receipt' => Carbon::now(),
+            'status' => 'OPEN',
+            'mrl_netto_weight' => 500.00,
+        ]);
+
+        Livewire::actingAs($worker)
+            ->test(WeighingSheet::class, ['batch_id' => $batch->id])
+            ->call('setProcessStage', 2)
+            // Add initial slot 1
+            ->call('addP2DustRow')
+            ->set('p2_dust_items.0.gross_kg', '7')
+            ->set('p2_dust_items.0.tare_kg', '0.7')
+            ->assertSet('p2_dust_items.0.netto_kg', 6.30)
+            ->assertSet('p2_dust_netto_kg', 6.30)
+            // Add slot 2
+            ->call('addP2DustRow')
+            // Row 1 MUST NOT be cleared / lost!
+            ->assertSet('p2_dust_items.0.gross_kg', '7')
+            ->assertSet('p2_dust_items.0.tare_kg', '0.7')
+            ->assertSet('p2_dust_items.0.netto_kg', 6.30)
+            // Row 2 is new
+            ->assertSet('p2_dust_items.1.gross_kg', 0)
+            ->assertSet('p2_dust_items.1.tare_kg', 0)
+            ->assertSet('p2_dust_items.1.netto_kg', 0)
+            // Set Row 2 with comma decimal
+            ->set('p2_dust_items.1.gross_kg', '5,5')
+            ->set('p2_dust_items.1.tare_kg', '0,5')
+            ->assertSet('p2_dust_items.1.netto_kg', 5.00)
+            ->assertSet('p2_dust_netto_kg', 11.30)
+            // Row 1 is still intact
+            ->assertSet('p2_dust_items.0.gross_kg', '7')
+            ->assertSet('p2_dust_items.0.netto_kg', 6.30);
+    }
 }

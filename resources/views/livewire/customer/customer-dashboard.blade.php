@@ -619,34 +619,138 @@ class="space-y-6">
             </div>
         </div>
 
-        <!-- UPPER SECTION: HISTORICAL PRODUCT YIELD TREND (FULL-WIDTH ENLARGED CHART) -->
+        <!-- UPPER SECTION: HISTORICAL SEPARATION YIELD & OUTPUT TREND (FULL-WIDTH ENLARGED CHART WITH METRIC SWITCHER) -->
         <div wire:key="historical-line-chart-{{ md5(json_encode($historicalData['chartLabels'] ?? [])) }}"
              x-data="historicalYieldChart({
                  labels: @js($historicalData['chartLabels'] ?? []),
                  yieldSeries: @js($historicalData['yieldSeries'] ?? []),
-                 weightedAvg: @js($historicalData['weightedProductYield'] ?? 72.31),
+                 stemSeries: @js($historicalData['stemSeries'] ?? []),
+                 dustSeries: @js($historicalData['dustSeries'] ?? []),
+                 wasteSeries: @js($historicalData['wasteSeries'] ?? []),
+                 weightedAvgProduct: @js($historicalData['weightedAvgProduct'] ?? ($historicalData['weightedProductYield'] ?? 72.31)),
+                 weightedAvgStem: @js($historicalData['weightedAvgStem'] ?? ($historicalData['bitsStemPct'] ?? 24.60)),
+                 weightedAvgDust: @js($historicalData['weightedAvgDust'] ?? ($historicalData['dustPct'] ?? 1.78)),
+                 weightedAvgWaste: @js($historicalData['weightedAvgWaste'] ?? ($historicalData['variancePct'] ?? 1.31)),
                  outlierPoints: @js($historicalData['outlierPoints'] ?? []),
                  batchDetails: @js($historicalData['batchDetails'] ?? [])
              })"
              x-init="initChart()"
              class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-5">
             
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-zinc-800 pb-4">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-zinc-800 pb-4">
                 <div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 flex-wrap">
                         <h3 class="text-base sm:text-lg font-black text-zinc-100 uppercase tracking-wide">Historical Product Yield Trend</h3>
                         <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-950 text-emerald-300 border border-emerald-800">
                             FULL EXPANDED VIEW
                         </span>
                     </div>
-                    <p class="text-xs text-zinc-400 mt-1">Tren hasil yield per batch dengan garis rata-rata tertimbang & deteksi outlier</p>
+                    <p class="text-xs text-zinc-400 mt-1">
+                        <span x-show="selectedMetric === 'all'">Perbandingan 4 output separasi (Product, Bits/Stem, Dust, Waste) per batch</span>
+                        <span x-show="selectedMetric === 'product'">Tren hasil Product Yield per batch dengan garis rata-rata tertimbang & deteksi outlier</span>
+                        <span x-show="selectedMetric === 'stem'">Tren perolehan Bits & Stem per batch dengan garis rata-rata tertimbang</span>
+                        <span x-show="selectedMetric === 'dust'">Tren partikel debu / dust per batch dengan garis rata-rata tertimbang</span>
+                        <span x-show="selectedMetric === 'waste'">Tren susut / uncountable waste per batch dengan garis rata-rata tertimbang</span>
+                    </p>
                 </div>
 
-                <!-- Legend -->
-                <div class="flex items-center flex-wrap gap-2.5 sm:gap-4 text-xs font-bold bg-zinc-950 px-4 py-2.5 rounded-2xl border border-zinc-800">
-                    <span class="flex items-center text-emerald-400"><span class="w-3 h-3 rounded-full bg-emerald-500 mr-2 shadow-sm shadow-emerald-500/50"></span> Product Yield (%)</span>
-                    <span class="flex items-center text-amber-400"><span class="w-4 h-0.5 border-t-2 border-dashed border-amber-400 mr-2"></span> Weighted Avg ({{ number_format($historicalData['weightedProductYield'] ?? 72.31, 2) }}%)</span>
-                    <span class="flex items-center text-red-400"><span class="w-3 h-3 rounded-full bg-red-500 mr-2 shadow-sm shadow-red-500/50"></span> Outlier</span>
+                <!-- METRIC SELECTOR PILL BUTTONS (PILIHAN 4 OUTPUT + ALL) -->
+                <div class="flex items-center flex-wrap gap-1.5 p-1 bg-zinc-950 border border-zinc-800 rounded-2xl shrink-0">
+                    <!-- All Metrics Button -->
+                    <button type="button" 
+                            @click="setMetric('all')" 
+                            :class="selectedMetric === 'all' ? 'bg-zinc-800 text-amber-300 border border-amber-500/50 shadow-md' : 'text-zinc-400 hover:text-zinc-200 border border-transparent'" 
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+                        <span>⚡ Semua Garis</span>
+                    </button>
+
+                    <!-- Product Yield Button -->
+                    <button type="button" 
+                            @click="setMetric('product')" 
+                            :class="selectedMetric === 'product' ? 'bg-emerald-950 text-emerald-300 border border-emerald-600 shadow-md' : 'text-zinc-400 hover:text-emerald-400 border border-transparent'" 
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
+                        <span>Product ({{ number_format($historicalData['weightedProductYield'] ?? 72.31, 1) }}%)</span>
+                    </button>
+
+                    <!-- Bits / Stem Button -->
+                    <button type="button" 
+                            @click="setMetric('stem')" 
+                            :class="selectedMetric === 'stem' ? 'bg-amber-950 text-amber-300 border border-amber-600 shadow-md' : 'text-zinc-400 hover:text-amber-400 border border-transparent'" 
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm shadow-amber-500/50"></span>
+                        <span>Bits/Stem ({{ number_format($historicalData['bitsStemPct'] ?? 24.60, 1) }}%)</span>
+                    </button>
+
+                    <!-- Dust Button -->
+                    <button type="button" 
+                            @click="setMetric('dust')" 
+                            :class="selectedMetric === 'dust' ? 'bg-cyan-950 text-cyan-300 border border-cyan-600 shadow-md' : 'text-zinc-400 hover:text-cyan-400 border border-transparent'" 
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 shadow-sm shadow-cyan-500/50"></span>
+                        <span>Dust ({{ number_format($historicalData['dustPct'] ?? 1.78, 1) }}%)</span>
+                    </button>
+
+                    <!-- Uncountable Waste Button -->
+                    <button type="button" 
+                            @click="setMetric('waste')" 
+                            :class="selectedMetric === 'waste' ? 'bg-purple-950 text-purple-300 border border-purple-600 shadow-md' : 'text-zinc-400 hover:text-purple-400 border border-transparent'" 
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-sm shadow-purple-500/50"></span>
+                        <span>Uncountable Waste ({{ number_format($historicalData['variancePct'] ?? 1.31, 1) }}%)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dynamic Active Legend Bar -->
+            <div class="flex items-center justify-between flex-wrap gap-2 text-xs font-bold bg-zinc-950/80 px-4 py-2.5 rounded-2xl border border-zinc-800">
+                <div class="flex items-center flex-wrap gap-3 sm:gap-5">
+                    <!-- When ALL is selected -->
+                    <template x-if="selectedMetric === 'all'">
+                        <div class="flex items-center flex-wrap gap-3 sm:gap-5">
+                            <span class="flex items-center text-emerald-400"><span class="w-3 h-3 rounded-full bg-emerald-500 mr-2 shadow-sm shadow-emerald-500/50"></span> Product Yield ({{ number_format($historicalData['weightedProductYield'] ?? 72.31, 2) }}%)</span>
+                            <span class="flex items-center text-amber-400"><span class="w-3 h-3 rounded-full bg-amber-500 mr-2 shadow-sm shadow-amber-500/50"></span> Bits / Stem ({{ number_format($historicalData['bitsStemPct'] ?? 24.60, 2) }}%)</span>
+                            <span class="flex items-center text-cyan-400"><span class="w-3 h-3 rounded-full bg-cyan-500 mr-2 shadow-sm shadow-cyan-500/50"></span> Dust ({{ number_format($historicalData['dustPct'] ?? 1.78, 2) }}%)</span>
+                            <span class="flex items-center text-purple-400"><span class="w-3 h-3 rounded-full bg-purple-500 mr-2 shadow-sm shadow-purple-500/50"></span> Uncountable Waste ({{ number_format($historicalData['variancePct'] ?? 1.31, 2) }}%)</span>
+                        </div>
+                    </template>
+
+                    <!-- When PRODUCT is selected -->
+                    <template x-if="selectedMetric === 'product'">
+                        <div class="flex items-center flex-wrap gap-3 sm:gap-5">
+                            <span class="flex items-center text-emerald-400"><span class="w-3 h-3 rounded-full bg-emerald-500 mr-2 shadow-sm shadow-emerald-500/50"></span> Product Yield (%)</span>
+                            <span class="flex items-center text-amber-400"><span class="w-4 h-0.5 border-t-2 border-dashed border-amber-400 mr-2"></span> Weighted Avg ({{ number_format($historicalData['weightedProductYield'] ?? 72.31, 2) }}%)</span>
+                            <span class="flex items-center text-red-400"><span class="w-3 h-3 rounded-full bg-red-500 mr-2 shadow-sm shadow-red-500/50"></span> Outlier (&plusmn;5%)</span>
+                        </div>
+                    </template>
+
+                    <!-- When STEM is selected -->
+                    <template x-if="selectedMetric === 'stem'">
+                        <div class="flex items-center flex-wrap gap-3 sm:gap-5">
+                            <span class="flex items-center text-amber-400"><span class="w-3 h-3 rounded-full bg-amber-500 mr-2 shadow-sm shadow-amber-500/50"></span> Bits / Stem (%)</span>
+                            <span class="flex items-center text-sky-400"><span class="w-4 h-0.5 border-t-2 border-dashed border-sky-400 mr-2"></span> Weighted Avg ({{ number_format($historicalData['bitsStemPct'] ?? 24.60, 2) }}%)</span>
+                        </div>
+                    </template>
+
+                    <!-- When DUST is selected -->
+                    <template x-if="selectedMetric === 'dust'">
+                        <div class="flex items-center flex-wrap gap-3 sm:gap-5">
+                            <span class="flex items-center text-cyan-400"><span class="w-3 h-3 rounded-full bg-cyan-500 mr-2 shadow-sm shadow-cyan-500/50"></span> Dust (%)</span>
+                            <span class="flex items-center text-amber-400"><span class="w-4 h-0.5 border-t-2 border-dashed border-amber-400 mr-2"></span> Weighted Avg ({{ number_format($historicalData['dustPct'] ?? 1.78, 2) }}%)</span>
+                        </div>
+                    </template>
+
+                    <!-- When WASTE is selected -->
+                    <template x-if="selectedMetric === 'waste'">
+                        <div class="flex items-center flex-wrap gap-3 sm:gap-5">
+                            <span class="flex items-center text-purple-400"><span class="w-3 h-3 rounded-full bg-purple-500 mr-2 shadow-sm shadow-purple-500/50"></span> Uncountable Waste (%)</span>
+                            <span class="flex items-center text-amber-400"><span class="w-4 h-0.5 border-t-2 border-dashed border-amber-400 mr-2"></span> Weighted Avg ({{ number_format($historicalData['variancePct'] ?? 1.31, 2) }}%)</span>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="text-zinc-500 text-[11px] font-mono">
+                    Mode: <span class="uppercase text-amber-400 font-bold" x-text="selectedMetric"></span>
                 </div>
             </div>
 
@@ -1275,160 +1379,356 @@ class="space-y-6">
 function historicalYieldChart(data) {
     return {
         chart: null,
+        selectedMetric: 'all', // 'all', 'product', 'stem', 'dust', 'waste'
+
         initChart() {
             this.$nextTick(() => {
-                const ctx = this.$refs.canvas.getContext('2d');
-                if (!ctx) return;
+                this.renderChart();
+            });
+        },
 
-                if (this.chart) this.chart.destroy();
+        setMetric(metric) {
+            this.selectedMetric = metric;
+            this.$nextTick(() => {
+                this.renderChart();
+            });
+        },
 
-                const avgArray = new Array((data.labels || []).length).fill(data.weightedAvg);
+        renderChart() {
+            const ctx = this.$refs.canvas ? this.$refs.canvas.getContext('2d') : null;
+            if (!ctx) return;
 
-                // Dynamically compute safe bounds so both top and bottom are completely visible with zero clipping
-                const values = (data.yieldSeries || []).filter(v => v !== null && v !== undefined && !isNaN(v));
-                const minVal = values.length > 0 ? Math.min(...values, data.weightedAvg) : 0;
-                const maxVal = values.length > 0 ? Math.max(...values, data.weightedAvg) : 100;
+            if (this.chart) {
+                this.chart.destroy();
+                this.chart = null;
+            }
+
+            const labels = data.labels || [];
+            const prodSeries = data.yieldSeries || [];
+            const stemSeries = data.stemSeries || [];
+            const dustSeries = data.dustSeries || [];
+            const wasteSeries = data.wasteSeries || [];
+
+            const avgProd = Number(data.weightedAvgProduct || 72.31);
+            const avgStem = Number(data.weightedAvgStem || 24.60);
+            const avgDust = Number(data.weightedAvgDust || 1.78);
+            const avgWaste = Number(data.weightedAvgWaste || 1.31);
+
+            let datasets = [];
+            let yMin = 0;
+            let yMax = 100;
+            let stepSize = 10;
+
+            if (this.selectedMetric === 'all') {
+                // Multi-line Comparison for all 4 separation outputs
+                datasets = [
+                    {
+                        label: 'Product Yield (%)',
+                        data: prodSeries,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                        pointBackgroundColor: '#10b981',
+                        pointBorderColor: '#064e3b',
+                        pointRadius: 4,
+                        pointHoverRadius: 7,
+                        tension: 0.25,
+                        borderWidth: 3,
+                        fill: false
+                    },
+                    {
+                        label: 'Bits / Stem (%)',
+                        data: stemSeries,
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                        pointBackgroundColor: '#f59e0b',
+                        pointBorderColor: '#78350f',
+                        pointRadius: 4,
+                        pointHoverRadius: 7,
+                        tension: 0.25,
+                        borderWidth: 2.5,
+                        fill: false
+                    },
+                    {
+                        label: 'Dust (%)',
+                        data: dustSeries,
+                        borderColor: '#06b6d4',
+                        backgroundColor: 'rgba(6, 182, 212, 0.08)',
+                        pointBackgroundColor: '#06b6d4',
+                        pointBorderColor: '#164e63',
+                        pointRadius: 4,
+                        pointHoverRadius: 7,
+                        tension: 0.25,
+                        borderWidth: 2.5,
+                        fill: false
+                    },
+                    {
+                        label: 'Uncountable Waste (%)',
+                        data: wasteSeries,
+                        borderColor: '#a855f7',
+                        backgroundColor: 'rgba(168, 85, 247, 0.08)',
+                        pointBackgroundColor: '#a855f7',
+                        pointBorderColor: '#581c87',
+                        pointRadius: 4,
+                        pointHoverRadius: 7,
+                        tension: 0.25,
+                        borderWidth: 2.5,
+                        fill: false
+                    }
+                ];
+                yMin = 0;
+                yMax = 100;
+                stepSize = 10;
+            } else if (this.selectedMetric === 'product') {
+                const values = prodSeries.filter(v => v !== null && v !== undefined && !isNaN(v));
+                const minVal = values.length > 0 ? Math.min(...values, avgProd) : 0;
+                const maxVal = values.length > 0 ? Math.max(...values, avgProd) : 100;
                 const hasZero = values.some(v => v <= 5);
 
-                // Auto-scale min/max with comfortable margin so no points or peaks clip
-                let yMin = hasZero ? 0 : Math.max(0, Math.floor((minVal - 10) / 10) * 10);
-                let yMax = Math.min(100, Math.ceil((maxVal + 8) / 10) * 10);
-                if (maxVal > 85 || yMax < 100) {
-                    if (maxVal > 85) yMax = 100;
-                }
+                yMin = hasZero ? 0 : Math.max(0, Math.floor((minVal - 10) / 10) * 10);
+                yMax = Math.min(100, Math.ceil((maxVal + 8) / 10) * 10);
+                if (maxVal > 85 || yMax < 100) yMax = 100;
                 if (yMin >= yMax) { yMin = 0; yMax = 100; }
+                stepSize = 10;
 
-                this.chart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: data.labels,
-                        datasets: [
-                            {
-                                label: 'Product Yield',
-                                data: data.yieldSeries,
-                                borderColor: '#10b981',
-                                backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                                pointBackgroundColor: '#10b981',
-                                pointBorderColor: '#064e3b',
-                                pointRadius: 5,
-                                pointHoverRadius: 8,
-                                tension: 0.25,
-                                borderWidth: 3,
-                                fill: true
-                            },
-                            {
-                                label: 'Weighted Average (' + data.weightedAvg + '%)',
-                                data: avgArray,
-                                borderColor: '#f59e0b',
-                                borderDash: [8, 6],
-                                pointRadius: 0,
-                                fill: false,
-                                borderWidth: 2.5
-                            },
-                            {
-                                label: 'Outlier',
-                                data: data.outlierPoints,
-                                borderColor: '#ffffff',
-                                borderWidth: 2,
-                                backgroundColor: '#ef4444',
-                                pointBackgroundColor: '#ef4444',
-                                pointRadius: 7,
-                                pointHoverRadius: 10,
-                                pointStyle: 'circle',
-                                showLine: false
-                            }
-                        ]
+                const avgArray = new Array(labels.length).fill(avgProd);
+
+                datasets = [
+                    {
+                        label: 'Product Yield (%)',
+                        data: prodSeries,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                        pointBackgroundColor: '#10b981',
+                        pointBorderColor: '#064e3b',
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                        tension: 0.25,
+                        borderWidth: 3,
+                        fill: true
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        layout: {
-                            padding: {
-                                top: 20,
-                                bottom: 15,
-                                left: 10,
-                                right: 15
+                    {
+                        label: 'Weighted Average (' + avgProd.toFixed(2) + '%)',
+                        data: avgArray,
+                        borderColor: '#f59e0b',
+                        borderDash: [8, 6],
+                        pointRadius: 0,
+                        fill: false,
+                        borderWidth: 2.5
+                    },
+                    {
+                        label: 'Outlier',
+                        data: data.outlierPoints || [],
+                        borderColor: '#ffffff',
+                        borderWidth: 2,
+                        backgroundColor: '#ef4444',
+                        pointBackgroundColor: '#ef4444',
+                        pointRadius: 7,
+                        pointHoverRadius: 10,
+                        pointStyle: 'circle',
+                        showLine: false
+                    }
+                ];
+            } else if (this.selectedMetric === 'stem') {
+                const values = stemSeries.filter(v => v !== null && v !== undefined && !isNaN(v));
+                const minVal = values.length > 0 ? Math.min(...values, avgStem) : 0;
+                const maxVal = values.length > 0 ? Math.max(...values, avgStem) : 35;
+                
+                yMin = Math.max(0, Math.floor((minVal - 5) / 5) * 5);
+                yMax = Math.ceil((maxVal + 5) / 5) * 5;
+                if (yMin >= yMax) { yMin = 0; yMax = 40; }
+                stepSize = 5;
+
+                const avgArray = new Array(labels.length).fill(avgStem);
+
+                datasets = [
+                    {
+                        label: 'Bits / Stem (%)',
+                        data: stemSeries,
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                        pointBackgroundColor: '#f59e0b',
+                        pointBorderColor: '#78350f',
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                        tension: 0.25,
+                        borderWidth: 3,
+                        fill: true
+                    },
+                    {
+                        label: 'Weighted Average (' + avgStem.toFixed(2) + '%)',
+                        data: avgArray,
+                        borderColor: '#38bdf8',
+                        borderDash: [8, 6],
+                        pointRadius: 0,
+                        fill: false,
+                        borderWidth: 2.5
+                    }
+                ];
+            } else if (this.selectedMetric === 'dust') {
+                const values = dustSeries.filter(v => v !== null && v !== undefined && !isNaN(v));
+                const maxVal = values.length > 0 ? Math.max(...values, avgDust) : 3;
+
+                yMin = 0;
+                yMax = Math.max(3, Math.ceil((maxVal + 0.5) * 2) / 2);
+                stepSize = yMax <= 5 ? 0.5 : 1;
+
+                const avgArray = new Array(labels.length).fill(avgDust);
+
+                datasets = [
+                    {
+                        label: 'Dust (%)',
+                        data: dustSeries,
+                        borderColor: '#06b6d4',
+                        backgroundColor: 'rgba(6, 182, 212, 0.15)',
+                        pointBackgroundColor: '#06b6d4',
+                        pointBorderColor: '#164e63',
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                        tension: 0.25,
+                        borderWidth: 3,
+                        fill: true
+                    },
+                    {
+                        label: 'Weighted Average (' + avgDust.toFixed(2) + '%)',
+                        data: avgArray,
+                        borderColor: '#f59e0b',
+                        borderDash: [8, 6],
+                        pointRadius: 0,
+                        fill: false,
+                        borderWidth: 2.5
+                    }
+                ];
+            } else if (this.selectedMetric === 'waste') {
+                const values = wasteSeries.filter(v => v !== null && v !== undefined && !isNaN(v));
+                const maxVal = values.length > 0 ? Math.max(...values, avgWaste) : 3;
+
+                yMin = 0;
+                yMax = Math.max(3, Math.ceil((maxVal + 0.5) * 2) / 2);
+                stepSize = yMax <= 5 ? 0.5 : 1;
+
+                const avgArray = new Array(labels.length).fill(avgWaste);
+
+                datasets = [
+                    {
+                        label: 'Uncountable Waste (%)',
+                        data: wasteSeries,
+                        borderColor: '#a855f7',
+                        backgroundColor: 'rgba(168, 85, 247, 0.15)',
+                        pointBackgroundColor: '#a855f7',
+                        pointBorderColor: '#581c87',
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                        tension: 0.25,
+                        borderWidth: 3,
+                        fill: true
+                    },
+                    {
+                        label: 'Weighted Average (' + avgWaste.toFixed(2) + '%)',
+                        data: avgArray,
+                        borderColor: '#f59e0b',
+                        borderDash: [8, 6],
+                        pointRadius: 0,
+                        fill: false,
+                        borderWidth: 2.5
+                    }
+                ];
+            }
+
+            this.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            top: 20,
+                            bottom: 15,
+                            left: 10,
+                            right: 15
+                        }
+                    },
+                    interaction: { intersect: false, mode: 'index' },
+                    scales: {
+                        y: {
+                            min: yMin,
+                            max: yMax,
+                            grid: { color: 'rgba(255, 255, 255, 0.08)' },
+                            ticks: { 
+                                color: '#a1a1aa', 
+                                font: { family: 'ui-monospace, SFMono-Regular, monospace', size: 12, weight: '600' },
+                                stepSize: stepSize,
+                                callback: v => v + '%' 
                             }
                         },
-                        interaction: { intersect: false, mode: 'index' },
-                        scales: {
-                            y: {
-                                min: yMin,
-                                max: yMax,
-                                grid: { color: 'rgba(255, 255, 255, 0.08)' },
-                                ticks: { 
-                                    color: '#a1a1aa', 
-                                    font: { family: 'ui-monospace, SFMono-Regular, monospace', size: 12, weight: '600' },
-                                    stepSize: 10,
-                                    callback: v => v + '%' 
-                                }
-                            },
-                            x: {
-                                grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                                ticks: { 
-                                    color: '#a1a1aa', 
-                                    font: { family: 'ui-monospace, SFMono-Regular, monospace', size: 11, weight: '600' },
-                                    maxRotation: 0,
-                                    autoSkip: false,
-                                    callback: function(val, index) {
-                                        const detail = (data.batchDetails && data.batchDetails[index]) ? data.batchDetails[index] : null;
-                                        if (detail) {
-                                            return `B#${detail.batchNum}`;
-                                        }
-                                        return data.labels ? data.labels[index] : val;
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { 
+                                color: '#a1a1aa', 
+                                font: { family: 'ui-monospace, SFMono-Regular, monospace', size: 11, weight: '600' },
+                                maxRotation: 0,
+                                autoSkip: false,
+                                callback: function(val, index) {
+                                    const detail = (data.batchDetails && data.batchDetails[index]) ? data.batchDetails[index] : null;
+                                    if (detail) {
+                                        return `B#${detail.batchNum}`;
                                     }
+                                    return labels ? labels[index] : val;
                                 }
                             }
-                        },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                backgroundColor: '#09090b',
-                                titleColor: '#f59e0b',
-                                titleFont: { size: 13, weight: 'bold' },
-                                bodyColor: '#ffffff',
-                                bodyFont: { size: 12 },
-                                borderColor: '#3f3f46',
-                                borderWidth: 1,
-                                padding: 12,
-                                boxPadding: 6,
-                                usePointStyle: true,
-                                callbacks: {
-                                    title: function(context) {
-                                        const idx = context[0].dataIndex;
-                                        const detail = (data.batchDetails && data.batchDetails[idx]) ? data.batchDetails[idx] : null;
-                                        if (detail) {
-                                            return `Batch #${detail.batchNum} • ${detail.batchCode}`;
-                                        }
-                                        return `Batch #${context[0].label}`;
-                                    },
-                                    beforeBody: function(context) {
-                                        const idx = context[0].dataIndex;
-                                        const detail = (data.batchDetails && data.batchDetails[idx]) ? data.batchDetails[idx] : null;
-                                        if (detail) {
-                                            const lines = [
-                                                `📍 Origin: ${detail.origin}`,
-                                                `🏷️ Origin Code: ${detail.originCode}`
-                                            ];
-                                            if (detail.date && detail.date !== '-') {
-                                                lines.push(`📅 Tanggal: ${detail.date}`);
-                                            }
-                                            return lines;
-                                        }
-                                        return [];
-                                    },
-                                    label: function(context) {
-                                        let label = context.dataset.label || '';
-                                        if (context.parsed.y !== null && context.parsed.y !== undefined) {
-                                            return ` ${label}: ${context.parsed.y}%`;
-                                        }
-                                        return null;
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#09090b',
+                            titleColor: '#f59e0b',
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyColor: '#ffffff',
+                            bodyFont: { size: 12 },
+                            borderColor: '#3f3f46',
+                            borderWidth: 1,
+                            padding: 12,
+                            boxPadding: 6,
+                            usePointStyle: true,
+                            callbacks: {
+                                title: function(context) {
+                                    const idx = context[0].dataIndex;
+                                    const detail = (data.batchDetails && data.batchDetails[idx]) ? data.batchDetails[idx] : null;
+                                    if (detail) {
+                                        return `Batch #${detail.batchNum} • ${detail.batchCode}`;
                                     }
+                                    return `Batch #${context[0].label}`;
+                                },
+                                beforeBody: function(context) {
+                                    const idx = context[0].dataIndex;
+                                    const detail = (data.batchDetails && data.batchDetails[idx]) ? data.batchDetails[idx] : null;
+                                    if (detail) {
+                                        const lines = [
+                                            `📍 Origin: ${detail.origin}`,
+                                            `🏷️ Origin Code: ${detail.originCode}`
+                                        ];
+                                        if (detail.date && detail.date !== '-') {
+                                            lines.push(`📅 Tanggal: ${detail.date}`);
+                                        }
+                                        return lines;
+                                    }
+                                    return [];
+                                },
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (context.parsed.y !== null && context.parsed.y !== undefined) {
+                                        return ` ${label}: ${context.parsed.y}%`;
+                                    }
+                                    return null;
                                 }
                             }
                         }
                     }
-                });
+                }
             });
         }
     };

@@ -213,4 +213,35 @@ class CustomerPortalRedesignTest extends TestCase
         $responseTrend->assertStatus(200);
         $responseTrend->assertJsonStructure(['status', 'data' => ['weightedAveragePct', 'series']]);
     }
+
+    public function test_historical_separation_performance_distinguishes_origin_and_origin_code_and_provides_chart_metadata(): void
+    {
+        // Test helper resolution
+        $resolvedLombok24 = CustomerDashboard::resolveOriginAndCode("Lombok'24");
+        $this->assertEquals('Lombok', $resolvedLombok24['origin']);
+        $this->assertEquals("Lombok'24", $resolvedLombok24['originCode']);
+
+        $resolvedPaiton = CustomerDashboard::resolveOriginAndCode('PAITON P10T5');
+        $this->assertEquals('Paiton', $resolvedPaiton['origin']);
+        $this->assertEquals('P10T5', $resolvedPaiton['originCode']);
+
+        $resolvedExplicit = CustomerDashboard::resolveOriginAndCode('Lombok', 'FN602');
+        $this->assertEquals('Lombok', $resolvedExplicit['origin']);
+        $this->assertEquals('FN602', $resolvedExplicit['originCode']);
+
+        // Test Livewire component renders Historical tab with origin & origin code
+        Livewire::actingAs($this->customerUser1)
+            ->test(CustomerDashboard::class)
+            ->call('setTab', 'historical_analytics')
+            ->assertSet('activeTab', 'historical_analytics')
+            ->assertSee('Historical Product Yield Trend')
+            ->assertSee('Output Composition Trend')
+            ->assertSee('Paiton')
+            ->assertSee('P10T5')
+            ->set('histBaseOrigin', 'Paiton')
+            ->assertSet('histBaseOrigin', 'Paiton')
+            ->call('resetHistoricalFilters')
+            ->assertSet('histBaseOrigin', '')
+            ->assertSet('histOriginCode', '');
+    }
 }

@@ -98,24 +98,17 @@ class="space-y-6">
             </div>
 
             <div>
-                <label class="block text-[10px] font-bold uppercase text-zinc-400 mb-1">Origin</label>
-                <select class="w-full px-3 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-amber-500 outline-none">
-                    <option value="">All Origins</option>
-                    @foreach($origins as $org)
-                        <option value="{{ $org->id }}">{{ $org->region_name }}</option>
-                    @endforeach
-                </select>
+                <label class="block text-[10px] font-bold uppercase text-amber-400 mb-1">Origin</label>
+                <div class="px-3 py-2.5 rounded-xl bg-zinc-950/80 border border-amber-500/40 text-amber-300 font-bold text-xs truncate">
+                    {{ $batchOverviewData['originName'] ?? '-' }}
+                </div>
             </div>
 
             <div>
-                <label class="block text-[10px] font-bold uppercase text-zinc-400 mb-1">Origin Code</label>
-                <select class="w-full px-3 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-amber-500 outline-none">
-                    <option value="">All Codes</option>
-                    <option value="P10T5">P10T5</option>
-                    <option value="P9K5">P9K5</option>
-                    <option value="FN504">FN504</option>
-                    <option value="FN602">FN602</option>
-                </select>
+                <label class="block text-[10px] font-bold uppercase text-cyan-400 mb-1">Origin Code</label>
+                <div class="px-3 py-2.5 rounded-xl bg-zinc-950/80 border border-cyan-500/40 text-cyan-300 font-mono font-bold text-xs truncate">
+                    {{ $batchOverviewData['originCode'] ?? '-' }}
+                </div>
             </div>
 
             <div>
@@ -365,7 +358,7 @@ class="space-y-6">
                         <span class="flex items-center"><span class="w-2.5 h-2.5 rounded bg-emerald-500 mr-1"></span> Product</span>
                         <span class="flex items-center"><span class="w-2.5 h-2.5 rounded bg-amber-500 mr-1"></span> Bits Stem</span>
                         <span class="flex items-center"><span class="w-2.5 h-2.5 rounded bg-blue-500 mr-1"></span> Dust</span>
-                        <span class="flex items-center"><span class="w-2.5 h-2.5 rounded bg-zinc-500 mr-1"></span> Process Variance</span>
+                        <span class="flex items-center"><span class="w-2.5 h-2.5 rounded bg-zinc-500 mr-1"></span> Uncountable Waste</span>
                     </div>
                 </div>
 
@@ -387,7 +380,7 @@ class="space-y-6">
                                 <div style="width: {{ $os['dustPct'] }}%" class="bg-blue-500 flex items-center justify-center text-white" title="Dust {{ $os['dustPct'] }}%">
                                     {{ $os['dustPct'] > 5 ? number_format($os['dustPct'], 1) . '%' : '' }}
                                 </div>
-                                <div style="width: {{ $os['variancePct'] }}%" class="bg-zinc-600 flex items-center justify-center text-zinc-300" title="Process Variance {{ $os['variancePct'] }}%">
+                                <div style="width: {{ $os['variancePct'] }}%" class="bg-zinc-600 flex items-center justify-center text-zinc-300" title="Uncountable Waste {{ $os['variancePct'] }}%">
                                     {{ $os['variancePct'] > 5 ? number_format($os['variancePct'], 1) . '%' : '' }}
                                 </div>
                             </div>
@@ -469,7 +462,7 @@ class="space-y-6">
                                     <td class="px-3 py-2.5 text-right text-blue-300">{{ number_format($batchOverviewData['balanceItems']['dustPct'] ?? 1.85, 2, '.', ',') }}%</td>
                                 </tr>
                                 <tr>
-                                    <td class="px-3 py-2.5 font-sans text-zinc-400">Process Variance</td>
+                                    <td class="px-3 py-2.5 font-sans text-zinc-400">Uncountable Waste</td>
                                     <td class="px-3 py-2.5 text-right text-zinc-400">{{ number_format($batchOverviewData['balanceItems']['varianceKg'] ?? 20.28, 2, '.', ',') }}</td>
                                     <td class="px-3 py-2.5 text-right text-zinc-400">{{ number_format($batchOverviewData['balanceItems']['variancePct'] ?? 0.63, 2, '.', ',') }}%</td>
                                 </tr>
@@ -512,13 +505,14 @@ class="space-y-6">
         <!-- FILTER BAR -->
         <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-4 sm:p-5 shadow-xl grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 items-end">
             <div>
-                <label class="block text-[10px] font-bold uppercase text-zinc-400 mb-1">Date Range</label>
-                <input type="text" placeholder="01 Jun - 31 Jul 2026" class="w-full px-3 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-amber-500 outline-none">
+                <label class="block text-[10px] font-bold uppercase text-zinc-400 mb-1">Start Date</label>
+                <input type="date" wire:model.live="histStartDate" class="w-full px-2.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-amber-500 outline-none">
             </div>
 
             <div>
                 <label class="block text-[10px] font-bold uppercase text-zinc-400 mb-1">Batch Range</label>
-                <select class="w-full px-3 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-amber-400 font-mono font-bold text-xs focus:border-amber-500 outline-none">
+                <select wire:model.live="histBatchRange" class="w-full px-3 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-amber-400 font-mono font-bold text-xs focus:border-amber-500 outline-none">
+                    <option value="all">All Batches</option>
                     <option value="1-25">1 - 25</option>
                     <option value="1-10">1 - 10</option>
                     <option value="11-20">11 - 20</option>
@@ -528,8 +522,8 @@ class="space-y-6">
 
             <div>
                 <label class="block text-[10px] font-bold uppercase text-zinc-400 mb-1">Product Type</label>
-                <select class="w-full px-3 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-amber-500 outline-none">
-                    <option value="">Rajangan</option>
+                <select wire:model.live="histProductTypeId" class="w-full px-3 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-amber-500 outline-none">
+                    <option value="">All Product Types</option>
                     @foreach($productTypes as $pt)
                         <option value="{{ $pt->id }}">{{ $pt->name }}</option>
                     @endforeach
@@ -537,29 +531,28 @@ class="space-y-6">
             </div>
 
             <div>
-                <label class="block text-[10px] font-bold uppercase text-zinc-400 mb-1">Origin</label>
-                <select class="w-full px-3 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-amber-500 outline-none">
+                <label class="block text-[10px] font-bold uppercase text-amber-400 mb-1">Origin</label>
+                <select wire:model.live="histBaseOrigin" class="w-full px-3 py-2.5 rounded-xl bg-zinc-950 border border-amber-500/60 text-amber-300 font-bold text-xs focus:border-amber-500 outline-none">
                     <option value="">All Origins</option>
-                    @foreach($origins as $org)
-                        <option value="{{ $org->id }}">{{ $org->region_name }}</option>
+                    @foreach($distinctOrigins as $dOrig)
+                        <option value="{{ $dOrig }}">{{ $dOrig }}</option>
                     @endforeach
                 </select>
             </div>
 
             <div>
-                <label class="block text-[10px] font-bold uppercase text-zinc-400 mb-1">Origin Code</label>
-                <select class="w-full px-3 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-amber-500 outline-none">
+                <label class="block text-[10px] font-bold uppercase text-cyan-400 mb-1">Origin Code</label>
+                <select wire:model.live="histOriginCode" class="w-full px-3 py-2.5 rounded-xl bg-zinc-950 border border-cyan-500/60 text-cyan-300 font-mono font-bold text-xs focus:border-cyan-500 outline-none">
                     <option value="">All Codes</option>
-                    <option value="P10T5">P10T5</option>
-                    <option value="P9K5">P9K5</option>
-                    <option value="FN504">FN504</option>
-                    <option value="FN602">FN602</option>
+                    @foreach($distinctOriginCodes as $dCode)
+                        <option value="{{ $dCode }}">{{ $dCode }}</option>
+                    @endforeach
                 </select>
             </div>
 
             <div>
                 <label class="block text-[10px] font-bold uppercase text-zinc-400 mb-1">Grouping</label>
-                <select class="w-full px-3 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-amber-500 outline-none">
+                <select wire:model.live="histGrouping" class="w-full px-3 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-amber-500 outline-none">
                     <option value="by_batch">By Batch</option>
                     <option value="by_origin">By Origin</option>
                 </select>
@@ -567,18 +560,16 @@ class="space-y-6">
 
             <div>
                 <label class="block text-[10px] font-bold uppercase text-zinc-400 mb-1">Metric</label>
-                <select class="w-full px-3 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-emerald-400 font-bold text-xs focus:border-amber-500 outline-none">
-                    <option value="yield">Yield (%)</option>
-                    <option value="kg">Weight (kg)</option>
+                <select wire:model.live="histMetric" class="w-full px-3 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-emerald-400 font-bold text-xs focus:border-amber-500 outline-none">
+                    <option value="yield_pct">Yield (%)</option>
+                    <option value="weight_kg">Weight (kg)</option>
                 </select>
             </div>
 
-            <div class="flex items-center gap-1.5">
-                <button wire:click="resetHistoricalFilters" class="w-1/2 py-2.5 rounded-xl bg-zinc-800 text-zinc-300 hover:bg-zinc-700 text-xs font-bold transition-all">
-                    Reset
-                </button>
-                <button class="w-1/2 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-black transition-all shadow-md shadow-amber-900/30">
-                    Apply
+            <div class="flex items-center">
+                <button type="button" wire:click="resetHistoricalFilters" class="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition-all flex items-center justify-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    Reset Filter
                 </button>
             </div>
         </div>
@@ -634,7 +625,8 @@ class="space-y-6">
                  labels: @js($historicalData['chartLabels'] ?? []),
                  yieldSeries: @js($historicalData['yieldSeries'] ?? []),
                  weightedAvg: @js($historicalData['weightedProductYield'] ?? 72.31),
-                 outlierPoints: @js($historicalData['outlierPoints'] ?? [])
+                 outlierPoints: @js($historicalData['outlierPoints'] ?? []),
+                 batchDetails: @js($historicalData['batchDetails'] ?? [])
              })"
              x-init="initChart()"
              class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-5">
@@ -734,7 +726,8 @@ class="space-y-6">
                      prod: @js($historicalData['compProduct'] ?? []),
                      stem: @js($historicalData['compStem'] ?? []),
                      dust: @js($historicalData['compDust'] ?? []),
-                     variance: @js($historicalData['compVariance'] ?? [])
+                     variance: @js($historicalData['compVariance'] ?? []),
+                     batchDetails: @js($historicalData['batchDetails'] ?? [])
                  })"
                  x-init="initChart()"
                  class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
@@ -812,14 +805,14 @@ class="space-y-6">
                         <tr>
                             <th class="px-3 py-3">Batch</th>
                             <th class="px-3 py-3">Date</th>
-                            <th class="px-3 py-3">Origin</th>
-                            <th class="px-3 py-3">Code</th>
+                            <th class="px-3 py-3 text-amber-400">Origin</th>
+                            <th class="px-3 py-3 text-cyan-400">Origin Code</th>
                             <th class="px-3 py-3 text-right">Input kg</th>
                             <th class="px-3 py-3 text-right">Product kg</th>
                             <th class="px-3 py-3 text-right text-emerald-400">Yield %</th>
                             <th class="px-3 py-3 text-right">Stem %</th>
                             <th class="px-3 py-3 text-right">Dust %</th>
-                            <th class="px-3 py-3 text-right">Variance %</th>
+                            <th class="px-3 py-3 text-right">Waste %</th>
                             <th class="px-3 py-3 text-center">Certificate</th>
                             <th class="px-3 py-3 text-center">Action</th>
                         </tr>
@@ -827,10 +820,21 @@ class="space-y-6">
                     <tbody class="divide-y divide-zinc-800/60">
                         @forelse($historicalData['batchRows'] ?? [] as $row)
                             <tr class="hover:bg-zinc-800/40 transition-colors">
-                                <td class="px-3 py-3 font-bold text-amber-400">{{ $row['batchNum'] }}</td>
+                                <td class="px-3 py-3">
+                                    <span class="font-bold text-amber-400">#{{ $row['batchNum'] }}</span>
+                                    <span class="text-zinc-500 text-[10px] block">{{ $row['batchCode'] }}</span>
+                                </td>
                                 <td class="px-3 py-3 text-zinc-300">{{ $row['date'] }}</td>
-                                <td class="px-3 py-3 font-sans text-zinc-200 font-bold">{{ $row['origin'] }}</td>
-                                <td class="px-3 py-3 text-zinc-400">{{ $row['originCode'] }}</td>
+                                <td class="px-3 py-3 font-sans">
+                                    <span class="px-2 py-0.5 rounded-lg bg-amber-950/60 text-amber-300 border border-amber-800/60 font-bold text-xs">
+                                        {{ $row['origin'] }}
+                                    </span>
+                                </td>
+                                <td class="px-3 py-3">
+                                    <span class="px-2 py-0.5 rounded-lg bg-zinc-950 text-cyan-400 border border-zinc-800 font-mono font-bold text-xs">
+                                        {{ $row['originCode'] }}
+                                    </span>
+                                </td>
                                 <td class="px-3 py-3 text-right text-zinc-300">{{ number_format($row['inputKg'], 0, '.', ',') }}</td>
                                 <td class="px-3 py-3 text-right text-zinc-200 font-bold">{{ number_format($row['productKg'], 0, '.', ',') }}</td>
                                 <td class="px-3 py-3 text-right font-black text-emerald-400">{{ number_format($row['yieldPct'], 2) }}%</td>
@@ -851,7 +855,7 @@ class="space-y-6">
                         @empty
                             <tr>
                                 <td colspan="12" class="px-4 py-8 text-center text-zinc-500 font-sans">
-                                    Tidak ada data historis batch yang cocok.
+                                    Tidak ada data historis batch yang cocok dengan filter yang dipilih.
                                 </td>
                             </tr>
                         @endforelse
@@ -968,7 +972,7 @@ class="space-y-6">
                             <input type="number" step="0.01" x-model.number="op.dustQty" @input="recalculate()" class="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-blue-300 font-mono font-bold outline-none">
                         </div>
                         <div>
-                            <label class="block text-zinc-400 text-[11px] mb-1">Process Variance (kg)</label>
+                            <label class="block text-zinc-400 text-[11px] mb-1">Uncountable Waste (kg)</label>
                             <input type="number" step="0.01" x-model.number="op.processVariance" @input="recalculate()" class="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-400 font-mono font-bold outline-none">
                         </div>
                     </div>
@@ -1278,7 +1282,7 @@ function historicalYieldChart(data) {
 
                 if (this.chart) this.chart.destroy();
 
-                const avgArray = new Array(data.labels.length).fill(data.weightedAvg);
+                const avgArray = new Array((data.labels || []).length).fill(data.weightedAvg);
 
                 // Dynamically compute safe bounds so both top and bottom are completely visible with zero clipping
                 const values = (data.yieldSeries || []).filter(v => v !== null && v !== undefined && !isNaN(v));
@@ -1300,7 +1304,7 @@ function historicalYieldChart(data) {
                         labels: data.labels,
                         datasets: [
                             {
-                                label: 'Product Yield (%)',
+                                label: 'Product Yield',
                                 data: data.yieldSeries,
                                 borderColor: '#10b981',
                                 backgroundColor: 'rgba(16, 185, 129, 0.12)',
@@ -1365,14 +1369,21 @@ function historicalYieldChart(data) {
                                     color: '#a1a1aa', 
                                     font: { family: 'ui-monospace, SFMono-Regular, monospace', size: 11, weight: '600' },
                                     maxRotation: 0,
-                                    autoSkip: false
+                                    autoSkip: false,
+                                    callback: function(val, index) {
+                                        const detail = (data.batchDetails && data.batchDetails[index]) ? data.batchDetails[index] : null;
+                                        if (detail) {
+                                            return `B#${detail.batchNum}`;
+                                        }
+                                        return data.labels ? data.labels[index] : val;
+                                    }
                                 }
                             }
                         },
                         plugins: {
                             legend: { display: false },
                             tooltip: {
-                                backgroundColor: '#18181b',
+                                backgroundColor: '#09090b',
                                 titleColor: '#f59e0b',
                                 titleFont: { size: 13, weight: 'bold' },
                                 bodyColor: '#ffffff',
@@ -1383,15 +1394,35 @@ function historicalYieldChart(data) {
                                 boxPadding: 6,
                                 usePointStyle: true,
                                 callbacks: {
+                                    title: function(context) {
+                                        const idx = context[0].dataIndex;
+                                        const detail = (data.batchDetails && data.batchDetails[idx]) ? data.batchDetails[idx] : null;
+                                        if (detail) {
+                                            return `Batch #${detail.batchNum} • ${detail.batchCode}`;
+                                        }
+                                        return `Batch #${context[0].label}`;
+                                    },
+                                    beforeBody: function(context) {
+                                        const idx = context[0].dataIndex;
+                                        const detail = (data.batchDetails && data.batchDetails[idx]) ? data.batchDetails[idx] : null;
+                                        if (detail) {
+                                            const lines = [
+                                                `📍 Origin: ${detail.origin}`,
+                                                `🏷️ Origin Code: ${detail.originCode}`
+                                            ];
+                                            if (detail.date && detail.date !== '-') {
+                                                lines.push(`📅 Tanggal: ${detail.date}`);
+                                            }
+                                            return lines;
+                                        }
+                                        return [];
+                                    },
                                     label: function(context) {
                                         let label = context.dataset.label || '';
-                                        if (label) {
-                                            label += ': ';
+                                        if (context.parsed.y !== null && context.parsed.y !== undefined) {
+                                            return ` ${label}: ${context.parsed.y}%`;
                                         }
-                                        if (context.parsed.y !== null) {
-                                            label += context.parsed.y + '%';
-                                        }
-                                        return label;
+                                        return null;
                                     }
                                 }
                             }
@@ -1418,20 +1449,78 @@ function historicalCompositionChart(data) {
                     data: {
                         labels: data.labels,
                         datasets: [
-                            { label: 'Product', data: data.prod, backgroundColor: '#10b981' },
+                            { label: 'Product Yield', data: data.prod, backgroundColor: '#10b981' },
                             { label: 'Bits Stem', data: data.stem, backgroundColor: '#f59e0b' },
                             { label: 'Dust', data: data.dust, backgroundColor: '#3b82f6' },
-                            { label: 'Variance', data: data.variance, backgroundColor: '#6b7280' }
+                            { label: 'Uncountable Waste', data: data.variance, backgroundColor: '#6b7280' }
                         ]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
                         scales: {
-                            x: { stacked: true, ticks: { color: '#9ca3af', font: { size: 9 } } },
-                            y: { stacked: true, max: 100, ticks: { color: '#9ca3af', callback: v => v + '%' } }
+                            x: { 
+                                stacked: true, 
+                                ticks: { 
+                                    color: '#9ca3af', 
+                                    font: { size: 9 },
+                                    callback: function(val, index) {
+                                        const detail = (data.batchDetails && data.batchDetails[index]) ? data.batchDetails[index] : null;
+                                        if (detail) {
+                                            return `B#${detail.batchNum}`;
+                                        }
+                                        return data.labels ? data.labels[index] : val;
+                                    }
+                                } 
+                            },
+                            y: { 
+                                stacked: true, 
+                                max: 100, 
+                                ticks: { color: '#9ca3af', callback: v => v + '%' } 
+                            }
                         },
-                        plugins: { legend: { display: false } }
+                        plugins: { 
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: '#09090b',
+                                titleColor: '#f59e0b',
+                                titleFont: { size: 12, weight: 'bold' },
+                                bodyColor: '#ffffff',
+                                bodyFont: { size: 11 },
+                                borderColor: '#3f3f46',
+                                borderWidth: 1,
+                                padding: 10,
+                                boxPadding: 4,
+                                callbacks: {
+                                    title: function(context) {
+                                        const idx = context[0].dataIndex;
+                                        const detail = (data.batchDetails && data.batchDetails[idx]) ? data.batchDetails[idx] : null;
+                                        if (detail) {
+                                            return `Batch #${detail.batchNum} • ${detail.batchCode}`;
+                                        }
+                                        return `Batch #${context[0].label}`;
+                                    },
+                                    beforeBody: function(context) {
+                                        const idx = context[0].dataIndex;
+                                        const detail = (data.batchDetails && data.batchDetails[idx]) ? data.batchDetails[idx] : null;
+                                        if (detail) {
+                                            return [
+                                                `📍 Origin: ${detail.origin}`,
+                                                `🏷️ Origin Code: ${detail.originCode}`
+                                            ];
+                                        }
+                                        return [];
+                                    },
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (context.parsed.y !== null && context.parsed.y !== undefined) {
+                                            return ` ${label}: ${context.parsed.y}%`;
+                                        }
+                                        return null;
+                                    }
+                                }
+                            }
+                        }
                     }
                 });
             });

@@ -34,8 +34,10 @@ class CustomerDashboard extends Component
     public string $histEndDate = '';
     public string $histBatchMin = '';
     public string $histBatchMax = '';
+    public string $histBatchRange = 'all';
     public ?int $histProductTypeId = null;
     public ?int $histOriginId = null;
+    public string $histBaseOrigin = '';
     public string $histOriginCode = '';
     public string $histPackType = '';
     public string $histGrouping = 'by_batch';
@@ -68,15 +70,72 @@ class CustomerDashboard extends Component
         return strtoupper($clean);
     }
 
-    public static function extractOriginCode(?string $name): string
+    public static function extractOriginCode(?string $name, ?string $materialCode = null): string
     {
-        if (empty($name)) {
-            return '-';
+        $res = self::resolveOriginAndCode($name, $materialCode);
+        return $res['originCode'];
+    }
+
+    public static function resolveOriginAndCode($batchOrOrigin, ?string $materialCode = null): array
+    {
+        $regionName = '';
+        if ($batchOrOrigin instanceof Batch) {
+            $regionName = $batchOrOrigin->origin ? $batchOrOrigin->origin->region_name : '';
+            $materialCode = $materialCode ?: $batchOrOrigin->material_code;
+        } elseif ($batchOrOrigin instanceof Origin) {
+            $regionName = $batchOrOrigin->region_name;
+        } elseif (is_string($batchOrOrigin)) {
+            $regionName = $batchOrOrigin;
         }
-        if (preg_match('/\b([A-Z0-9]{3,8})\b/i', $name, $matches)) {
-            return strtoupper($matches[1]);
+
+        $raw = trim($regionName ?? '');
+        if (empty($raw)) {
+            return [
+                'origin' => 'Unknown',
+                'originCode' => !empty($materialCode) ? trim($materialCode) : '-',
+                'baseOrigin' => 'UNKNOWN',
+            ];
         }
-        return strtoupper(substr(trim($name), 0, 5));
+
+        $baseOrigin = self::extractBaseOrigin($raw);
+        $originTitle = ucwords(strtolower($baseOrigin));
+
+        // If explicit materialCode exists, that is the Origin Code
+        if (!empty($materialCode) && trim($materialCode) !== '') {
+            return [
+                'origin' => $originTitle,
+                'originCode' => trim($materialCode),
+                'baseOrigin' => $baseOrigin,
+            ];
+        }
+
+        // Pattern 1: Lombok'24 / LOMBOK '24 / Lombok 2024 / Lombok 24
+        if (preg_match("/^([A-Za-z\s]+)['’\s]*(\d{2,4})$/u", $raw, $m)) {
+            $base = ucwords(strtolower(trim($m[1])));
+            $code = $base . "'" . substr($m[2], -2);
+            return [
+                'origin' => $base,
+                'originCode' => $code,
+                'baseOrigin' => $baseOrigin,
+            ];
+        }
+
+        // Pattern 2: PAITON P10T5 / LOMBOK P9K5 / MADURA FN504
+        if (preg_match('/^([A-Za-z\s]+)\s+([A-Z0-9\'-]{2,})$/i', $raw, $m)) {
+            $base = ucwords(strtolower(trim($m[1])));
+            return [
+                'origin' => $base,
+                'originCode' => strtoupper(trim($m[2])),
+                'baseOrigin' => $baseOrigin,
+            ];
+        }
+
+        // Default single word origin (e.g. "LOMBOK" -> origin: "Lombok", originCode: "Lombok")
+        return [
+            'origin' => $originTitle,
+            'originCode' => $originTitle,
+            'baseOrigin' => $baseOrigin,
+        ];
     }
 
     public function mount()
@@ -151,8 +210,10 @@ class CustomerDashboard extends Component
             'histEndDate',
             'histBatchMin',
             'histBatchMax',
+            'histBatchRange',
             'histProductTypeId',
             'histOriginId',
+            'histBaseOrigin',
             'histOriginCode',
             'histPackType',
             'histGrouping',
@@ -217,7 +278,7 @@ class CustomerDashboard extends Component
         $historicalData = $this->computeHistoricalAnalyticsData($allApprovedBatches);
 
         // ----------------------------------------------------
-        // 3. MASTER DATA DROPDOWNS
+        // 3. MASTER DATA DROPDOWNS & DISTINCT ORIGINS
         // ----------------------------------------------------
         $productTypes = ProductType::orderBy('name')->get();
         $origins = Origin::orderBy('region_name')->get();
@@ -230,6 +291,26 @@ class CustomerDashboard extends Component
             }
         }
         sort($baseOrigins);
+
+        $distinctOrigins = [];
+        $distinctOriginCodes = [];
+        foreach ($allApprovedBatches as $b) {
+            $info = self::resolveOriginAndCode($b);
+            if (! empty($info['origin']) && $info['origin'] !== 'Unknown') {
+                $distinctOrigins[$info['origin']] = $info['origin'];
+            }
+            if (! empty($info['originCode']) && $info['originCode'] !== '-') {
+                $distinctOriginCodes[$info['originCode']] = $info['originCode'];
+            }
+        }
+        if (empty($distinctOrigins)) {
+            $distinctOrigins = ['Lombok' => 'Lombok', 'Madura' => 'Madura', 'Paiton' => 'Paiton', 'Rembang' => 'Rembang', 'Temanggung' => 'Temanggung'];
+        }
+        if (empty($distinctOriginCodes)) {
+            $distinctOriginCodes = ["Lombok'24" => "Lombok'24", 'P10T5' => 'P10T5', 'P9K5' => 'P9K5', 'FN504' => 'FN504', 'FN602' => 'FN602'];
+        }
+        ksort($distinctOrigins);
+        ksort($distinctOriginCodes);
 
         // Standard Paginated Batches for Certificate List Table
         $paginatedBatchesQuery = $this->getBaseQuery()->latest('date_of_receipt');
@@ -255,6 +336,8 @@ class CustomerDashboard extends Component
             'productTypes',
             'origins',
             'baseOrigins',
+            'distinctOrigins',
+            'distinctOriginCodes',
             'approvedBatches'
         ));
     }
@@ -391,8 +474,8 @@ class CustomerDashboard extends Component
             'customerName' => $batch->customer->name ?? 'PT Falih Nur Gemilang',
             'deliveryNote' => $batch->deliveryNote->dn_number ?? 'DN-2026-0025',
             'receiptDate' => $dateStr,
-            'originName' => $batch->origin->region_name ?? 'All Origins',
-            'originCode' => self::extractOriginCode($batch->origin->region_name ?? ''),
+            'originName' => self::resolveOriginAndCode($batch)['origin'],
+            'originCode' => self::resolveOriginAndCode($batch)['originCode'],
             'certificateStatus' => $batch->isApprovedBySupervisor() ? 'Released' : 'Pending',
 
             // 8 Top KPI Cards
@@ -440,21 +523,42 @@ class CustomerDashboard extends Component
         if ($this->histProductTypeId) {
             $filtered = $filtered->where('product_type_id', $this->histProductTypeId);
         }
-        if ($this->histOriginId) {
+        if (! empty($this->histBaseOrigin)) {
+            $filtered = $filtered->filter(function ($b) {
+                $info = self::resolveOriginAndCode($b);
+                return strcasecmp($info['origin'], $this->histBaseOrigin) === 0;
+            });
+        } elseif ($this->histOriginId) {
             $filtered = $filtered->where('origin_id', $this->histOriginId);
         }
-        if ($this->histStartDate && $this->histEndDate) {
+        if (! empty($this->histOriginCode)) {
             $filtered = $filtered->filter(function ($b) {
-                return $b->date_of_receipt && $b->date_of_receipt->between($this->histStartDate, $this->histEndDate);
+                $info = self::resolveOriginAndCode($b);
+                return strcasecmp($info['originCode'], $this->histOriginCode) === 0;
             });
         }
-        if ($this->histBatchMin && $this->histBatchMax) {
+        if ($this->histBatchRange && $this->histBatchRange !== 'all') {
+            if (preg_match('/^(\d+)-(\d+)$/', $this->histBatchRange, $m)) {
+                $min = (int) $m[1];
+                $max = (int) $m[2];
+                $filtered = $filtered->filter(function ($b) use ($min, $max) {
+                    preg_match('/(\d+)$/', $b->batch_code, $bm);
+                    $num = isset($bm[1]) ? (int) $bm[1] : 0;
+                    return $num >= $min && $num <= $max;
+                });
+            }
+        } elseif ($this->histBatchMin && $this->histBatchMax) {
             $min = (int) $this->histBatchMin;
             $max = (int) $this->histBatchMax;
             $filtered = $filtered->filter(function ($b) use ($min, $max) {
                 preg_match('/(\d+)$/', $b->batch_code, $m);
                 $num = isset($m[1]) ? (int) $m[1] : 0;
                 return $num >= $min && $num <= $max;
+            });
+        }
+        if ($this->histStartDate && $this->histEndDate) {
+            $filtered = $filtered->filter(function ($b) {
+                return $b->date_of_receipt && $b->date_of_receipt->between($this->histStartDate, $this->histEndDate);
             });
         }
 
@@ -480,6 +584,7 @@ class CustomerDashboard extends Component
         $compStem = [];
         $compDust = [];
         $compVariance = [];
+        $batchDetails = [];
 
         $yieldList = [];
         $batchRows = [];
@@ -528,6 +633,10 @@ class CustomerDashboard extends Component
 
             $isOutlier = abs($yield - $weightedYieldPct) > 5.0;
 
+            $originInfo = self::resolveOriginAndCode($b);
+            $originName = $originInfo['origin'];
+            $originCode = $originInfo['originCode'];
+
             $chartLabels[] = (string) $batchNum;
             $yieldSeries[] = $yield;
             $weightedAvgSeries[] = $weightedYieldPct;
@@ -540,13 +649,13 @@ class CustomerDashboard extends Component
 
             $yieldList[$batchNum] = $yield;
 
-            $batchRows[] = [
+            $detail = [
                 'id' => $b->id,
                 'batchNum' => $batchNum,
                 'batchCode' => $b->batch_code,
                 'date' => $b->date_of_receipt ? $b->date_of_receipt->format('d M Y') : '-',
-                'origin' => $b->origin ? $b->origin->region_name : 'Malawi',
-                'originCode' => self::extractOriginCode($b->origin ? $b->origin->region_name : 'P10T5'),
+                'origin' => $originName,
+                'originCode' => $originCode,
                 'inputKg' => $input,
                 'productKg' => $prod,
                 'yieldPct' => $yield,
@@ -555,6 +664,9 @@ class CustomerDashboard extends Component
                 'variancePct' => $varPct,
                 'certificateStatus' => $b->isApprovedBySupervisor() ? 'Released' : 'Pending',
             ];
+
+            $batchDetails[] = $detail;
+            $batchRows[] = $detail;
 
             $idx++;
         }
@@ -574,8 +686,11 @@ class CustomerDashboard extends Component
 
         $outliersCount = count(array_filter($outlierPoints, fn ($v) => $v !== null));
 
-        // Weighted Yield by Origin
-        $originsGrouped = $filtered->groupBy(fn ($b) => $b->origin ? $b->origin->region_name : 'Other');
+        // Weighted Yield by Origin (Grouped cleanly by Origin name)
+        $originsGrouped = $filtered->groupBy(function ($b) {
+            $info = self::resolveOriginAndCode($b);
+            return $info['origin'];
+        });
         $originYieldBars = [];
         foreach ($originsGrouped as $name => $items) {
             $oInput = $items->sum(fn ($b) => (float) ($b->mrl_netto_weight > 0 ? $b->mrl_netto_weight : $b->mrl_gross_weight));
@@ -598,13 +713,44 @@ class CustomerDashboard extends Component
             ];
         }
 
-        // Origin Code Performance Matrix
-        $codeMatrix = [
-            ['code' => 'P10T5', 'c1' => 1, 'c2' => 1, 'c3' => 3, 'c4' => 4, 'c5' => 2, 'total' => 11],
-            ['code' => 'P9K5', 'c1' => 0, 'c2' => 1, 'c3' => 4, 'c4' => 3, 'c5' => 1, 'total' => 9],
-            ['code' => 'FN504', 'c1' => 1, 'c2' => 2, 'c3' => 2, 'c4' => 2, 'c5' => 1, 'total' => 8],
-            ['code' => 'FN602', 'c1' => 1, 'c2' => 1, 'c3' => 1, 'c4' => 1, 'c5' => 0, 'total' => 4],
-        ];
+        // Origin Code Performance Matrix (Grouped cleanly by Origin Code)
+        $codesGrouped = $filtered->groupBy(function ($b) {
+            $info = self::resolveOriginAndCode($b);
+            return $info['originCode'] !== '-' ? $info['originCode'] : $info['origin'];
+        });
+        $codeMatrix = [];
+        foreach ($codesGrouped as $code => $items) {
+            $c1 = 0; $c2 = 0; $c3 = 0; $c4 = 0; $c5 = 0;
+            foreach ($items as $it) {
+                $inp = (float) ($it->mrl_netto_weight > 0 ? $it->mrl_netto_weight : ($it->mrl_gross_weight > 0 ? $it->mrl_gross_weight : $it->dn_netto_weight));
+                $p = (float) $it->separation_product_kg;
+                $y = ($inp > 0 && $p > 0) ? round(($p / $inp) * 100, 2) : (float) ($it->yield_product_pct ?? 0);
+                if ($y < 68) $c1++;
+                elseif ($y < 71) $c2++;
+                elseif ($y < 74) $c3++;
+                elseif ($y < 77) $c4++;
+                else $c5++;
+            }
+            $codeMatrix[] = [
+                'code' => $code,
+                'c1' => $c1,
+                'c2' => $c2,
+                'c3' => $c3,
+                'c4' => $c4,
+                'c5' => $c5,
+                'total' => $items->count(),
+            ];
+        }
+        usort($codeMatrix, fn ($a, $b) => $b['total'] <=> $a['total']);
+        if (empty($codeMatrix)) {
+            $codeMatrix = [
+                ['code' => "Lombok'24", 'c1' => 0, 'c2' => 1, 'c3' => 1, 'c4' => 0, 'c5' => 0, 'total' => 2],
+                ['code' => 'P10T5', 'c1' => 1, 'c2' => 1, 'c3' => 3, 'c4' => 4, 'c5' => 2, 'total' => 11],
+                ['code' => 'P9K5', 'c1' => 0, 'c2' => 1, 'c3' => 4, 'c4' => 3, 'c5' => 1, 'total' => 9],
+                ['code' => 'FN504', 'c1' => 1, 'c2' => 2, 'c3' => 2, 'c4' => 2, 'c5' => 1, 'total' => 8],
+                ['code' => 'FN602', 'c1' => 1, 'c2' => 1, 'c3' => 1, 'c4' => 1, 'c5' => 0, 'total' => 4],
+            ];
+        }
 
         return [
             'totalBatches' => $totalBatches ?: 25,
@@ -629,6 +775,7 @@ class CustomerDashboard extends Component
             'yieldSeries' => $yieldSeries,
             'weightedAvgSeries' => $weightedAvgSeries,
             'outlierPoints' => $outlierPoints,
+            'batchDetails' => $batchDetails,
             'milestoneBatchIndex' => array_search('23', $chartLabels),
 
             // Output Composition Series

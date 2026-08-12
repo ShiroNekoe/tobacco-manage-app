@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#18181b">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
     
@@ -375,22 +376,133 @@
                     if (status >= 400) {
                         preventDefault();
                         
-                        let title = 'Terjadi Kendala Sistem (Status ' + status + ')';
-                        let text = 'Terjadi kesalahan internal pada server. Silakan coba beberapa saat lagi atau hubungi administrator.';
-
-                        if (status === 403) {
-                            title = 'Akses Ditolak';
-                            text = 'Anda tidak memiliki wewenang untuk melakukan aksi ini.';
-                        } else if (status === 404) {
-                            title = 'Data Tidak Ditemukan';
-                            text = 'Halaman atau data yang diminta tidak dapat ditemukan.';
+                        // Handle 419 Session / CSRF Token Expired
+                        if (status === 419) {
+                            if (window.Swal) {
+                                Swal.fire({
+                                    icon: 'warning',
+                                    title: 'Sesi Telah Berakhir',
+                                    html: '<div class="text-sm text-zinc-300 space-y-2"><p>Sesi portal Anda telah kedaluwarsa demi keamanan sistem.</p><p class="text-amber-400 font-semibold text-xs">Halaman akan otomatis dimuat ulang untuk menyegarkan sesi...</p></div>',
+                                    background: '#18181b',
+                                    color: '#f4f4f5',
+                                    confirmButtonColor: '#d97706',
+                                    confirmButtonText: 'Muat Ulang Sekarang',
+                                    timer: 4000,
+                                    timerProgressBar: true,
+                                    allowOutsideClick: false,
+                                    allowEscapeKey: false,
+                                    heightAuto: false
+                                }).then(() => {
+                                    window.location.reload();
+                                });
+                            } else {
+                                alert('Sesi telah berakhir. Halaman akan dimuat ulang.');
+                                window.location.reload();
+                            }
+                            return;
                         }
 
+                        // Handle 401 Unauthorized
+                        if (status === 401) {
+                            if (window.Swal) {
+                                Swal.fire({
+                                    icon: 'info',
+                                    title: 'Sesi Login Berakhir',
+                                    text: 'Silakan login kembali untuk melanjutkan.',
+                                    background: '#18181b',
+                                    color: '#f4f4f5',
+                                    confirmButtonColor: '#d97706',
+                                    confirmButtonText: 'Ke Halaman Login',
+                                    heightAuto: false
+                                }).then(() => {
+                                    window.location.href = '{{ route("login") }}';
+                                });
+                            } else {
+                                window.location.href = '{{ route("login") }}';
+                            }
+                            return;
+                        }
+
+                        // Handle 403 Forbidden
+                        if (status === 403) {
+                            triggerGlobalErrorModal('Akses Ditolak', 'Anda tidak memiliki wewenang untuk melakukan aksi ini.');
+                            return;
+                        }
+
+                        // Handle 404 Not Found
+                        if (status === 404) {
+                            triggerGlobalErrorModal('Data Tidak Ditemukan', 'Halaman atau data yang diminta tidak dapat ditemukan.');
+                            return;
+                        }
+
+                        // Handle other 500 / 4xx server errors
+                        let title = 'Terjadi Kendala Sistem (Status ' + status + ')';
+                        let text = 'Terjadi kesalahan internal pada server. Silakan coba beberapa saat lagi atau hubungi administrator.';
                         triggerGlobalErrorModal(title, text);
                     }
                 });
             });
         });
+
+        // Background Session Keep-Alive & CSRF Synchronizer
+        (function() {
+            let isPinging = false;
+            function pingSessionKeepAlive() {
+                if (isPinging) return;
+                isPinging = true;
+
+                fetch('{{ route("session.keep-alive") }}', {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(res => {
+                    if (res.status === 419 || res.status === 401) {
+                        console.warn('[Session] Session expired, auto-refreshing...');
+                        window.location.reload();
+                        return null;
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    if (data && data.csrf_token) {
+                        // Sync meta csrf token
+                        const meta = document.querySelector('meta[name="csrf-token"]');
+                        if (meta) {
+                            meta.setAttribute('content', data.csrf_token);
+                        }
+                        // Sync axios default header if available
+                        if (window.axios) {
+                            window.axios.defaults.headers.common['X-CSRF-TOKEN'] = data.csrf_token;
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.debug('[Session Keep-Alive] Network heartbeat debug:', err);
+                })
+                .finally(() => {
+                    isPinging = false;
+                });
+            }
+
+            // Periodic heartbeat every 10 minutes (600,000 ms)
+            setInterval(pingSessionKeepAlive, 600000);
+
+            // Trigger heartbeat when user returns to tab
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    pingSessionKeepAlive();
+                }
+            });
+
+            // Trigger heartbeat on window focus
+            window.addEventListener('focus', () => {
+                pingSessionKeepAlive();
+            });
+        })();
     </script>
 </body>
 </html>

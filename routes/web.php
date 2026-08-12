@@ -23,6 +23,15 @@ Route::post('/logout', function () {
     return redirect()->route('login');
 })->name('logout');
 
+// Session Keep-Alive & CSRF Token Refresh Endpoint
+Route::get('/session/keep-alive', function () {
+    return response()->json([
+        'status' => 'active',
+        'csrf_token' => csrf_token(),
+        'authenticated' => Auth::check(),
+    ]);
+})->name('session.keep-alive');
+
 // Protected Routes (4-Role MES System)
 Route::middleware(['auth'])->group(function () {
     // Role-Based Root Navigation Redirect

@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#18181b">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Login - Tobacco Production ERP</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">

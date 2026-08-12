@@ -59,7 +59,7 @@
                 <img src="/images/icontobacco.jpeg" alt="Tobacco Logo" class="w-10 h-10 object-contain rounded-xl shadow-lg shadow-amber-900/30 border border-amber-500/20">
                 <div>
                     <h1 class="font-black text-base tracking-wide text-amber-400">Tobacco Production Management System</h1>
-                    <p class="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Production & Quality PWA</p>
+                    <p class="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Tobacco Processing App</p>
                 </div>
             </div>
 

@@ -4,7 +4,7 @@
         <div class="text-center space-y-2">
             <img src="/images/icontobacco.jpeg" alt="Tobacco Logo" class="inline-block w-16 h-16 object-contain rounded-2xl shadow-xl shadow-amber-900/40 border border-amber-500/30 mb-2">
             <h1 class="text-2xl font-black tracking-wide text-amber-400">Tobacco Production Management System</h1>
-            <p class="text-xs text-zinc-400 font-medium">Sistem Production & Quality Control Timbangan Tembakau</p>
+            <p class="text-xs text-zinc-400 font-medium">Sistem Informasi Manajemen Produksi & Pengolahan Tembakau</p>
         </div>
 
         <!-- Quick Demo Login Buttons for 4 Roles -->

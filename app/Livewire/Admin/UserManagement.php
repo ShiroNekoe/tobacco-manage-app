@@ -19,6 +19,7 @@ class UserManagement extends Component
     public string $group = 'Group A';
     public ?int $customer_id = null;
     public string $password = '';
+    public bool $must_change_password = true;
 
     public function mount()
     {
@@ -39,6 +40,9 @@ class UserManagement extends Component
             $this->shift = $u->shift ?? 'Shift 1';
             $this->group = $u->group ?? 'Group A';
             $this->customer_id = $u->customer_id;
+            $this->must_change_password = (bool) ($u->must_change_password ?? false);
+        } else {
+            $this->must_change_password = true;
         }
         $this->showModal = true;
     }
@@ -62,6 +66,7 @@ class UserManagement extends Component
             'shift' => $this->shift,
             'group' => $this->group,
             'customer_id' => $this->role === 'customer' ? $this->customer_id : null,
+            'must_change_password' => $this->must_change_password,
         ];
 
         if ($this->password) {
@@ -89,7 +94,7 @@ class UserManagement extends Component
 
     protected function resetFields()
     {
-        $this->reset(['user_id', 'name', 'email', 'role', 'shift', 'group', 'customer_id', 'password']);
+        $this->reset(['user_id', 'name', 'email', 'role', 'shift', 'group', 'customer_id', 'password', 'must_change_password']);
     }
 
     public function render()

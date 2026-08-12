@@ -55,6 +55,18 @@ class CustomerDashboard extends Component
     public ?int $approvingShipmentId = null;
     public string $approvalNote = '';
 
+    // ==========================================
+    // 4. CUSTOMER PROFILE STATE
+    // ==========================================
+    public string $profileName = '';
+    public string $profileEmail = '';
+    public string $profileContactPerson = '';
+    public string $profilePhone = '';
+    public string $profileAddress = '';
+    public string $profileCurrentPassword = '';
+    public string $profileNewPassword = '';
+    public string $profileNewPasswordConfirmation = '';
+
     // General Search & Filter for Table / Lists
     public string $search = '';
     public ?int $filter_product_type_id = null;
@@ -180,6 +192,8 @@ class CustomerDashboard extends Component
             abort(403, 'Akses khusus Customer Portal.');
         }
 
+        $this->loadProfile();
+
         // Set initial selected batch to latest approved batch or requested ID
         if (! $this->selectedBatchId) {
             $latestBatch = $this->getBaseQuery()->latest('date_of_receipt')->first();
@@ -189,9 +203,93 @@ class CustomerDashboard extends Component
         }
     }
 
+    public function loadProfile(): void
+    {
+        $user = Auth::user();
+        if ($user) {
+            $this->profileName = $user->name ?? '';
+            $this->profileEmail = $user->email ?? '';
+            if ($user->customer) {
+                $this->profileContactPerson = $user->customer->contact_person ?? '';
+                $this->profilePhone = $user->customer->phone ?? '';
+                $this->profileAddress = $user->customer->address ?? '';
+            }
+        }
+    }
+
+    public function updateProfile(): void
+    {
+        $user = Auth::user();
+        if (! $user) {
+            return;
+        }
+
+        $this->validate([
+            'profileName' => 'required|string|max:255',
+            'profileEmail' => 'required|email|unique:users,email,' . $user->id,
+            'profileContactPerson' => 'nullable|string|max:255',
+            'profilePhone' => 'nullable|string|max:50',
+            'profileAddress' => 'nullable|string|max:500',
+        ], [
+            'profileName.required' => 'Nama lengkap wajib diisi.',
+            'profileEmail.required' => 'Email wajib diisi.',
+            'profileEmail.email' => 'Format email tidak valid.',
+            'profileEmail.unique' => 'Email sudah digunakan oleh akun lain.',
+        ]);
+
+        $user->update([
+            'name' => $this->profileName,
+            'email' => $this->profileEmail,
+        ]);
+
+        if ($user->customer) {
+            $user->customer->update([
+                'contact_person' => $this->profileContactPerson,
+                'phone' => $this->profilePhone,
+                'address' => $this->profileAddress,
+            ]);
+        }
+
+        session()->flash('message', 'Profil akun dan data kontak berhasil diperbarui.');
+        $this->dispatch('profile-updated');
+    }
+
+    public function updatePassword(): void
+    {
+        $user = Auth::user();
+        if (! $user) {
+            return;
+        }
+
+        $this->validate([
+            'profileCurrentPassword' => 'required',
+            'profileNewPassword' => 'required|string|min:6|same:profileNewPasswordConfirmation',
+        ], [
+            'profileCurrentPassword.required' => 'Kata sandi saat ini wajib diisi.',
+            'profileNewPassword.required' => 'Kata sandi baru wajib diisi.',
+            'profileNewPassword.min' => 'Kata sandi baru minimal 6 karakter.',
+            'profileNewPassword.same' => 'Konfirmasi kata sandi baru tidak cocok.',
+        ]);
+
+        if (! \Illuminate\Support\Facades\Hash::check($this->profileCurrentPassword, $user->password)) {
+            $this->addError('profileCurrentPassword', 'Kata sandi saat ini yang Anda masukkan salah.');
+            return;
+        }
+
+        $user->update([
+            'password' => \Illuminate\Support\Facades\Hash::make($this->profileNewPassword),
+            'must_change_password' => false,
+            'password_changed_at' => now(),
+        ]);
+
+        $this->reset(['profileCurrentPassword', 'profileNewPassword', 'profileNewPasswordConfirmation']);
+        session()->flash('message', 'Kata sandi berhasil diperbarui.');
+        $this->dispatch('password-updated');
+    }
+
     public function setTab(string $tab)
     {
-        $validTabs = ['batch_overview', 'historical_analytics', 'yield_calculator', 'reconciliation', 'traceability', 'certificates'];
+        $validTabs = ['batch_overview', 'historical_analytics', 'yield_calculator', 'reconciliation', 'certificates', 'dn_shipments', 'profile'];
         if (in_array($tab, $validTabs)) {
             $this->activeTab = $tab;
         }
@@ -501,6 +599,8 @@ class CustomerDashboard extends Component
         $materialBalanceTotal = $productOutput + $bitsStem + $dust + $variance;
         $materialBalancePct = $processedInput > 0 ? round(($materialBalanceTotal / $processedInput) * 100, 2) : 100.00;
 
+        $receiverName = $batch->createdBy ? $batch->createdBy->name : ($batch->supervisorApprovedBy ? $batch->supervisorApprovedBy->name : 'Plant Intake / Weighing Team');
+
         // Breakdown per origin
         $originReconciliation = [];
         $originSeparation = [];
@@ -530,6 +630,8 @@ class CustomerDashboard extends Component
 
                 $originReconciliation[] = [
                     'name' => $orgName,
+                    'dnNumber' => $batch->deliveryNote->dn_number ?? 'DN-2026-0025',
+                    'receiver' => $receiverName,
                     'packs' => $boPacks,
                     'dnGross' => $boDnGross,
                     'mrlGross' => $boMrlGross,
@@ -551,6 +653,8 @@ class CustomerDashboard extends Component
             $orgName = $batch->origin ? $batch->origin->region_name : 'Default Origin';
             $originReconciliation[] = [
                 'name' => $orgName,
+                'dnNumber' => $batch->deliveryNote->dn_number ?? 'DN-2026-0025',
+                'receiver' => $receiverName,
                 'packs' => $batch->mrl_total_pack ?: ($batch->dn_total_pack ?: 65),
                 'dnGross' => $dnGross,
                 'mrlGross' => $mrlGross,
@@ -573,7 +677,7 @@ class CustomerDashboard extends Component
         $dateStr = $baseDate->format('d M Y');
 
         // Outbound DN Shipment(s) linked to this batch
-        $linkedShipmentItems = \App\Models\DnShipmentItem::with('dnShipment.customerApprovedBy')
+        $linkedShipmentItems = \App\Models\DnShipmentItem::with(['dnShipment.customerApprovedBy', 'dnShipment.customer'])
             ->where(function ($q) use ($batch) {
                 $q->where('batch_id', $batch->id)
                   ->orWhere('batch_code', $batch->batch_code);
@@ -595,6 +699,8 @@ class CustomerDashboard extends Component
             'materials' => [],
         ];
 
+        $dnShippedRows = [];
+
         if ($linkedShipmentItems->isNotEmpty()) {
             $firstItem = $linkedShipmentItems->first();
             $shipment = $firstItem->dnShipment;
@@ -612,6 +718,29 @@ class CustomerDashboard extends Component
                     'is_approved' => $shipment->isApprovedByCustomer(),
                     'approved_at' => $shipment->customer_approved_at ? $shipment->customer_approved_at->format('d M Y H:i') : null,
                     'materials' => $linkedShipmentItems->pluck('material_type')->filter()->unique()->values()->all(),
+                ];
+            }
+
+            foreach ($linkedShipmentItems as $item) {
+                $shp = $item->dnShipment;
+                if (! $shp) continue;
+                $dnShippedRows[] = [
+                    'id' => $shp->id,
+                    'dn_number' => $shp->dn_number,
+                    'shipment_date' => $shp->shipment_date ? $shp->shipment_date->format('d M Y') : '-',
+                    'material_type' => $item->material_type ?: 'Product',
+                    'origin_lot' => trim(($item->origin ?: '') . ' ' . ($item->origin_code ?: '')),
+                    'vehicle_number' => $shp->vehicle_number ?: '-',
+                    'driver_name' => $shp->driver_name ?: '-',
+                    'destination' => $shp->destination ?: ($batch->customer->name ?? 'Customer Facility'),
+                    'total_sacks' => (int) $item->total_sacks,
+                    'total_gross_kg' => (float) $item->total_gross_kg,
+                    'total_tare_kg' => (float) $item->total_tare_kg,
+                    'total_netto_kg' => (float) $item->total_netto_kg,
+                    'status' => $shp->status,
+                    'is_approved' => $shp->isApprovedByCustomer(),
+                    'approved_at' => $shp->customer_approved_at ? $shp->customer_approved_at->format('d M Y H:i') : null,
+                    'approved_by' => $shp->customerApprovedBy->name ?? null,
                 ];
             }
         }
@@ -638,6 +767,7 @@ class CustomerDashboard extends Component
             // Inbound & Outbound DN Tracking
             'dnReceived' => [
                 'dn_number' => $batch->deliveryNote->dn_number ?? 'DN-2026-0025',
+                'receiver' => $receiverName,
                 'receipt_date' => $dateStr,
                 'gross_kg' => $dnGross,
                 'netto_kg' => (float) $batch->dn_netto_weight,
@@ -645,6 +775,8 @@ class CustomerDashboard extends Component
                 'status' => 'Diterima & Diverifikasi MRL',
             ],
             'dnShipped' => $dnShippedInfo,
+            'dnShippedRows' => $dnShippedRows,
+            'dnReceiverName' => $receiverName,
 
             // 8 Top KPI Cards
             'dnGross' => $dnGross,

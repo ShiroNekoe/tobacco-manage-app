@@ -72,6 +72,10 @@
                     <h3 class="text-base font-black text-zinc-100 uppercase tracking-wide">Komposisi Yield Hasil Pemisahan</h3>
                     <p class="text-xs text-zinc-400">Persentase Produk Jadi, Bits Stem, Dust, dan Waste</p>
                 </div>
+                <button type="button" onclick="initCharts()" class="px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-amber-500/50 text-zinc-400 hover:text-amber-400 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95" title="Refresh Chart">
+                    <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    <span>Refresh</span>
+                </button>
             </div>
             <div class="relative h-64 flex items-center justify-center">
                 <canvas id="yieldDoughnutChart"></canvas>
@@ -85,6 +89,10 @@
                     <h3 class="text-base font-black text-zinc-100 uppercase tracking-wide">Volume Timbangan per Asal Daerah</h3>
                     <p class="text-xs text-zinc-400">Perbandingan Netto Produk (PAITON, LOMBOK, JEMBER)</p>
                 </div>
+                <button type="button" onclick="initCharts()" class="px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-amber-500/50 text-zinc-400 hover:text-amber-400 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95" title="Refresh Chart">
+                    <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    <span>Refresh</span>
+                </button>
             </div>
             <div class="relative h-64 flex items-center justify-center">
                 <canvas id="originBarChart"></canvas>
@@ -171,6 +179,9 @@
             // 1. Doughnut Chart: Yield Breakdown
             const doughnutCtx = document.getElementById('yieldDoughnutChart');
             if (doughnutCtx) {
+                const existingDoughnut = Chart.getChart(doughnutCtx);
+                if (existingDoughnut) existingDoughnut.destroy();
+
                 new Chart(doughnutCtx, {
                     type: 'doughnut',
                     data: {
@@ -203,6 +214,9 @@
             // 2. Bar Chart: Production Volume per Origin
             const barCtx = document.getElementById('originBarChart');
             if (barCtx) {
+                const existingBar = Chart.getChart(barCtx);
+                if (existingBar) existingBar.destroy();
+
                 const originsLabels = {!! json_encode($originsData->pluck('name')) !!};
                 const originsTotals = {!! json_encode($originsData->pluck('total_kg')) !!};
                 const originsProducts = {!! json_encode($originsData->pluck('product_kg')) !!};

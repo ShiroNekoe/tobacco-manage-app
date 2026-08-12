@@ -137,6 +137,8 @@ class BatchOverviewReconciliationTest extends TestCase
             ->assertSee('Batch Overview', false)
             ->assertSee('Delivery Note Reconciliation Pipeline', false)
             ->assertSee('Material Receiving Reconciliation', false)
+            ->assertSee('DN Receiver', false)
+            ->assertSee('Outbound DN Shipment Details (DN Shipped)', false)
             ->assertSee('Receiving Confirmation Status', false)
             ->assertSee('Separation Result by Origin', false)
             ->assertSee('Process Material Balance', false)
@@ -195,7 +197,9 @@ class BatchOverviewReconciliationTest extends TestCase
             ->set('selectedBatchId', $this->batch2->id)
             ->assertSee('DN-2026-0002')
             ->assertSee('DN-OUT-2026-0099')
-            ->assertSee('46 Krg')
+            ->assertSee('DN Receiver')
+            ->assertSee('Outbound DN Shipment Details (DN Shipped)')
+            ->assertSee('46 Sacks')
             ->assertSee('2,300.00 kg');
     }
 

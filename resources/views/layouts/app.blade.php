@@ -75,6 +75,16 @@
                             <span class="text-[10px] text-zinc-400 block mt-0.5 font-mono">{{ auth()->user()->shift }} ({{ auth()->user()->group }})</span>
                         @endif
                     </div>
+                    @if(auth()->user() && auth()->user()->isCustomer())
+                        <a href="{{ route('customer.dashboard', ['activeTab' => 'profile']) }}" 
+                           @if(request()->routeIs('customer.dashboard'))
+                           @click.prevent="activeCustomerTab = 'profile'; sidebarOpen = false; $dispatch('switch-customer-tab', 'profile'); window.history.replaceState({}, '', '{{ route('customer.dashboard') }}?activeTab=profile')"
+                           @endif
+                           title="Profil Customer" 
+                           class="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-amber-400 hover:text-amber-300 hover:bg-zinc-800 transition-all">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                        </a>
+                    @endif
                 </div>
             </div>
 
@@ -251,20 +261,7 @@
                             <span class="truncate">Receiving Reconciliation</span>
                         </a>
 
-                        <!-- 4. Batch Traceability -->
-                        <a href="{{ route('customer.dashboard', ['activeTab' => 'traceability']) }}"
-                           @if(request()->routeIs('customer.dashboard'))
-                           @click.prevent="activeCustomerTab = 'traceability'; sidebarOpen = false; $dispatch('switch-customer-tab', 'traceability'); window.history.replaceState({}, '', '{{ route('customer.dashboard') }}?activeTab=traceability')"
-                           @else
-                           @click="sidebarOpen = false"
-                           @endif
-                           :class="activeCustomerTab === 'traceability' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200'"
-                           class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all">
-                            <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-                            <span class="truncate">Batch Traceability</span>
-                        </a>
-
-                        <!-- 5. Certificates -->
+                        <!-- 4. Certificates -->
                         <a href="{{ route('customer.dashboard', ['activeTab' => 'certificates']) }}"
                            @if(request()->routeIs('customer.dashboard'))
                            @click.prevent="activeCustomerTab = 'certificates'; sidebarOpen = false; $dispatch('switch-customer-tab', 'certificates'); window.history.replaceState({}, '', '{{ route('customer.dashboard') }}?activeTab=certificates')"
@@ -277,7 +274,7 @@
                             <span class="truncate">Certificates</span>
                         </a>
 
-                        <!-- 6. Yield Cost Calculator (Placed below Certificates) -->
+                        <!-- 5. Yield Cost Calculator -->
                         <a href="{{ route('customer.dashboard', ['activeTab' => 'yield_calculator']) }}"
                            @if(request()->routeIs('customer.dashboard'))
                            @click.prevent="activeCustomerTab = 'yield_calculator'; sidebarOpen = false; $dispatch('switch-customer-tab', 'yield_calculator'); window.history.replaceState({}, '', '{{ route('customer.dashboard') }}?activeTab=yield_calculator')"
@@ -290,7 +287,7 @@
                             <span class="truncate">Yield Cost Calculator</span>
                         </a>
 
-                        <!-- 7. DN Shipment (Surat Jalan Pengiriman & Approval) -->
+                        <!-- 6. DN Shipment (Delivery Notes & Customer Approval) -->
                         <a href="{{ route('customer.dashboard', ['activeTab' => 'dn_shipments']) }}"
                            @if(request()->routeIs('customer.dashboard'))
                            @click.prevent="activeCustomerTab = 'dn_shipments'; sidebarOpen = false; $dispatch('switch-customer-tab', 'dn_shipments'); window.history.replaceState({}, '', '{{ route('customer.dashboard') }}?activeTab=dn_shipments')"
@@ -300,7 +297,20 @@
                            :class="activeCustomerTab === 'dn_shipments' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200'"
                            class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all">
                             <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                            <span class="truncate">DN Shipment (Surat Jalan)</span>
+                            <span class="truncate">DN Shipment</span>
+                        </a>
+
+                        <!-- 7. Customer Profile -->
+                        <a href="{{ route('customer.dashboard', ['activeTab' => 'profile']) }}"
+                           @if(request()->routeIs('customer.dashboard'))
+                           @click.prevent="activeCustomerTab = 'profile'; sidebarOpen = false; $dispatch('switch-customer-tab', 'profile'); window.history.replaceState({}, '', '{{ route('customer.dashboard') }}?activeTab=profile')"
+                           @else
+                           @click="sidebarOpen = false"
+                           @endif
+                           :class="activeCustomerTab === 'profile' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200'"
+                           class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all">
+                            <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                            <span class="truncate">User Profile</span>
                         </a>
                     </div>
                 </div>
@@ -338,6 +348,9 @@
         </main>
     </div>
 
+    <!-- First Time Login Force Change Password Modal -->
+    @livewire('auth.force-change-password-modal')
+
     <!-- PWA Service Worker Registration -->
     <script>
         if ('serviceWorker' in navigator) {
@@ -353,6 +366,23 @@
 
     @livewireScripts
     <script>
+        // Global SweetAlert Alert Event Dispatcher
+        window.addEventListener('swal:alert', event => {
+            const detail = Array.isArray(event.detail) ? event.detail[0] : event.detail;
+            if (window.Swal) {
+                Swal.fire({
+                    icon: detail.icon || 'success',
+                    title: detail.title || 'Berhasil',
+                    text: detail.text || '',
+                    background: '#18181b',
+                    color: '#f4f4f5',
+                    confirmButtonColor: '#d97706',
+                    confirmButtonText: 'OK',
+                    heightAuto: false
+                });
+            }
+        });
+
         function triggerGlobalErrorModal(title, text) {
             if (window.Swal) {
                 Swal.fire({

@@ -9,7 +9,7 @@ use Livewire\Component;
 
 class Login extends Component
 {
-    public string $mode = 'karyawan'; // 'karyawan' or 'email'
+    public string $mode = 'email'; // 'email' or 'karyawan'
     public string $name = '';
     public string $email = '';
     public string $password = '';
@@ -85,7 +85,7 @@ class Login extends Component
     {
         $roleMap = [
             'karyawan' => ['email' => 'karyawan@tobacco.com', 'name' => 'Karyawan Shift 1', 'role' => 'karyawan'],
-            'admin' => ['email' => 'admin@tobacco.com', 'name' => 'Admin MES', 'role' => 'admin'],
+            'admin' => ['email' => 'admin@tobacco.com', 'name' => 'Admin TPMS', 'role' => 'admin'],
             'supervisor' => ['email' => 'supervisor@tobacco.com', 'name' => 'Supervisor QC', 'role' => 'supervisor'],
             'customer' => ['email' => 'customer@tobacco.com', 'name' => 'Customer Portal User', 'role' => 'customer'],
         ];
@@ -121,6 +121,6 @@ class Login extends Component
 
     public function render()
     {
-        return view('livewire.auth.login')->layout('layouts.guest', ['title' => 'Login System MES']);
+        return view('livewire.auth.login')->layout('layouts.guest', ['title' => 'Login System TPMS']);
     }
 }

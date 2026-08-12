@@ -3,7 +3,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <h2 class="text-2xl font-black tracking-wide text-zinc-100 flex items-center">
-                Manajemen Batch Production (MES v2.0)
+                Manajemen Batch Production (TPMS v2.0)
                 <span class="ml-3 px-3 py-0.5 rounded-full text-[10px] font-black uppercase bg-purple-950 text-purple-300 border border-purple-800">
                     Akses Admin & Supervisor
                 </span>

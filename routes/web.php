@@ -32,7 +32,7 @@ Route::get('/session/keep-alive', function () {
     ]);
 })->name('session.keep-alive');
 
-// Protected Routes (4-Role MES System)
+// Protected Routes (4-Role TPMS System)
 Route::middleware(['auth'])->group(function () {
     // Role-Based Root Navigation Redirect
     Route::get('/', function () {

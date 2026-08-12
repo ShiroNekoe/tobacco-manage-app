@@ -449,7 +449,7 @@ class ProcessingReportImporter
         ]);
 
         User::firstOrCreate(['email' => 'admin@tobacco.com'], [
-            'name' => 'Admin MES Fallback',
+            'name' => 'Admin TPMS Fallback',
             'role' => User::ROLE_ADMIN,
             'shift' => 'Shift 1',
             'group' => 'Group A',

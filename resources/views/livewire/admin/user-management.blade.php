@@ -32,7 +32,14 @@
                 <tbody class="divide-y divide-zinc-800/80">
                     @forelse($users as $u)
                         <tr class="hover:bg-zinc-800/40 transition-colors">
-                            <td class="px-4 py-3.5 font-bold text-zinc-100">{{ $u->name }}</td>
+                            <td class="px-4 py-3.5 font-bold text-zinc-100">
+                                {{ $u->name }}
+                                @if($u->must_change_password)
+                                    <span class="ml-2 px-2 py-0.5 rounded-md text-[9px] font-bold bg-amber-950 text-amber-300 border border-amber-800">
+                                        🔐 Wajib Ganti Password
+                                    </span>
+                                @endif
+                            </td>
                             <td class="px-4 py-3.5 text-zinc-400 font-mono">{{ $u->email ?: '-' }}</td>
                             <td class="px-4 py-3.5">
                                 <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-amber-950 text-amber-300 border border-amber-800">
@@ -118,7 +125,13 @@
                 @endif
                 <div>
                     <label class="block font-bold uppercase text-zinc-300 mb-1">Kata Sandi (Kosongkan jika tidak diubah)</label>
-                    <input type="password" wire:model="password" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 outline-none">
+                    <input type="password" wire:model="password" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 outline-none" placeholder="Default: password">
+                </div>
+                <div class="pt-1">
+                    <label class="inline-flex items-center gap-2 text-zinc-300 cursor-pointer select-none">
+                        <input type="checkbox" wire:model="must_change_password" class="rounded bg-zinc-950 border-zinc-800 text-amber-500 focus:ring-amber-500">
+                        <span class="font-semibold">Wajib ganti password saat login pertama kali</span>
+                    </label>
                 </div>
                 <div class="flex justify-end space-x-3 pt-3 border-t border-zinc-800">
                     <button type="button" wire:click="$set('showModal', false)" class="px-5 py-3 min-h-[48px] rounded-xl bg-zinc-800 text-zinc-300 font-bold">Batal</button>

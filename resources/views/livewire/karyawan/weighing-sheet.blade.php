@@ -6,7 +6,7 @@
     <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-                <span class="text-[11px] font-black uppercase text-amber-500 tracking-wider">Aplikasi Timbangan Lapangan PWA (MES v2.0)</span>
+                <span class="text-[11px] font-black uppercase text-amber-500 tracking-wider">Aplikasi Timbangan Lapangan PWA (TPMS v2.0)</span>
                 <h2 class="text-2xl font-black tracking-wide text-zinc-100">Lembar Penimbangan Karung</h2>
             </div>
             

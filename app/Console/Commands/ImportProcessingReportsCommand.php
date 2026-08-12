@@ -13,7 +13,7 @@ class ImportProcessingReportsCommand extends Command
 
     public function handle(): int
     {
-        $this->info('🚀 Starting MES Excel Data Import (Batch 1 to 25)...');
+        $this->info('🚀 Starting TPMS Excel Data Import (Batch 1 to 25)...');
 
         $reset = $this->option('reset');
         $path = $this->option('path');

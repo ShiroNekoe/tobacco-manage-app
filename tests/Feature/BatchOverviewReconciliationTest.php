@@ -253,4 +253,46 @@ class BatchOverviewReconciliationTest extends TestCase
             'customer_approval_note' => 'Diterima dengan baik dan sesuai.',
         ]);
     }
+
+    public function test_customer_can_search_older_batch_manually(): void
+    {
+        Livewire::actingAs($this->customerUser)
+            ->test(CustomerDashboard::class)
+            ->set('selectedBatchId', $this->batch2->id)
+            ->set('batchSearch', 'BCH-2026-0001')
+            ->assertSet('selectedBatchId', $this->batch1->id)
+            ->assertSee('BCH-2026-0001')
+            ->call('clearBatchSearch')
+            ->assertSet('batchSearch', '');
+    }
+
+    public function test_batch_dropdown_limits_to_latest_10_batches(): void
+    {
+        // Create 12 batches
+        for ($i = 3; $i <= 14; $i++) {
+            Batch::create([
+                'batch_code' => sprintf('BCH-2026-%04d', $i),
+                'customer_id' => $this->customer->id,
+                'delivery_note_id' => $this->batch1->delivery_note_id,
+                'origin_id' => $this->originPaiton->id,
+                'product_type_id' => $this->productType->id,
+                'date_of_receipt' => '2026-08-08',
+                'dn_gross_weight' => 2500.00,
+                'dn_netto_weight' => 2450.00,
+                'dn_total_pack' => 50,
+                'mrl_gross_weight' => 2500.00,
+                'mrl_netto_weight' => 2450.00,
+                'separation_product_kg' => 1900.00,
+                'yield_product_pct' => 76.00,
+                'supervisor_approval_status' => Batch::APPROVAL_APPROVED,
+            ]);
+        }
+
+        $component = Livewire::actingAs($this->customerUser)
+            ->test(CustomerDashboard::class);
+
+        $overviewBatches = $component->viewData('overviewBatches');
+        $this->assertLessThanOrEqual(11, $overviewBatches->count());
+        $this->assertTrue($overviewBatches->contains('batch_code', 'BCH-2026-0014'));
+    }
 }

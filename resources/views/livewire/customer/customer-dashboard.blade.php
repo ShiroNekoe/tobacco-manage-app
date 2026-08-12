@@ -76,15 +76,42 @@ class="space-y-6">
 
         <!-- FILTER CONTROLS BAR -->
         <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-4 sm:p-5 shadow-xl grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 items-end">
+            <!-- 1. Batch Dropdown (10 Terakhir / Hasil Cari) -->
             <div>
-                <label class="block text-[10px] font-bold uppercase text-zinc-400 mb-1">Batch</label>
+                <label class="block text-[10px] font-bold uppercase text-zinc-400 mb-1 flex items-center justify-between">
+                    <span>Batch ({{ empty($batchSearch) ? '10 Terakhir' : 'Hasil Cari' }})</span>
+                </label>
                 <select wire:model.live="selectedBatchId" class="w-full px-3 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-amber-400 font-mono font-bold text-xs focus:border-amber-500 outline-none">
-                    @foreach($allApprovedBatches as $ab)
+                    @forelse($overviewBatches as $ab)
                         <option value="{{ $ab->id }}">{{ $ab->batch_code }}</option>
-                    @endforeach
+                    @empty
+                        <option value="">Tidak ada batch cocok</option>
+                    @endforelse
                 </select>
             </div>
 
+            <!-- 2. Manual Search Box for Older Batches -->
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-zinc-400 mb-1 flex items-center justify-between">
+                    <span class="flex items-center gap-1 text-zinc-300">
+                        <span>🔍 Cari Batch Lama</span>
+                    </span>
+                    @if(!empty($batchSearch))
+                        <button type="button" wire:click="clearBatchSearch" class="text-[9px] text-amber-400 hover:underline font-bold">Clear</button>
+                    @endif
+                </label>
+                <div class="relative flex items-center">
+                    <input type="text" 
+                           wire:model.live.debounce.300ms="batchSearch" 
+                           placeholder="Ketik batch/DN..." 
+                           class="w-full pl-3 pr-6 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-amber-500 outline-none placeholder-zinc-600 font-mono">
+                    @if(!empty($batchSearch))
+                        <button type="button" wire:click="clearBatchSearch" class="absolute right-2 text-zinc-500 hover:text-zinc-300 text-xs">✕</button>
+                    @endif
+                </div>
+            </div>
+
+            <!-- 3. DN Received -->
             <div>
                 <label class="block text-[10px] font-bold uppercase text-amber-400 mb-1 flex items-center gap-1">
                     <span>📥 DN Received</span>
@@ -92,6 +119,7 @@ class="space-y-6">
                 <input type="text" value="{{ $batchOverviewData['dnReceived']['dn_number'] ?? ($batchOverviewData['deliveryNote'] ?? '-') }}" readonly class="w-full px-3 py-2.5 rounded-xl bg-zinc-950/80 border border-amber-500/40 text-amber-300 font-mono font-bold text-xs outline-none" title="Inbound Raw Material Delivery Note">
             </div>
 
+            <!-- 4. DN Shipped -->
             <div>
                 <label class="block text-[10px] font-bold uppercase text-cyan-400 mb-1 flex items-center gap-1">
                     <span>🚚 DN Shipped</span>
@@ -106,6 +134,7 @@ class="space-y-6">
                 </div>
             </div>
 
+            <!-- 5. Receipt Date -->
             <div>
                 <label class="block text-[10px] font-bold uppercase text-zinc-400 mb-1">Receipt Date</label>
                 <div class="flex items-center px-3 py-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800 text-zinc-300 font-mono text-xs">
@@ -114,20 +143,16 @@ class="space-y-6">
                 </div>
             </div>
 
+            <!-- 6. Origin & Code -->
             <div>
-                <label class="block text-[10px] font-bold uppercase text-amber-400 mb-1">Origin</label>
+                <label class="block text-[10px] font-bold uppercase text-amber-400 mb-1">Origin & Code</label>
                 <div class="px-3 py-2.5 rounded-xl bg-zinc-950/80 border border-amber-500/40 text-amber-300 font-bold text-xs truncate">
-                    {{ $batchOverviewData['originName'] ?? '-' }}
+                    <span>{{ $batchOverviewData['originName'] ?? '-' }}</span>
+                    <span class="text-cyan-400 font-mono text-[11px] block">{{ $batchOverviewData['originCode'] ?? '-' }}</span>
                 </div>
             </div>
 
-            <div>
-                <label class="block text-[10px] font-bold uppercase text-cyan-400 mb-1">Origin Code</label>
-                <div class="px-3 py-2.5 rounded-xl bg-zinc-950/80 border border-cyan-500/40 text-cyan-300 font-mono font-bold text-xs truncate">
-                    {{ $batchOverviewData['originCode'] ?? '-' }}
-                </div>
-            </div>
-
+            <!-- 7. Certificate -->
             <div>
                 <label class="block text-[10px] font-bold uppercase text-zinc-400 mb-1">Certificate</label>
                 <div class="px-3 py-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800 text-emerald-400 font-bold text-xs flex items-center">
@@ -136,12 +161,11 @@ class="space-y-6">
                 </div>
             </div>
 
-            <div class="flex items-center gap-1.5">
-                <button wire:click="resetBatchOverviewFilters" class="w-1/2 py-2.5 rounded-xl bg-zinc-800 text-zinc-300 hover:bg-zinc-700 text-xs font-bold transition-all">
-                    Reset
-                </button>
-                <button class="w-1/2 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-black transition-all shadow-md shadow-amber-900/30">
-                    Apply
+            <!-- 8. Reset Filter -->
+            <div class="flex items-center">
+                <button wire:click="resetBatchOverviewFilters" class="w-full py-2.5 rounded-xl bg-zinc-800 text-zinc-300 hover:bg-zinc-700 text-xs font-bold transition-all flex items-center justify-center gap-1 shadow">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    <span>Reset</span>
                 </button>
             </div>
         </div>
@@ -803,8 +827,25 @@ class="space-y-6">
         <!-- FILTER BAR -->
         <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-4 sm:p-5 shadow-xl grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 items-end">
             <div>
-                <label class="block text-[10px] font-bold uppercase text-zinc-400 mb-1">Start Date</label>
-                <input type="date" wire:model.live="histStartDate" class="w-full px-2.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-amber-500 outline-none">
+                <label class="block text-[10px] font-bold uppercase text-zinc-400 mb-1 flex items-center justify-between">
+                    <span class="flex items-center gap-1 text-amber-400">
+                        <span>📅 Start Date</span>
+                    </span>
+                    @if(!empty($histStartDate))
+                        <button type="button" wire:click="$set('histStartDate', '')" class="text-[9px] text-amber-400 hover:underline font-bold">Clear</button>
+                    @endif
+                </label>
+                <div class="relative flex items-center cursor-pointer group" onclick="const el = document.getElementById('histStartDateInput'); if(el && el.showPicker) el.showPicker(); else if(el) el.focus();">
+                    <input type="date" 
+                           id="histStartDateInput" 
+                           wire:model.live="histStartDate" 
+                           onclick="if(this.showPicker) this.showPicker()"
+                           style="color-scheme: dark;"
+                           class="w-full pl-8 pr-2.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-amber-500 outline-none cursor-pointer">
+                    <div class="absolute left-2.5 pointer-events-none text-amber-400 group-hover:text-amber-300 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                </div>
             </div>
 
             <div>

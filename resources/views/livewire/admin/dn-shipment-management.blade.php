@@ -104,7 +104,7 @@
         <!-- Filter Date From -->
         <div>
             <label class="block text-[10px] font-bold uppercase text-zinc-400 mb-1">Dari Tanggal</label>
-            <input type="date" wire:model.live="filterDateFrom" class="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-amber-500 outline-none">
+            <input type="date" wire:model.live="filterDateFrom" onclick="if(this.showPicker) this.showPicker()" style="color-scheme: dark;" class="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-amber-500 outline-none cursor-pointer">
         </div>
 
         <!-- Reset Button -->
@@ -307,7 +307,7 @@
                         <!-- Tanggal Kirim -->
                         <div>
                             <label class="block text-[11px] font-bold text-zinc-300 uppercase mb-1">Tanggal Pengiriman <span class="text-red-400">*</span></label>
-                            <input type="date" wire:model="shipment_date" class="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-zinc-200 text-xs focus:border-amber-500 outline-none">
+                            <input type="date" wire:model="shipment_date" onclick="if(this.showPicker) this.showPicker()" style="color-scheme: dark;" class="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-zinc-200 text-xs focus:border-amber-500 outline-none cursor-pointer">
                             @error('shipment_date') <span class="text-red-400 text-[10px] mt-1 block">{{ $message }}</span> @enderror
                         </div>
 

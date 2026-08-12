@@ -22,6 +22,7 @@ class CustomerDashboard extends Component
     // 1. BATCH OVERVIEW STATE
     // ==========================================
     public ?int $selectedBatchId = null;
+    public string $batchSearch = '';
     public string $dnFilter = '';
     public string $receiptDateFilter = '';
     public string $originFilter = '';
@@ -331,9 +332,31 @@ class CustomerDashboard extends Component
         }
     }
 
+    public function updatedBatchSearch($value): void
+    {
+        $s = strtolower(trim($value));
+        if (! empty($s)) {
+            $allApprovedBatches = $this->getBaseQuery()->orderBy('id', 'desc')->get();
+            $found = $allApprovedBatches->first(function ($b) use ($s) {
+                return str_contains(strtolower($b->batch_code), $s)
+                    || str_contains(strtolower($b->deliveryNote->dn_number ?? ''), $s)
+                    || str_contains(strtolower($b->productType->name ?? ''), $s)
+                    || str_contains(strtolower($b->origin->region_name ?? ''), $s);
+            });
+            if ($found) {
+                $this->selectedBatchId = $found->id;
+            }
+        }
+    }
+
+    public function clearBatchSearch(): void
+    {
+        $this->batchSearch = '';
+    }
+
     public function resetBatchOverviewFilters()
     {
-        $this->reset(['dnFilter', 'receiptDateFilter', 'originFilter', 'originCodeFilter', 'certificateStatusFilter']);
+        $this->reset(['dnFilter', 'receiptDateFilter', 'originFilter', 'originCodeFilter', 'certificateStatusFilter', 'batchSearch']);
     }
 
     public function resetHistoricalFilters()
@@ -449,6 +472,25 @@ class CustomerDashboard extends Component
             $this->selectedBatchId = $currentBatch->id;
         }
 
+        // Prepare Overview Batches (10 most recent created/approved by default, or filtered by search)
+        $overviewBatches = collect();
+        if (! empty($this->batchSearch)) {
+            $s = strtolower(trim($this->batchSearch));
+            $overviewBatches = $allApprovedBatches->filter(function ($b) use ($s) {
+                return str_contains(strtolower($b->batch_code), $s)
+                    || str_contains(strtolower($b->deliveryNote->dn_number ?? ''), $s)
+                    || str_contains(strtolower($b->productType->name ?? ''), $s)
+                    || str_contains(strtolower($b->origin->region_name ?? ''), $s);
+            })->values();
+        } else {
+            $recentBatches = $allApprovedBatches->sortByDesc('id')->take(10)->values();
+            if ($currentBatch && ! $recentBatches->contains('id', $currentBatch->id)) {
+                $overviewBatches = $recentBatches->prepend($currentBatch);
+            } else {
+                $overviewBatches = $recentBatches;
+            }
+        }
+
         $batchOverviewData = $this->computeBatchOverviewData($currentBatch, $allApprovedBatches);
 
         // ----------------------------------------------------
@@ -538,6 +580,7 @@ class CustomerDashboard extends Component
 
         return view('livewire.customer.customer-dashboard', compact(
             'allApprovedBatches',
+            'overviewBatches',
             'currentBatch',
             'batchOverviewData',
             'historicalData',
@@ -859,6 +902,14 @@ class CustomerDashboard extends Component
         if ($this->histStartDate && $this->histEndDate) {
             $filtered = $filtered->filter(function ($b) {
                 return $b->date_of_receipt && $b->date_of_receipt->between($this->histStartDate, $this->histEndDate);
+            });
+        } elseif ($this->histStartDate) {
+            $filtered = $filtered->filter(function ($b) {
+                return $b->date_of_receipt && $b->date_of_receipt->greaterThanOrEqualTo($this->histStartDate);
+            });
+        } elseif ($this->histEndDate) {
+            $filtered = $filtered->filter(function ($b) {
+                return $b->date_of_receipt && $b->date_of_receipt->lessThanOrEqualTo($this->histEndDate);
             });
         }
 

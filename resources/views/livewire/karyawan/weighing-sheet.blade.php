@@ -28,17 +28,48 @@
             </div>
         </div>
 
-        <!-- Active Batch Dropdown -->
-        <div>
-            <label class="block text-xs font-bold uppercase text-zinc-300 mb-2">Pilih Batch Timbangan Aktif:</label>
-            <select wire:change="selectBatch($event.target.value)" class="w-full px-4 py-3.5 min-h-[48px] rounded-2xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm font-bold focus:border-amber-500 outline-none">
-                <option value="">-- Pilih Batch --</option>
-                @foreach($activeBatches as $bItem)
-                    <option value="{{ $bItem->id }}" {{ $bItem->id == $batchId ? 'selected' : '' }}>
-                        {{ $bItem->batch_code }} - {{ $bItem->customer->name ?? '-' }} ({{ $bItem->productType->name ?? '-' }} - {{ $bItem->origin->region_name ?? '-' }})
-                    </option>
-                @endforeach
-            </select>
+        <!-- Active Batch Dropdown & Active Shift Switcher -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-end">
+            <!-- Active Batch Dropdown (Col 8) -->
+            <div class="md:col-span-7">
+                <label class="block text-xs font-bold uppercase text-zinc-300 mb-1.5">Pilih Batch Timbangan Aktif:</label>
+                <select wire:change="selectBatch($event.target.value)" class="w-full px-4 py-3 min-h-[48px] rounded-2xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm font-bold focus:border-amber-500 outline-none">
+                    <option value="">-- Pilih Batch --</option>
+                    @foreach($activeBatches as $bItem)
+                        <option value="{{ $bItem->id }}" {{ $bItem->id == $batchId ? 'selected' : '' }}>
+                            {{ $bItem->batch_code }} - {{ $bItem->customer->name ?? '-' }} ({{ $bItem->productType->name ?? '-' }} - {{ $bItem->origin->region_name ?? '-' }})
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Active Shift Selection Card (Col 5) -->
+            <div class="md:col-span-5 bg-zinc-950/80 p-2.5 rounded-2xl border border-zinc-800 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-1.5 px-1">
+                    <span class="text-[11px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
+                        ⏱️ Shift Kerja Aktif:
+                    </span>
+                    @if(auth()->user() && auth()->user()->shift && auth()->user()->shift !== $active_shift)
+                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800/80" title="Shift default akun: {{ auth()->user()->shift }}">
+                            Bantuan (Asal: {{ auth()->user()->shift }})
+                        </span>
+                    @endif
+                </div>
+
+                <!-- Shift Toggle Buttons -->
+                <div class="grid grid-cols-2 gap-1.5 bg-zinc-900 p-1 rounded-xl border border-zinc-800">
+                    <button type="button" 
+                            wire:click="setShift('Shift 1')" 
+                            class="py-2 px-2 text-center rounded-lg text-xs font-black uppercase transition-all {{ $active_shift === 'Shift 1' ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-zinc-950 font-black shadow-md' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800' }}">
+                        Shift 1
+                    </button>
+                    <button type="button" 
+                            wire:click="setShift('Shift 2')" 
+                            class="py-2 px-2 text-center rounded-lg text-xs font-black uppercase transition-all {{ $active_shift === 'Shift 2' ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-zinc-950 font-black shadow-md' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800' }}">
+                        Shift 2
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Batch Info Summary Cards -->

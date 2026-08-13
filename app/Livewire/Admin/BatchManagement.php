@@ -330,8 +330,8 @@ class BatchManagement extends Component
     public function approveCertificate(int $id)
     {
         $user = Auth::user();
-        if (! $user || ! ($user->isSupervisor() || $user->isAdmin())) {
-            abort(403, 'Hanya Supervisor yang dapat menyetujui (ACC / Approve) Sertifikat Produk.');
+        if (! $user || ! $user->isSupervisor()) {
+            abort(403, 'Hanya role Supervisor yang berhak menyetujui (ACC / Approve) Sertifikat Produk.');
         }
 
         $batch = Batch::findOrFail($id);
@@ -343,8 +343,8 @@ class BatchManagement extends Component
     public function revokeCertificateApproval(int $id)
     {
         $user = Auth::user();
-        if (! $user || ! ($user->isSupervisor() || $user->isAdmin())) {
-            abort(403, 'Hanya Supervisor yang dapat membatalkan persetujuan ACC Sertifikat Produk.');
+        if (! $user || ! $user->isSupervisor()) {
+            abort(403, 'Hanya role Supervisor yang berhak membatalkan persetujuan ACC Sertifikat Produk.');
         }
 
         $batch = Batch::findOrFail($id);

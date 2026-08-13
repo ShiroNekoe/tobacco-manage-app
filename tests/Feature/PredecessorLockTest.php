@@ -288,5 +288,69 @@ class PredecessorLockTest extends TestCase
             'created_by_user_id' => $workerShift2->id,
         ]);
     }
+
+    public function test_shift_1_worker_can_switch_to_shift_2_and_work_under_shift_2(): void
+    {
+        $worker = User::create([
+            'name' => 'Worker Flex',
+            'email' => 'w_flex@tobacco.com',
+            'password' => bcrypt('password'),
+            'role' => 'karyawan',
+            'shift' => 'Shift 1', // Default profile shift is Shift 1
+            'group' => 'Group A',
+        ]);
+
+        $customer = Customer::create(['name' => 'PT Flex Test', 'code' => 'CUST-FLX']);
+        $prodType = ProductType::create(['code' => 'P-FLX', 'name' => 'PAITON FLX']);
+        $origin = Origin::create(['region_name' => 'PAITON FLX']);
+        $dn = DeliveryNote::create(['dn_number' => 'DN-FLX-01', 'customer_id' => $customer->id, 'delivery_date' => Carbon::now()]);
+
+        $batch = Batch::create([
+            'batch_code' => 'BCH-FLX-001',
+            'customer_id' => $customer->id,
+            'delivery_note_id' => $dn->id,
+            'product_type_id' => $prodType->id,
+            'origin_id' => $origin->id,
+            'pack_type' => 'Bale',
+            'date_of_receipt' => Carbon::now(),
+            'status' => 'OPEN',
+        ]);
+
+        // Shift 1 existing row (created earlier in Shift 1)
+        $rowShift1 = WeighingItem::create([
+            'batch_id' => $batch->id,
+            'sack_number' => 1,
+            'gross_kg' => 50.00,
+            'tare_kg' => 0.20,
+            'netto_kg' => 49.80,
+            'remark' => 'Normal',
+            'shift' => 'Shift 1',
+            'group' => 'Group A',
+        ]);
+
+        // Worker opens sheet and switches active_shift to Shift 2
+        Livewire::actingAs($worker)
+            ->test(WeighingSheet::class, ['batch_id' => $batch->id])
+            ->assertSet('active_shift', 'Shift 1')
+            ->call('setShift', 'Shift 2')
+            ->assertSet('active_shift', 'Shift 2')
+            // Row 1 (Shift 1) is now locked because worker is in Shift 2
+            ->assertSet('items.0.is_locked_for_user', true)
+            // Worker adds a new sack row for Shift 2
+            ->call('addSackRow')
+            ->set('items.1.gross_kg', 60.00)
+            ->set('items.1.tare_kg', 0.25)
+            ->call('saveDraft');
+
+        // Verify the new row is saved under Shift 2
+        $this->assertDatabaseHas('weighing_items', [
+            'batch_id' => $batch->id,
+            'sack_number' => 2,
+            'tare_kg' => 0.25,
+            'shift' => 'Shift 2',
+            'created_by_user_id' => $worker->id,
+        ]);
+    }
 }
+
 

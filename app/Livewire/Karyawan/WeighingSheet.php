@@ -12,6 +12,7 @@ use Livewire\Component;
 class WeighingSheet extends Component
 {
     public ?int $batchId = null;
+    public string $active_shift = 'Shift 1';
 
     // Sack items array: [['id' => 1, 'sack_number' => 1, 'gross_kg' => 0, 'tare_kg' => 2, 'netto_kg' => 0, 'remark' => '', 'created_by_user_id' => 1, 'is_locked_for_user' => false]]
     public array $items = [];
@@ -111,6 +112,9 @@ class WeighingSheet extends Component
 
     public function mount(?int $batch_id = null)
     {
+        $user = Auth::user();
+        $this->active_shift = session('worker_active_shift', $user ? ($user->shift ?? 'Shift 1') : 'Shift 1');
+
         if ($batch_id) {
             $this->selectBatch($batch_id);
         } else {
@@ -119,6 +123,21 @@ class WeighingSheet extends Component
             if ($active) {
                 $this->selectBatch($active->id);
             }
+        }
+    }
+
+    public function setShift(string $shift)
+    {
+        if (in_array($shift, ['Shift 1', 'Shift 2', 'Shift 3'])) {
+            $this->active_shift = $shift;
+            session(['worker_active_shift' => $shift]);
+
+            // Recompute row locks based on newly selected active shift
+            if ($this->batchId) {
+                $this->selectBatch($this->batchId);
+            }
+
+            session()->flash('message', 'Shift aktif berhasil diubah ke ' . $shift . '. Baris kerja telah disesuaikan.');
         }
     }
 
@@ -218,7 +237,7 @@ class WeighingSheet extends Component
         }
 
         $this->items = [];
-        $currentShift = $user ? ($user->shift ?? 'Shift 1') : 'Shift 1';
+        $currentShift = $this->active_shift ?: ($user ? ($user->shift ?? 'Shift 1') : 'Shift 1');
         $currentGroup = $user ? ($user->group ?? 'Group A') : 'Group A';
         $isCurrentUserAdmin = $user && ($user->isAdmin() || $user->isSupervisor());
 
@@ -644,7 +663,7 @@ class WeighingSheet extends Component
         BatchInterimSeparation::create([
             'batch_id' => $batch->id,
             'user_id' => Auth::id(),
-            'shift' => $user->shift ?? 'Shift 1',
+            'shift' => $this->active_shift ?: ($user->shift ?? 'Shift 1'),
             'group' => $user->group ?? 'Group A',
             'product_tare_per_sack' => $this->product_tare_per_sack,
             'separation_product_kg' => $this->separation_product_kg,
@@ -702,7 +721,7 @@ class WeighingSheet extends Component
 
         $user = Auth::user();
         $currentUserId = $user ? $user->id : null;
-        $currentShift = $user ? ($user->shift ?? 'Shift 1') : 'Shift 1';
+        $currentShift = $this->active_shift ?: ($user ? ($user->shift ?? 'Shift 1') : 'Shift 1');
         $currentGroup = $user ? ($user->group ?? 'Group A') : 'Group A';
         $isCurrentUserAdmin = $user && ($user->isAdmin() || $user->isSupervisor());
 
@@ -846,7 +865,7 @@ class WeighingSheet extends Component
                         'netto_kg' => $targetNetto,
                         'remark' => ($it['remark'] === 'MRL Pre-Launch') ? 'Normal' : ($it['remark'] ?? 'Normal'),
                         'created_by_user_id' => $currentUserId,
-                        'shift' => $user ? ($user->shift ?? 'Shift 1') : 'Shift 1',
+                        'shift' => $currentShift,
                         'group' => $user ? ($user->group ?? 'Group A') : 'Group A',
                     ]);
                 }

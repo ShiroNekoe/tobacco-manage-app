@@ -100,7 +100,7 @@
                                         @endif
                                     </div>
                                 @else
-                                    @if(auth()->user() && (auth()->user()->isSupervisor() || auth()->user()->isAdmin()))
+                                    @if(auth()->user() && auth()->user()->isSupervisor())
                                         <button type="button" 
                                                 wire:click="approveCertificate({{ $b->id }})"
                                                 wire:loading.attr="disabled"
@@ -130,7 +130,7 @@
                                         👁️ Preview PDF
                                     </button>
 
-                                    @if(auth()->user() && (auth()->user()->isSupervisor() || auth()->user()->isAdmin()))
+                                    @if(auth()->user() && auth()->user()->isSupervisor())
                                         @if(!$b->isApprovedBySupervisor())
                                             <button wire:click="approveCertificate({{ $b->id }})" 
                                                     title="ACC / Setujui Sertifikat Process Certificate"

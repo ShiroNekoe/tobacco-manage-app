@@ -17,9 +17,12 @@ console_command = 'php /var/www/html/artisan tinker'
   LOG_CHANNEL = 'stderr'
   LOG_LEVEL = 'info'
   LOG_STDERR_FORMATTER = 'Monolog\Formatter\JsonFormatter'
+  DB_CONNECTION = 'sqlite'
+  DB_DATABASE = '/data/database.sqlite'
   SESSION_DRIVER = 'database'
   SESSION_LIFETIME = '43200'
   SESSION_SECURE_COOKIE = 'true'
+
 
 [[mounts]]
   source = 'sqlite_data'

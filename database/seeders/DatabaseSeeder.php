@@ -11,7 +11,7 @@ class DatabaseSeeder extends Seeder
     {
         try {
             $importer = new ProcessingReportImporter();
-            $result = $importer->import(true); // reset = true
+            $result = $importer->import(false); // reset = false (preserves existing data)
             \Log::info('Seeder completed', $result);
         } catch (\Exception $e) {
             \Log::error('Seeder error: ' . $e->getMessage());

@@ -66,5 +66,10 @@ RUN mkdir -p /var/www/html/database \
     && chown -R www-data:www-data /var/www/html/database \
     && chmod -R 775 /var/www/html/database
 
+# Setup entrypoint script
+RUN chmod +x /var/www/html/docker-entrypoint.sh
+
 # Expose port 80 untuk web server
 EXPOSE 80
+
+ENTRYPOINT ["/var/www/html/docker-entrypoint.sh"]

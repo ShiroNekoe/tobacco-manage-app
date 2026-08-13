@@ -111,7 +111,7 @@ class BatchManagement extends Component
             for ($i = $currentCount + 1; $i <= $count; $i++) {
                 $this->mrl_items[] = [
                     'sack_number' => $i,
-                    'mrl_gross_weight' => 0,
+                    'mrl_gross_weight' => '',
                 ];
             }
         } elseif ($count < $currentCount) {

@@ -192,7 +192,7 @@
 
     <!-- CREATE BATCH MODAL WITH SIMPLIFIED MRL GROSS WEIGHT TABLE -->
     <div x-show="showCreateModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl max-w-5xl w-full p-6 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-zinc-800 pb-4">
                 <h3 class="text-lg font-black text-amber-400 uppercase tracking-wider">Buat Batch Timbangan Baru (Input MRL Pre-Launch)</h3>
                 <button type="button" @click="showCreateModal = false" class="text-zinc-400 hover:text-white text-2xl font-bold p-2 min-w-[44px] min-h-[44px]">&times;</button>
@@ -289,59 +289,74 @@
                 </div>
 
                 <!-- SIMPLIFIED MRL RECEIVING ITEMS TABLE (ONLY MRL GROSS WEIGHT PER SACK) -->
-                <div class="border-t border-zinc-800 pt-5 space-y-4">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-950 p-4 rounded-2xl border border-zinc-800">
+                <div class="border-t border-zinc-800 pt-6 space-y-4">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-950 p-4 rounded-2xl border border-zinc-800">
                         <div>
-                            <h4 class="text-sm font-black uppercase text-amber-400 tracking-wider">Input Wajib MRL Pre-Launch Penerimaan Gudang</h4>
-                            <p class="text-[11px] text-zinc-400">Ketik jumlah sak/bale (misal: 32) untuk membuat jumlah baris MRL Gross Weight secara otomatis.</p>
+                            <h4 class="text-sm font-black uppercase text-amber-400 tracking-wider flex items-center gap-2">
+                                📦 Input Wajib MRL Pre-Launch Penerimaan Gudang
+                            </h4>
+                            <p class="text-xs text-zinc-400 mt-0.5">Ketik jumlah sak/bale di samping untuk membuat daftar baris berat Gross secara otomatis.</p>
                         </div>
 
                         <!-- Numeric Sack Count Generator Input -->
-                        <div class="flex items-center space-x-2 shrink-0">
+                        <div class="flex items-center space-x-2.5 shrink-0 bg-zinc-900/80 px-3.5 py-2 rounded-xl border border-zinc-800">
                             <label class="text-xs font-bold uppercase text-amber-400 whitespace-nowrap">
                                 Jumlah Sak / Bale:
                             </label>
                             <input type="number" min="1" max="500" 
                                 wire:model.live.debounce.300ms="target_sack_count"
-                                class="w-24 px-3 py-2 text-center rounded-xl bg-zinc-900 border border-amber-500/80 text-amber-400 font-black text-base outline-none focus:border-amber-400"
+                                class="w-20 px-3 py-1.5 text-center rounded-lg bg-zinc-950 border border-amber-500/80 text-amber-400 font-mono font-black text-base outline-none focus:border-amber-400"
                                 placeholder="32">
                             <span class="text-xs text-zinc-300 font-bold">Unit</span>
                         </div>
                     </div>
 
                     <!-- Responsive Multi-Column Grid Layout for MRL Items (Arranged Side-by-Side) -->
-                    <div class="bg-zinc-950/80 p-3.5 rounded-2xl border border-zinc-800/80">
-                        <div class="flex items-center justify-between mb-3 px-1">
-                            <span class="text-xs font-black uppercase text-amber-400 tracking-wider">
-                                Daftar Baris MRL ({{ count($mrl_items) }} Sak / Bale)
-                            </span>
-                            <span class="text-[10px] text-zinc-400 font-bold bg-zinc-900 px-2 py-1 rounded-lg border border-zinc-800">
+                    <div class="bg-zinc-950/80 p-4 rounded-2xl border border-zinc-800/80 space-y-3">
+                        <div class="flex flex-wrap items-center justify-between gap-2 px-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-black uppercase text-amber-400 tracking-wider">
+                                    Daftar Baris MRL ({{ count($mrl_items) }} Sak / Bale)
+                                </span>
+                                <span class="text-[10px] text-amber-300 font-bold bg-amber-950/80 px-2 py-0.5 rounded-md border border-amber-800/60">
+                                    Gross Weight
+                                </span>
+                            </div>
+                            <span class="text-[10px] text-zinc-400 font-bold bg-zinc-900 px-2.5 py-1 rounded-lg border border-zinc-800">
                                 📊 Layout Kolom Menyamping
                             </span>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 max-h-[380px] overflow-y-auto p-1 pr-2">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-[420px] overflow-y-auto p-1 pr-2">
                             @foreach($mrl_items as $index => $item)
-                                <div class="bg-zinc-900/90 border border-amber-500/40 hover:border-amber-400 rounded-xl p-2.5 flex items-center space-x-2.5 shadow-sm transition-all">
+                                <div class="bg-zinc-900/90 border border-zinc-800 hover:border-amber-500/50 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-sm transition-all group">
                                     <!-- Sack Number Badge -->
-                                    <div class="w-9 h-9 rounded-lg bg-amber-950/90 border border-amber-800/80 text-amber-400 font-mono font-black text-xs flex items-center justify-center shrink-0 shadow-inner">
-                                        #{{ $item['sack_number'] }}
+                                    <div class="flex items-center space-x-2.5 shrink-0">
+                                        <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/40 text-amber-400 font-mono font-black text-sm flex items-center justify-center shadow-inner group-hover:border-amber-400 transition-colors">
+                                            #{{ $item['sack_number'] }}
+                                        </div>
+                                        <div class="hidden sm:block">
+                                            <span class="text-[11px] font-black uppercase tracking-wider text-zinc-300 block">Sak #{{ $item['sack_number'] }}</span>
+                                            <span class="text-[9px] text-amber-400/80 font-bold uppercase">Gross Wt</span>
+                                        </div>
                                     </div>
 
                                     <!-- MRL Gross Weight Input -->
-                                    <div class="flex-1 min-w-0">
-                                        <label class="block text-[9px] font-black uppercase text-amber-400/90 tracking-wider mb-0.5">Gross (kg) <span class="text-red-400">*</span></label>
-                                        <input type="number" step="0.01" inputmode="decimal" 
-                                            wire:model.live.debounce.300ms="mrl_items.{{ $index }}.mrl_gross_weight" 
-                                            class="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-amber-500/60 text-amber-300 font-black text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50 placeholder-zinc-600/70" 
-                                            placeholder="0.00">
+                                    <div class="flex-1 min-w-[120px]">
+                                        <div class="relative flex items-center">
+                                            <input type="number" step="0.01" inputmode="decimal" 
+                                                wire:model.live.debounce.300ms="mrl_items.{{ $index }}.mrl_gross_weight" 
+                                                class="w-full pl-3 pr-9 py-2 rounded-xl bg-zinc-950 border border-zinc-700 hover:border-zinc-600 focus:border-amber-400 text-amber-300 font-mono font-black text-base outline-none focus:ring-2 focus:ring-amber-400/30 placeholder-zinc-700 transition-all" 
+                                                placeholder="0.00">
+                                            <span class="absolute right-3 text-xs font-bold text-zinc-500 pointer-events-none">kg</span>
+                                        </div>
                                     </div>
 
                                     <!-- Hapus Action Button -->
                                     @if(count($mrl_items) > 1)
                                         <button type="button" wire:click="removeMrlItemRow({{ $index }})" 
                                             title="Hapus Sak #{{ $item['sack_number'] }}"
-                                            class="w-8 h-8 rounded-lg bg-red-950/80 border border-red-800/80 text-red-400 hover:bg-red-900 font-bold text-base flex items-center justify-center shrink-0 transition-colors">
+                                            class="text-zinc-500 hover:text-red-400 text-2xl font-bold px-1.5 py-0.5 leading-none transition-colors shrink-0">
                                             &times;
                                         </button>
                                     @endif
@@ -373,6 +388,7 @@
                         </div>
                     </div>
                 </div>
+
 
                 <div class="flex items-center justify-end space-x-3 pt-4 border-t border-zinc-800">
                     <button type="button" @click="showCreateModal = false" class="px-5 py-3 min-h-[48px] rounded-xl bg-zinc-800 text-zinc-300 font-bold text-xs hover:bg-zinc-700">

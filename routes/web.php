@@ -13,8 +13,22 @@ use App\Livewire\Karyawan\WeighingSheet;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-// Authentication Routes
+// Authentication & Root Navigation Routes
 Route::get('/login', Login::class)->name('login');
+
+Route::get('/', function () {
+    if (!Auth::check()) {
+        return redirect()->route('login');
+    }
+    $user = Auth::user();
+    if ($user->isCustomer()) {
+        return redirect()->route('customer.dashboard');
+    }
+    if ($user->isAdmin() || $user->isSupervisor()) {
+        return redirect()->route('admin.batches');
+    }
+    return redirect()->route('karyawan.weighing');
+})->name('dashboard');
 
 Route::post('/logout', function () {
     Auth::logout();
@@ -34,19 +48,6 @@ Route::get('/session/keep-alive', function () {
 
 // Protected Routes (4-Role TPMS System)
 Route::middleware(['auth'])->group(function () {
-    // Role-Based Root Navigation Redirect
-    Route::get('/', function () {
-        $user = Auth::user();
-        if ($user) {
-            if ($user->isCustomer()) {
-                return redirect()->route('customer.dashboard');
-            }
-            if ($user->isAdmin() || $user->isSupervisor()) {
-                return redirect()->route('admin.batches');
-            }
-        }
-        return redirect()->route('karyawan.weighing');
-    })->name('dashboard');
 
     // 1. Karyawan / Worker Route (Restricted to /karyawan/weighing)
     Route::middleware(['role:karyawan,operator,worker,admin,supervisor'])->group(function () {

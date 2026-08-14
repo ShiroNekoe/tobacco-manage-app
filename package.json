@@ -1,9 +1,11 @@
 {
+    "name": "tobacco-manage-app",
+    "version": "1.0.0",
     "$schema": "https://www.schemastore.org/package.json",
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vite build",
+        "build": "vite build && node scripts/build-dist.js",
         "dev": "vite"
     },
     "devDependencies": {

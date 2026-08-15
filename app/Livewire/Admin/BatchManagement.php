@@ -258,6 +258,11 @@ class BatchManagement extends Component
         $this->showCreateModal = false;
         $this->reset(['dn_number', 'dn_gross_weight', 'dn_tare_weight', 'dn_netto_weight', 'dn_total_pack', 'mrl_gross_weight', 'mrl_total_pack', 'selected_origins', 'dn_gross_weight_input']);
         session()->flash('message', 'Batch ' . $batch->batch_code . ' (' . count($this->mrl_items) . ' Sak/Bale MRL) berhasil dibuat & diverifikasi!');
+        $this->dispatch('swal:alert', [
+            'icon' => 'success',
+            'title' => 'Batch Berhasil Dibuat!',
+            'text' => 'Batch ' . $batch->batch_code . ' (' . count($this->mrl_items) . ' Sak/Bale MRL) berhasil dibuat & diverifikasi.',
+        ]);
     }
 
     public function deleteBatch(int $id)
@@ -272,6 +277,11 @@ class BatchManagement extends Component
         $batch->delete();
 
         session()->flash('message', 'Batch ' . $batchCode . ' berhasil dihapus dari sistem.');
+        $this->dispatch('swal:alert', [
+            'icon' => 'success',
+            'title' => 'Batch Terhapus!',
+            'text' => 'Batch ' . $batchCode . ' berhasil dihapus dari sistem.',
+        ]);
     }
 
     public function unlockBatch(int $id)
@@ -289,6 +299,11 @@ class BatchManagement extends Component
         ]);
 
         session()->flash('message', 'Batch ' . $batch->batch_code . ' berhasil dibuka kembali (Draft).');
+        $this->dispatch('swal:alert', [
+            'icon' => 'info',
+            'title' => 'Batch Dibuka Kembali',
+            'text' => 'Batch ' . $batch->batch_code . ' berhasil dibuka kembali (Draft).',
+        ]);
     }
 
     public function openCloseModal(int $id)

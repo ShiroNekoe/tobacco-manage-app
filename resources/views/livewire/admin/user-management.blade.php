@@ -72,9 +72,13 @@
     </div>
 
     <!-- USER MODAL -->
-    <div x-data="{ show: @entangle('showModal') }" x-show="show" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
-            <h3 class="text-lg font-black text-amber-400 border-b border-zinc-800 pb-3">Form Pengguna & Shift</h3>
+    @if($showModal)
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl my-auto">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <h3 class="text-lg font-black text-amber-400">Form Pengguna & Shift</h3>
+                <button type="button" wire:click="$set('showModal', false)" class="text-zinc-400 hover:text-white text-2xl font-bold p-1 leading-none">&times;</button>
+            </div>
             <form wire:submit.prevent="saveUser" class="space-y-3 text-xs">
                 <div>
                     <label class="block font-bold uppercase text-zinc-300 mb-1">Nama Lengkap <span class="text-red-400">*</span></label>
@@ -140,4 +144,5 @@
             </form>
         </div>
     </div>
+    @endif
 </div>

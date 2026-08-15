@@ -1,4 +1,4 @@
-<div x-data="{ showCreateModal: @entangle('showCreateModal'), showCloseModal: @entangle('showCloseModal'), showPdfModal: @entangle('showPdfRemarksModal') }" class="space-y-6">
+<div class="space-y-6">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -11,7 +11,7 @@
             <p class="text-xs text-zinc-400 mt-1">Pre-launch MRL verification per sak/bale, selisih berat DN vs MRL, approval Supervisor, dan live preview Sertifikat PDF</p>
         </div>
 
-        <button @click="showCreateModal = true; $wire.openCreateModal()" class="px-5 py-3 min-h-[48px] inline-flex items-center justify-center font-black text-xs rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white hover:from-amber-500 shadow-xl shadow-amber-950/50">
+        <button wire:click="openCreateModal" class="px-5 py-3 min-h-[48px] inline-flex items-center justify-center font-black text-xs rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white hover:from-amber-500 shadow-xl shadow-amber-950/50">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
             + Buat Batch Timbangan Baru
         </button>
@@ -191,11 +191,12 @@
     </div>
 
     <!-- CREATE BATCH MODAL WITH SIMPLIFIED MRL GROSS WEIGHT TABLE -->
-    <div x-show="showCreateModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl max-w-5xl w-full p-6 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+    @if($showCreateModal)
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl max-w-5xl w-full p-6 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto my-auto">
             <div class="flex items-center justify-between border-b border-zinc-800 pb-4">
                 <h3 class="text-lg font-black text-amber-400 uppercase tracking-wider">Buat Batch Timbangan Baru (Input MRL Pre-Launch)</h3>
-                <button type="button" @click="showCreateModal = false" class="text-zinc-400 hover:text-white text-2xl font-bold p-2 min-w-[44px] min-h-[44px]">&times;</button>
+                <button type="button" wire:click="$set('showCreateModal', false)" class="text-zinc-400 hover:text-white text-2xl font-bold p-2 min-w-[44px] min-h-[44px] leading-none">&times;</button>
             </div>
 
             <form wire:submit.prevent="createBatch" class="space-y-6">
@@ -391,7 +392,7 @@
 
 
                 <div class="flex items-center justify-end space-x-3 pt-4 border-t border-zinc-800">
-                    <button type="button" @click="showCreateModal = false" class="px-5 py-3 min-h-[48px] rounded-xl bg-zinc-800 text-zinc-300 font-bold text-xs hover:bg-zinc-700">
+                    <button type="button" wire:click="$set('showCreateModal', false)" class="px-5 py-3 min-h-[48px] rounded-xl bg-zinc-800 text-zinc-300 font-bold text-xs hover:bg-zinc-700">
                         Batal
                     </button>
                     <button type="submit" class="px-6 py-3 min-h-[48px] rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white font-black text-xs hover:from-amber-500 shadow-lg">
@@ -401,10 +402,12 @@
             </form>
         </div>
     </div>
+    @endif
 
     <!-- LIVE INTERACTIVE PDF PREVIEW & CUSTOM REMARKS MODAL -->
-    <div x-show="showPdfModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm">
-        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl max-w-5xl w-full p-5 sm:p-6 space-y-4 shadow-2xl max-h-[95vh] flex flex-col">
+    @if($showPdfRemarksModal)
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl max-w-5xl w-full p-5 sm:p-6 space-y-4 shadow-2xl max-h-[95vh] flex flex-col my-auto">
             <!-- Modal Header -->
             <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
                 <div>
@@ -416,7 +419,7 @@
                     </h3>
                     <p class="text-xs text-zinc-400">Pratinjau visual tampilan sertifikat sebelum memutuskan untuk mencetak / mengunduh PDF</p>
                 </div>
-                <button type="button" @click="showPdfModal = false" class="text-zinc-400 hover:text-white text-2xl font-bold p-2 min-w-[44px] min-h-[44px]">&times;</button>
+                <button type="button" wire:click="$set('showPdfRemarksModal', false)" class="text-zinc-400 hover:text-white text-2xl font-bold p-2 min-w-[44px] min-h-[44px] leading-none">&times;</button>
             </div>
 
             <!-- Split Screen Content: Left Controls & Right Iframe Live Preview -->
@@ -468,7 +471,7 @@
 
             <!-- Footer Action Buttons -->
             <div class="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-zinc-800 pt-3">
-                <button type="button" @click="showPdfModal = false" class="w-full sm:w-auto px-5 py-3 min-h-[48px] rounded-xl bg-zinc-800 text-zinc-300 font-bold text-xs hover:bg-zinc-700">
+                <button type="button" wire:click="$set('showPdfRemarksModal', false)" class="w-full sm:w-auto px-5 py-3 min-h-[48px] rounded-xl bg-zinc-800 text-zinc-300 font-bold text-xs hover:bg-zinc-700">
                     ❌ Batal (Tidak Jadi Cetak)
                 </button>
                 
@@ -480,4 +483,5 @@
             </div>
         </div>
     </div>
+    @endif
 </div>

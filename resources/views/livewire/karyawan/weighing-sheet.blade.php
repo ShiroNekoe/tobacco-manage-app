@@ -659,8 +659,9 @@
     @endif
 
     <!-- THANK YOU SHIFT COMPLETION MODAL POPUP -->
-    <div x-data="{ show: @entangle('showThankYouModal') }" x-show="show" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-        <div class="bg-zinc-900 border border-emerald-500/40 rounded-3xl max-w-md w-full p-6 text-center space-y-5 shadow-2xl animate-in fade-in zoom-in duration-300">
+    @if($showThankYouModal)
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+        <div class="bg-zinc-900 border border-emerald-500/40 rounded-3xl max-w-md w-full p-6 text-center space-y-5 shadow-2xl animate-in fade-in zoom-in duration-300 my-auto">
             <div class="w-16 h-16 rounded-full bg-emerald-950 border border-emerald-500/50 flex items-center justify-center mx-auto text-emerald-400 text-3xl shadow-lg shadow-emerald-950/80">
                 ✓
             </div>
@@ -676,10 +677,11 @@
             </div>
 
             <div class="pt-2 border-t border-zinc-800">
-                <button type="button" @click="show = false" wire:click="$set('showThankYouModal', false)" class="w-full py-3.5 px-6 min-h-[48px] rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-black text-sm shadow-xl shadow-emerald-950/50 transition-all">
+                <button type="button" wire:click="$set('showThankYouModal', false)" class="w-full py-3.5 px-6 min-h-[48px] rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-black text-sm shadow-xl shadow-emerald-950/50 transition-all">
                     Siap, Mengerti 👍
                 </button>
             </div>
         </div>
     </div>
+    @endif
 </div>

@@ -114,6 +114,11 @@ class MasterDataManagement extends Component
         $this->showCustomerModal = false;
         $this->resetCustomerFields();
         session()->flash('message', 'Data Pelanggan (Customer) berhasil disimpan.');
+        $this->dispatch('swal:alert', [
+            'icon' => 'success',
+            'title' => 'Berhasil!',
+            'text' => 'Data Pelanggan berhasil disimpan.',
+        ]);
     }
 
     public function deleteCustomer(int $id)
@@ -121,6 +126,11 @@ class MasterDataManagement extends Component
         $this->ensureAdminAccess();
         Customer::findOrFail($id)->delete();
         session()->flash('message', 'Pelanggan berhasil dihapus.');
+        $this->dispatch('swal:alert', [
+            'icon' => 'success',
+            'title' => 'Terhapus!',
+            'text' => 'Data Pelanggan berhasil dihapus.',
+        ]);
     }
 
     protected function resetCustomerFields()
@@ -163,6 +173,11 @@ class MasterDataManagement extends Component
         $this->showProductModal = false;
         $this->resetProductFields();
         session()->flash('message', 'Data Jenis Produk (Product Type) berhasil disimpan.');
+        $this->dispatch('swal:alert', [
+            'icon' => 'success',
+            'title' => 'Berhasil!',
+            'text' => 'Data Jenis Produk berhasil disimpan.',
+        ]);
     }
 
     public function deleteProduct(int $id)
@@ -170,6 +185,11 @@ class MasterDataManagement extends Component
         $this->ensureAdminAccess();
         ProductType::findOrFail($id)->delete();
         session()->flash('message', 'Jenis Produk berhasil dihapus.');
+        $this->dispatch('swal:alert', [
+            'icon' => 'success',
+            'title' => 'Terhapus!',
+            'text' => 'Jenis Produk berhasil dihapus.',
+        ]);
     }
 
     protected function resetProductFields()
@@ -212,6 +232,11 @@ class MasterDataManagement extends Component
         $this->showOriginModal = false;
         $this->resetOriginFields();
         session()->flash('message', 'Data Asal Tembakau (Primary Origin) berhasil disimpan.');
+        $this->dispatch('swal:alert', [
+            'icon' => 'success',
+            'title' => 'Berhasil!',
+            'text' => 'Data Asal Tembakau berhasil disimpan.',
+        ]);
     }
 
     public function deleteOrigin(int $id)
@@ -219,6 +244,11 @@ class MasterDataManagement extends Component
         $this->ensureAdminAccess();
         Origin::findOrFail($id)->delete();
         session()->flash('message', 'Asal Tembakau berhasil dihapus.');
+        $this->dispatch('swal:alert', [
+            'icon' => 'success',
+            'title' => 'Terhapus!',
+            'text' => 'Asal Tembakau berhasil dihapus.',
+        ]);
     }
 
     protected function resetOriginFields()
@@ -273,6 +303,11 @@ class MasterDataManagement extends Component
         $this->showMaterialModal = false;
         $this->resetMaterialFields();
         session()->flash('message', 'Data Jenis Muatan Pengiriman (Material Type) berhasil disimpan.');
+        $this->dispatch('swal:alert', [
+            'icon' => 'success',
+            'title' => 'Berhasil!',
+            'text' => 'Data Jenis Muatan berhasil disimpan.',
+        ]);
     }
 
     public function deleteMaterial(int $id)
@@ -280,6 +315,11 @@ class MasterDataManagement extends Component
         $this->ensureAdminAccess();
         MaterialType::findOrFail($id)->delete();
         session()->flash('message', 'Jenis Muatan Pengiriman berhasil dihapus.');
+        $this->dispatch('swal:alert', [
+            'icon' => 'success',
+            'title' => 'Terhapus!',
+            'text' => 'Jenis Muatan berhasil dihapus.',
+        ]);
     }
 
     protected function resetMaterialFields()

@@ -80,16 +80,31 @@ class UserManagement extends Component
         $this->showModal = false;
         $this->resetFields();
         session()->flash('message', 'Pengguna berhasil disimpan.');
+        $this->dispatch('swal:alert', [
+            'icon' => 'success',
+            'title' => 'Berhasil!',
+            'text' => 'Data pengguna berhasil disimpan.',
+        ]);
     }
 
     public function deleteUser(int $id)
     {
         if ($id === Auth::id()) {
             session()->flash('message', 'Tidak dapat menghapus akun sendiri.');
+            $this->dispatch('swal:alert', [
+                'icon' => 'warning',
+                'title' => 'Perhatian',
+                'text' => 'Tidak dapat menghapus akun sendiri.',
+            ]);
             return;
         }
         User::findOrFail($id)->delete();
         session()->flash('message', 'Pengguna berhasil dihapus.');
+        $this->dispatch('swal:alert', [
+            'icon' => 'success',
+            'title' => 'Terhapus!',
+            'text' => 'Pengguna berhasil dihapus.',
+        ]);
     }
 
     protected function resetFields()

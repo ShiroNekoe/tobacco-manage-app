@@ -273,9 +273,13 @@ class="space-y-6">
         </div>
 
     <!-- CUSTOMER MODAL -->
-    <div x-data="{ show: @entangle('showCustomerModal') }" x-show="show" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
-            <h3 class="text-base font-black text-amber-400 border-b border-zinc-800 pb-3">Form Data Pelanggan (Customer)</h3>
+    @if($showCustomerModal)
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl my-auto">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <h3 class="text-base font-black text-amber-400">Form Data Pelanggan (Customer)</h3>
+                <button type="button" wire:click="$set('showCustomerModal', false)" class="text-zinc-400 hover:text-white text-2xl font-bold p-1 leading-none">&times;</button>
+            </div>
             <form wire:submit.prevent="saveCustomer" class="space-y-3 text-xs">
                 <div>
                     <label class="block font-bold uppercase text-zinc-300 mb-1">Kode Customer <span class="text-red-400">*</span></label>
@@ -306,11 +310,16 @@ class="space-y-6">
             </form>
         </div>
     </div>
+    @endif
 
     <!-- PRODUCT TYPE MODAL -->
-    <div x-data="{ show: @entangle('showProductModal') }" x-show="show" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
-            <h3 class="text-base font-black text-amber-400 border-b border-zinc-800 pb-3">Form Data Jenis Produk</h3>
+    @if($showProductModal)
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl my-auto">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <h3 class="text-base font-black text-amber-400">Form Data Jenis Produk</h3>
+                <button type="button" wire:click="$set('showProductModal', false)" class="text-zinc-400 hover:text-white text-2xl font-bold p-1 leading-none">&times;</button>
+            </div>
             <form wire:submit.prevent="saveProduct" class="space-y-3 text-xs">
                 <div>
                     <label class="block font-bold uppercase text-zinc-300 mb-1">Kode Jenis Produk <span class="text-red-400">*</span></label>
@@ -329,11 +338,16 @@ class="space-y-6">
             </form>
         </div>
     </div>
+    @endif
 
     <!-- ORIGIN MODAL -->
-    <div x-data="{ show: @entangle('showOriginModal') }" x-show="show" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
-            <h3 class="text-base font-black text-amber-400 border-b border-zinc-800 pb-3">Form Data Asal Utama Tembakau</h3>
+    @if($showOriginModal)
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl my-auto">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <h3 class="text-base font-black text-amber-400">Form Data Asal Utama Tembakau</h3>
+                <button type="button" wire:click="$set('showOriginModal', false)" class="text-zinc-400 hover:text-white text-2xl font-bold p-1 leading-none">&times;</button>
+            </div>
             <form wire:submit.prevent="saveOrigin" class="space-y-3 text-xs">
                 <div>
                     <label class="block font-bold uppercase text-zinc-300 mb-1">Nama Asal Daerah (Origin Region) <span class="text-red-400">*</span></label>
@@ -351,11 +365,16 @@ class="space-y-6">
             </form>
         </div>
     </div>
+    @endif
 
     <!-- MATERIAL TYPE MODAL [NEW] -->
-    <div x-data="{ show: @entangle('showMaterialModal') }" x-show="show" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
-            <h3 class="text-base font-black text-amber-400 border-b border-zinc-800 pb-3">Form Data Jenis Muatan DN Shipment</h3>
+    @if($showMaterialModal)
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl my-auto">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <h3 class="text-base font-black text-amber-400">Form Data Jenis Muatan DN Shipment</h3>
+                <button type="button" wire:click="$set('showMaterialModal', false)" class="text-zinc-400 hover:text-white text-2xl font-bold p-1 leading-none">&times;</button>
+            </div>
             <form wire:submit.prevent="saveMaterial" class="space-y-3 text-xs">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
@@ -403,4 +422,5 @@ class="space-y-6">
             </form>
         </div>
     </div>
+    @endif
 </div>

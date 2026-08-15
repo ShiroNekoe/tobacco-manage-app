@@ -404,11 +404,11 @@
                                         <!-- Manggil Batch Sumber Selector -->
                                         <div class="flex items-center gap-1.5">
                                             <label class="text-[10px] font-bold uppercase text-amber-400 whitespace-nowrap">Kode Batch / No. Batch:</label>
-                                            <select wire:change="selectBatchForLot({{ $index }}, $event.target.value)" class="px-2.5 py-1.5 rounded-xl bg-zinc-900 border border-amber-500/40 text-amber-300 font-mono text-xs focus:border-amber-400 outline-none max-w-[240px]">
+                                            <select wire:change="selectBatchForLot({{ $index }}, $event.target.value)" class="px-2.5 py-1.5 rounded-xl bg-zinc-900 border border-amber-500/40 text-amber-300 font-mono text-xs focus:border-amber-400 outline-none max-w-[320px]">
                                                 <option value="">-- Panggil Batch (Otomatis) --</option>
                                                 @foreach($availableBatches as $ab)
                                                     <option value="{{ $ab->id }}" {{ ($item['batch_id'] ?? null) == $ab->id ? 'selected' : '' }}>
-                                                        {{ $ab->batch_code }} ({{ $ab->origin->region_name ?? '-' }})
+                                                        {{ $ab->batch_code }} ({{ $ab->origin->region_name ?? '-' }}) — {{ ($ab->remaining_sacks ?? 0) > 0 ? 'Sisa: ' . $ab->remaining_sacks . ' Krg (' . number_format($ab->remaining_netto ?? 0, 1) . ' kg)' : 'Habis (0 Krg)' }}
                                                     </option>
                                                 @endforeach
                                             </select>

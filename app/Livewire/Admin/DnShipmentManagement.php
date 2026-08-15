@@ -66,7 +66,7 @@ class DnShipmentManagement extends Component
         'items.*.origin' => 'required|string|max:100',
         'items.*.origin_code' => 'nullable|string|max:100',
         'items.*.material_type' => 'nullable|string|max:100',
-        'items.*.standard_sack_count' => 'required|integer|min:1',
+        'items.*.standard_sack_count' => 'required|integer|min:0',
         'items.*.standard_gross_per_sack' => 'required|numeric|min:0.01',
         'items.*.standard_tare_per_sack' => 'required|numeric|min:0',
         'items.*.standard_netto_per_sack' => 'required|numeric|min:0.01',
@@ -263,11 +263,16 @@ class DnShipmentManagement extends Component
         if ($batch->batchOrigins && $batch->batchOrigins->count() > 1) {
             $subOrigins = $batch->batchOrigins;
             $totalAlloc = $subOrigins->sum('allocated_kg') ?: 1;
-            $totalSacks = (int) ($batch->separation_product_sack ?: ($batch->product_sack_count ?: (count($subOrigins) * 10)));
+
+            $stockInfo = $this->getLotStockInfo($batch->id, 0, 0.0);
+            $remainingTotalSacks = $stockInfo ? (int) $stockInfo['remaining_sacks_before'] : 0;
+            $remainingNetto = $stockInfo ? (float) $stockInfo['remaining_netto_before'] : 0.0;
+
             $tarePerSack = (float) ($batch->product_tare_per_sack ?? 0.20);
             $grossPerSack = (float) ($batch->product_kg_per_sack ?: 50.20);
-            $nettoPerSack = max(0.0, round($grossPerSack - $tarePerSack, 2));
-            $remnantKg = (float) ($batch->separation_product_remnant_kg ?: ($batch->product_remnant_kg ?: 0));
+            $nettoPerSack = max(0.01, round($grossPerSack - $tarePerSack, 2));
+
+            $origRemnantKg = (float) ($batch->separation_product_remnant_kg ?: ($batch->product_remnant_kg ?: 0));
             $remnantGross = (float) ($batch->separation_product_remnant_gross_kg ?? 0);
             $remnantTare = (float) ($batch->separation_product_remnant_tare_kg ?? $tarePerSack);
 
@@ -275,10 +280,10 @@ class DnShipmentManagement extends Component
             foreach ($subOrigins as $sIdx => $bo) {
                 $info = CustomerDashboard::resolveOriginAndCode($bo->origin ?: $batch->origin, $batch->material_code);
                 $share = $bo->allocated_kg > 0 ? ($bo->allocated_kg / $totalAlloc) : (1 / count($subOrigins));
-                $lotSacks = max(1, (int) round($totalSacks * $share));
+                $lotSacks = max(0, (int) round($remainingTotalSacks * $share));
 
                 $isLast = ($sIdx === count($subOrigins) - 1);
-                $hasRem = ($isLast && ($remnantKg > 0 || $remnantGross > 0));
+                $hasRem = ($isLast && ($origRemnantKg > 0 || $remnantGross > 0) && $remainingTotalSacks > 0);
 
                 $newLots[] = [
                     'item_no' => 0, // will be re-indexed
@@ -292,9 +297,9 @@ class DnShipmentManagement extends Component
                     'standard_tare_per_sack' => $tarePerSack,
                     'standard_netto_per_sack' => $nettoPerSack,
                     'has_remnant' => $hasRem,
-                    'remnant_gross_kg' => $hasRem ? ($remnantGross ?: round($remnantKg + $remnantTare, 2)) : 0.00,
+                    'remnant_gross_kg' => $hasRem ? ($remnantGross ?: round($origRemnantKg + $remnantTare, 2)) : 0.00,
                     'remnant_tare_kg' => $hasRem ? ($remnantTare ?: $tarePerSack) : 0.00,
-                    'remnant_netto_kg' => $hasRem ? ($remnantKg ?: max(0.0, round($remnantGross - $remnantTare, 2))) : 0.00,
+                    'remnant_netto_kg' => $hasRem ? ($origRemnantKg ?: max(0.0, round($remnantGross - $remnantTare, 2))) : 0.00,
                     'total_sacks' => $lotSacks + ($hasRem ? 1 : 0),
                     'total_gross_kg' => 0.00,
                     'total_tare_kg' => 0.00,
@@ -337,11 +342,26 @@ class DnShipmentManagement extends Component
 
     /**
      * Apply Batch Weights to Lot depending on Material Type (Product, Bits / Stem, Dust)
+     * Auto-populates the actual remaining stock in warehouse.
      */
     protected function applyBatchWeightsToLot(int $index, Batch $batch, string $materialType): void
     {
+        $tarePerSack = (float) ($batch->product_tare_per_sack ?? 0.20);
+        $this->items[$index]['standard_tare_per_sack'] = $tarePerSack;
+
+        $grossPerSack = (float) ($batch->product_kg_per_sack ?: 50.20);
+        $this->items[$index]['standard_gross_per_sack'] = $grossPerSack;
+        $stdNettoPerSack = max(0.01, round($grossPerSack - $tarePerSack, 2));
+        $this->items[$index]['standard_netto_per_sack'] = $stdNettoPerSack;
+
         if ($materialType === 'Bits / Stem') {
-            $nettoKg = (float) ($batch->separation_bits_stem_kg ?: ($batch->bits_stem_kg ?? 0));
+            $totalNetto = (float) ($batch->separation_bits_stem_kg ?: ($batch->bits_stem_kg ?? 0));
+            $shippedNetto = (float) $batch->dnShipmentItems()
+                ->when($this->editingShipmentId, fn ($q) => $q->where('dn_shipment_id', '!=', $this->editingShipmentId))
+                ->where('material_type', 'Bits / Stem')
+                ->sum('total_netto_kg');
+            $nettoKg = max(0.0, round($totalNetto - $shippedNetto, 2));
+
             $sackCount = max(0, (int) floor($nettoKg / 50.00));
             $remnantKg = round(fmod($nettoKg, 50.00), 2);
             if ($sackCount === 0 && $nettoKg > 0) {
@@ -353,7 +373,7 @@ class DnShipmentManagement extends Component
                 $this->items[$index]['remnant_netto_kg'] = 0.00;
                 $this->items[$index]['remnant_gross_kg'] = 0.00;
             } else {
-                $this->items[$index]['standard_sack_count'] = max(1, $sackCount);
+                $this->items[$index]['standard_sack_count'] = max(0, $sackCount);
                 $this->items[$index]['standard_netto_per_sack'] = 50.00;
                 $this->items[$index]['standard_tare_per_sack'] = 0.70;
                 $this->items[$index]['standard_gross_per_sack'] = 50.70;
@@ -369,7 +389,13 @@ class DnShipmentManagement extends Component
                 }
             }
         } elseif ($materialType === 'Dust') {
-            $nettoKg = (float) ($batch->separation_dust_kg ?: ($batch->dust_kg ?? 0));
+            $totalNetto = (float) ($batch->separation_dust_kg ?: ($batch->dust_kg ?? 0));
+            $shippedNetto = (float) $batch->dnShipmentItems()
+                ->when($this->editingShipmentId, fn ($q) => $q->where('dn_shipment_id', '!=', $this->editingShipmentId))
+                ->where('material_type', 'Dust')
+                ->sum('total_netto_kg');
+            $nettoKg = max(0.0, round($totalNetto - $shippedNetto, 2));
+
             $sackCount = max(0, (int) floor($nettoKg / 50.00));
             $remnantKg = round(fmod($nettoKg, 50.00), 2);
             if ($sackCount === 0 && $nettoKg > 0) {
@@ -381,7 +407,7 @@ class DnShipmentManagement extends Component
                 $this->items[$index]['remnant_netto_kg'] = 0.00;
                 $this->items[$index]['remnant_gross_kg'] = 0.00;
             } else {
-                $this->items[$index]['standard_sack_count'] = max(1, $sackCount);
+                $this->items[$index]['standard_sack_count'] = max(0, $sackCount);
                 $this->items[$index]['standard_netto_per_sack'] = 50.00;
                 $this->items[$index]['standard_tare_per_sack'] = 0.70;
                 $this->items[$index]['standard_gross_per_sack'] = 50.70;
@@ -397,33 +423,55 @@ class DnShipmentManagement extends Component
                 }
             }
         } else {
-            // Product
-            $sackCount = $batch->separation_product_sack ?: ($batch->product_sack_count ?? null);
-            if ($sackCount && (int) $sackCount > 0) {
-                $this->items[$index]['standard_sack_count'] = (int) $sackCount;
-            }
+            // Product (Finished goods) - Load real-time remaining stock
+            $stockInfo = $this->getLotStockInfo($batch->id, 0, 0.0);
+            $remainingSacks = $stockInfo ? (int) $stockInfo['remaining_sacks_before'] : 0;
+            $remainingNetto = $stockInfo ? (float) $stockInfo['remaining_netto_before'] : 0.0;
+            $producedTotalSacks = $stockInfo ? (int) $stockInfo['produced_sacks'] : 0;
 
-            $tarePerSack = (float) ($batch->product_tare_per_sack ?? 0.20);
-            $this->items[$index]['standard_tare_per_sack'] = $tarePerSack;
+            $origStdSacks = (int) ($batch->separation_product_sack ?: ($batch->product_sack_count ?? 0));
+            $origRemnantKg = (float) ($batch->separation_product_remnant_kg ?: ($batch->product_remnant_kg ?? 0));
+            $origRemnantGross = (float) ($batch->separation_product_remnant_gross_kg ?? 0);
+            $origRemnantTare = (float) ($batch->separation_product_remnant_tare_kg ?? $tarePerSack);
 
-            $grossPerSack = (float) ($batch->product_kg_per_sack ?: 50.20);
-            $this->items[$index]['standard_gross_per_sack'] = $grossPerSack;
-            $this->items[$index]['standard_netto_per_sack'] = max(0.0, round($grossPerSack - $tarePerSack, 2));
-
-            $remnantKg = (float) ($batch->separation_product_remnant_kg ?: ($batch->product_remnant_kg ?? 0));
-            $remnantGross = (float) ($batch->separation_product_remnant_gross_kg ?? 0);
-            $remnantTare = (float) ($batch->separation_product_remnant_tare_kg ?? $tarePerSack);
-
-            if ($remnantGross > 0 || $remnantKg > 0) {
-                $this->items[$index]['has_remnant'] = true;
-                $this->items[$index]['remnant_tare_kg'] = $remnantTare ?: $tarePerSack;
-                $this->items[$index]['remnant_gross_kg'] = $remnantGross ?: round($remnantKg + ($remnantTare ?: $tarePerSack), 2);
-                $this->items[$index]['remnant_netto_kg'] = $remnantKg ?: max(0.0, round($remnantGross - $remnantTare, 2));
-            } else {
+            if ($remainingSacks <= 0 || $remainingNetto <= 0.0) {
+                // Batch is completely depleted in warehouse
+                $this->items[$index]['standard_sack_count'] = 0;
                 $this->items[$index]['has_remnant'] = false;
                 $this->items[$index]['remnant_netto_kg'] = 0.00;
                 $this->items[$index]['remnant_gross_kg'] = 0.00;
                 $this->items[$index]['remnant_tare_kg'] = 0.00;
+            } elseif ($remainingSacks >= $producedTotalSacks) {
+                // Full batch is available (no previous shipments)
+                $this->items[$index]['standard_sack_count'] = $origStdSacks;
+                if ($origRemnantKg > 0 || $origRemnantGross > 0) {
+                    $this->items[$index]['has_remnant'] = true;
+                    $this->items[$index]['remnant_tare_kg'] = $origRemnantTare ?: $tarePerSack;
+                    $this->items[$index]['remnant_netto_kg'] = $origRemnantKg;
+                    $this->items[$index]['remnant_gross_kg'] = $origRemnantGross ?: round($origRemnantKg + ($origRemnantTare ?: $tarePerSack), 2);
+                } else {
+                    $this->items[$index]['has_remnant'] = false;
+                    $this->items[$index]['remnant_netto_kg'] = 0.00;
+                    $this->items[$index]['remnant_gross_kg'] = 0.00;
+                    $this->items[$index]['remnant_tare_kg'] = 0.00;
+                }
+            } else {
+                // Partial stock remaining
+                if ($origRemnantKg > 0 && $remainingSacks > $origStdSacks) {
+                    // Remnant is still part of remaining
+                    $this->items[$index]['standard_sack_count'] = max(0, $remainingSacks - 1);
+                    $this->items[$index]['has_remnant'] = true;
+                    $this->items[$index]['remnant_tare_kg'] = $origRemnantTare ?: $tarePerSack;
+                    $this->items[$index]['remnant_netto_kg'] = $origRemnantKg;
+                    $this->items[$index]['remnant_gross_kg'] = $origRemnantGross ?: round($origRemnantKg + ($origRemnantTare ?: $tarePerSack), 2);
+                } else {
+                    // Only standard sacks remaining
+                    $this->items[$index]['standard_sack_count'] = $remainingSacks;
+                    $this->items[$index]['has_remnant'] = false;
+                    $this->items[$index]['remnant_netto_kg'] = 0.00;
+                    $this->items[$index]['remnant_gross_kg'] = 0.00;
+                    $this->items[$index]['remnant_tare_kg'] = 0.00;
+                }
             }
         }
     }
@@ -719,7 +767,7 @@ class DnShipmentManagement extends Component
             'items.*.origin' => 'required|string|max:100',
             'items.*.origin_code' => 'nullable|string|max:100',
             'items.*.material_type' => 'nullable|string|max:100',
-            'items.*.standard_sack_count' => 'required|integer|min:1',
+            'items.*.standard_sack_count' => 'required|integer|min:0',
             'items.*.standard_gross_per_sack' => 'required|numeric|min:0.01',
             'items.*.standard_tare_per_sack' => 'required|numeric|min:0',
             'items.*.standard_netto_per_sack' => 'required|numeric|min:0.01',
@@ -918,8 +966,14 @@ class DnShipmentManagement extends Component
         $distinctOrigins = array_keys($originCodesMap);
         sort($distinctOrigins);
 
-        // Batches for selection in lot items
-        $availableBatches = Batch::with(['customer', 'origin', 'productType'])->orderBy('date_of_receipt', 'desc')->get();
+        // Batches for selection in lot items with real-time remaining stock calculation
+        $allBatches = Batch::with(['customer', 'origin', 'productType', 'dnShipmentItems'])->orderBy('date_of_receipt', 'desc')->get();
+        $availableBatches = $allBatches->map(function ($b) {
+            $stock = $this->getLotStockInfo($b->id, 0, 0.0);
+            $b->remaining_sacks = $stock ? $stock['remaining_sacks_before'] : 0;
+            $b->remaining_netto = $stock ? $stock['remaining_netto_before'] : 0.0;
+            return $b;
+        });
 
         // Summary Aggregates
         $totalShipmentsCount = DnShipment::count();

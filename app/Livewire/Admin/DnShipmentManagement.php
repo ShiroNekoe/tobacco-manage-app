@@ -908,9 +908,15 @@ class DnShipmentManagement extends Component
 
         $remainingSacksBefore = max(0, $producedTotalSacks - $shippedSacks);
         $remainingNettoBefore = max(0.0, round($producedNettoKg - $shippedNettoKg, 2));
+        if ($remainingSacksBefore === 0 && $shippedSacks >= $producedTotalSacks && $producedTotalSacks > 0) {
+            $remainingNettoBefore = 0.00;
+        }
 
         $remainingSacksAfter = max(0, $remainingSacksBefore - $currentLotSacks);
         $remainingNettoAfter = max(0.0, round($remainingNettoBefore - $currentLotNetto, 2));
+        if ($remainingSacksAfter === 0 && ($currentLotSacks >= $remainingSacksBefore) && $remainingSacksBefore > 0) {
+            $remainingNettoAfter = 0.00;
+        }
 
         return [
             'produced_sacks' => $producedTotalSacks,

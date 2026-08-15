@@ -535,7 +535,7 @@
                                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-[11px] font-mono shadow-inner">
                                         <div class="flex items-center justify-between sm:justify-start gap-2 text-zinc-400">
                                             <span class="text-[10px] text-zinc-500 uppercase font-bold">Jumlah di Gudang:</span>
-                                            <span class="text-zinc-200 font-bold">{{ $lotStock['produced_sacks'] }} Karung ({{ number_format($lotStock['produced_netto_kg'], 2) }} kg)</span>
+                                            <span class="text-zinc-200 font-bold">{{ $lotStock['remaining_sacks_before'] }} Karung ({{ number_format($lotStock['remaining_netto_before'], 2) }} kg)</span>
                                         </div>
                                         <div class="flex items-center justify-between sm:justify-start gap-2 text-zinc-400">
                                             <span class="text-[10px] text-amber-500/80 uppercase font-bold">Terkirim Sblmnya:</span>

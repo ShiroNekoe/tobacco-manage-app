@@ -215,8 +215,8 @@ class BatchManagement extends Component
             $this->product_tare_per_sack = str_replace(',', '.', trim($this->product_tare_per_sack));
         }
 
-        if ($this->isBoxPackType()) {
-            $this->product_kg_per_sack = $this->product_kg_per_sack ?: 25.20;
+        if ($this->isBoxPackType() && empty($this->product_kg_per_sack)) {
+            $this->product_kg_per_sack = 25.20;
         }
 
         $this->validate([
@@ -227,7 +227,7 @@ class BatchManagement extends Component
             'origin_id' => 'required|exists:origins,id',
             'material_code' => 'nullable|string',
             'pack_type' => 'required|string',
-            'product_kg_per_sack' => $this->isBoxPackType() ? 'nullable|numeric|min:0.01' : 'required|numeric|min:0.01',
+            'product_kg_per_sack' => 'required|numeric|min:0.01',
             'product_tare_per_sack' => 'required|numeric|min:0',
             'date_of_receipt' => 'required|date',
             'mrl_items' => 'required|array|min:1',

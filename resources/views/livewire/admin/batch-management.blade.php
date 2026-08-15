@@ -275,14 +275,14 @@
                             <input type="number" min="1" max="500" wire:model.live.debounce.300ms="target_sack_count" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-bold text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50 placeholder-zinc-600/70" placeholder="Contoh: 5">
                             <span class="text-[10px] text-zinc-500/70 opacity-60 block mt-1">DN Gross Weight otomatis dibagi rata ke {{ $target_sack_count ?: 0 }} Box</span>
                         </div>
-                    @else
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Berat Gross Per Sak Produk Jadi (kg/sak) <span class="text-red-400">*</span></label>
-                            <input type="number" step="0.01" wire:model="product_kg_per_sack" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-bold text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50 placeholder-zinc-600/70" placeholder="25.20">
-                            <span class="text-[10px] text-zinc-500/70 opacity-60 block mt-1">Gross per sak untuk konversi Produk Jadi</span>
-                            @error('product_kg_per_sack') <span class="text-red-400 font-bold block text-[11px] mt-1">{{ $message }}</span> @enderror
-                        </div>
                     @endif
+
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Berat Gross Per Sak Produk Jadi (kg/sak) <span class="text-red-400">*</span></label>
+                        <input type="number" step="0.01" wire:model="product_kg_per_sack" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-bold text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50 placeholder-zinc-600/70" placeholder="25.20">
+                        <span class="text-[10px] text-zinc-500/70 opacity-60 block mt-1">Gross per sak untuk konversi Produk Jadi</span>
+                        @error('product_kg_per_sack') <span class="text-red-400 font-bold block text-[11px] mt-1">{{ $message }}</span> @enderror
+                    </div>
 
                     <div>
                         <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Tare Standar Produk Jadi (kg/sak) <span class="text-red-400">*</span></label>

@@ -262,19 +262,27 @@
 
                     <div>
                         <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Jenis Kemasan (Pack Type) <span class="text-red-400">*</span></label>
-                        <select wire:model="pack_type" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-bold text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50">
+                        <select wire:model.live="pack_type" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-bold text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50">
                             <option value="Bale" class="bg-zinc-950 text-zinc-100">Bale</option>
                             <option value="Sack" class="bg-zinc-950 text-zinc-100">Sack (Karung)</option>
                             <option value="Box" class="bg-zinc-950 text-zinc-100">Box</option>
                         </select>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Berat Gross Per Sak Produk Jadi (kg/sak) <span class="text-red-400">*</span></label>
-                        <input type="number" step="0.01" wire:model="product_kg_per_sack" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-bold text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50 placeholder-zinc-600/70" placeholder="25.20">
-                        <span class="text-[10px] text-zinc-500/70 opacity-60 block mt-1">Gross per sak untuk konversi Produk Jadi</span>
-                        @error('product_kg_per_sack') <span class="text-red-400 font-bold block text-[11px] mt-1">{{ $message }}</span> @enderror
-                    </div>
+                    @if($pack_type === 'Box')
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Jumlah Box Penerimaan (Box) <span class="text-red-400">*</span></label>
+                            <input type="number" min="1" max="500" wire:model.live.debounce.300ms="target_sack_count" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-bold text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50 placeholder-zinc-600/70" placeholder="Contoh: 5">
+                            <span class="text-[10px] text-zinc-500/70 opacity-60 block mt-1">DN Gross Weight otomatis dibagi rata ke {{ $target_sack_count ?: 0 }} Box</span>
+                        </div>
+                    @else
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Berat Gross Per Sak Produk Jadi (kg/sak) <span class="text-red-400">*</span></label>
+                            <input type="number" step="0.01" wire:model="product_kg_per_sack" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-bold text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50 placeholder-zinc-600/70" placeholder="25.20">
+                            <span class="text-[10px] text-zinc-500/70 opacity-60 block mt-1">Gross per sak untuk konversi Produk Jadi</span>
+                            @error('product_kg_per_sack') <span class="text-red-400 font-bold block text-[11px] mt-1">{{ $message }}</span> @enderror
+                        </div>
+                    @endif
 
                     <div>
                         <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Tare Standar Produk Jadi (kg/sak) <span class="text-red-400">*</span></label>
@@ -296,19 +304,25 @@
                             <h4 class="text-sm font-black uppercase text-amber-400 tracking-wider flex items-center gap-2">
                                 📦 Input Wajib MRL Pre-Launch Penerimaan Gudang
                             </h4>
-                            <p class="text-xs text-zinc-400 mt-0.5">Ketik jumlah sak/bale di samping untuk membuat daftar baris berat Gross secara otomatis.</p>
+                            <p class="text-xs text-zinc-400 mt-0.5">
+                                @if($pack_type === 'Box')
+                                    Ketik jumlah box di samping atau masukkan DN Gross untuk pembagian berat Gross otomatis per box.
+                                @else
+                                    Ketik jumlah sak/bale di samping untuk membuat daftar baris berat Gross secara otomatis.
+                                @endif
+                            </p>
                         </div>
 
                         <!-- Numeric Sack Count Generator Input -->
                         <div class="flex items-center space-x-2.5 shrink-0 bg-zinc-900/80 px-3.5 py-2 rounded-xl border border-zinc-800">
                             <label class="text-xs font-bold uppercase text-amber-400 whitespace-nowrap">
-                                Jumlah Sak / Bale:
+                                Jumlah {{ $pack_type === 'Box' ? 'Box' : 'Sak / Bale' }}:
                             </label>
                             <input type="number" min="1" max="500" 
                                 wire:model.live.debounce.300ms="target_sack_count"
                                 class="w-20 px-3 py-1.5 text-center rounded-lg bg-zinc-950 border border-amber-500/80 text-amber-400 font-mono font-black text-base outline-none focus:border-amber-400"
                                 placeholder="32">
-                            <span class="text-xs text-zinc-300 font-bold">Unit</span>
+                            <span class="text-xs text-zinc-300 font-bold">{{ $pack_type === 'Box' ? 'Box' : 'Unit' }}</span>
                         </div>
                     </div>
 
@@ -317,7 +331,7 @@
                         <div class="flex flex-wrap items-center justify-between gap-2 px-1">
                             <div class="flex items-center space-x-2">
                                 <span class="text-xs font-black uppercase text-amber-400 tracking-wider">
-                                    Daftar Baris MRL ({{ count($mrl_items) }} Sak / Bale)
+                                    Daftar Baris MRL ({{ count($mrl_items) }} {{ $pack_type === 'Box' ? 'Box' : 'Sak / Bale' }})
                                 </span>
                                 <span class="text-[10px] text-amber-300 font-bold bg-amber-950/80 px-2 py-0.5 rounded-md border border-amber-800/60">
                                     Gross Weight
@@ -331,13 +345,13 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-[420px] overflow-y-auto p-1 pr-2">
                             @foreach($mrl_items as $index => $item)
                                 <div class="bg-zinc-900/90 border border-zinc-800 hover:border-amber-500/50 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-sm transition-all group">
-                                    <!-- Sack Number Badge -->
+                                    <!-- Sack / Box Number Badge -->
                                     <div class="flex items-center space-x-2.5 shrink-0">
                                         <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/40 text-amber-400 font-mono font-black text-sm flex items-center justify-center shadow-inner group-hover:border-amber-400 transition-colors">
                                             #{{ $item['sack_number'] }}
                                         </div>
                                         <div class="hidden sm:block">
-                                            <span class="text-[11px] font-black uppercase tracking-wider text-zinc-300 block">Sak #{{ $item['sack_number'] }}</span>
+                                            <span class="text-[11px] font-black uppercase tracking-wider text-zinc-300 block">{{ $pack_type === 'Box' ? 'Box' : 'Sak' }} #{{ $item['sack_number'] }}</span>
                                             <span class="text-[9px] text-amber-400/80 font-bold uppercase">Gross Wt</span>
                                         </div>
                                     </div>
@@ -356,7 +370,7 @@
                                     <!-- Hapus Action Button -->
                                     @if(count($mrl_items) > 1)
                                         <button type="button" wire:click="removeMrlItemRow({{ $index }})" 
-                                            title="Hapus Sak #{{ $item['sack_number'] }}"
+                                            title="Hapus {{ $pack_type === 'Box' ? 'Box' : 'Sak' }} #{{ $item['sack_number'] }}"
                                             class="text-zinc-500 hover:text-red-400 text-2xl font-bold px-1.5 py-0.5 leading-none transition-colors shrink-0">
                                             &times;
                                         </button>
@@ -369,8 +383,8 @@
                     <!-- MRL Real-Time Calculated Summary Cards -->
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-zinc-950 p-4 rounded-2xl border border-zinc-800/80 text-xs">
                         <div>
-                            <span class="text-zinc-500 block text-[10px] uppercase font-bold">Total Sak/Bale</span>
-                            <strong class="text-amber-400 font-mono text-base block">{{ count($mrl_items) }} Unit</strong>
+                            <span class="text-zinc-500 block text-[10px] uppercase font-bold">Total {{ $pack_type === 'Box' ? 'Box' : 'Sak/Bale' }}</span>
+                            <strong class="text-amber-400 font-mono text-base block">{{ count($mrl_items) }} {{ $pack_type === 'Box' ? 'Box' : 'Unit' }}</strong>
                         </div>
                         <div>
                             <span class="text-zinc-500 block text-[10px] uppercase font-bold">Total DN Gross</span>
@@ -396,7 +410,7 @@
                         Batal
                     </button>
                     <button type="submit" class="px-6 py-3 min-h-[48px] rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white font-black text-xs hover:from-amber-500 shadow-lg">
-                        Simpan MRL & Launch Batch ({{ count($mrl_items) }} Sak)
+                        Simpan MRL & Launch Batch ({{ count($mrl_items) }} {{ $pack_type === 'Box' ? 'Box' : 'Sak' }})
                     </button>
                 </div>
             </form>

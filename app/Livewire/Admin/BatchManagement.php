@@ -83,14 +83,50 @@ class BatchManagement extends Component
         $this->showCreateModal = true;
     }
 
+    public function updatedPackType($value)
+    {
+        if ($value === 'Box') {
+            $this->autoDistributeDnGrossForBox();
+        }
+        $this->recalculateMrlTotals();
+    }
+
     public function updatedTargetSackCount()
     {
         $this->generateMrlRowsFromTargetCount();
+        if ($this->pack_type === 'Box') {
+            $this->autoDistributeDnGrossForBox();
+        }
+        $this->recalculateMrlTotals();
     }
 
     public function updatedDnGrossWeightInput()
     {
+        if ($this->pack_type === 'Box') {
+            $this->autoDistributeDnGrossForBox();
+        }
         $this->recalculateMrlTotals();
+    }
+
+    public function autoDistributeDnGrossForBox(): void
+    {
+        if ($this->pack_type !== 'Box') {
+            return;
+        }
+
+        $dnGross = (float) ($this->dn_gross_weight_input ?? 0);
+        $count = count($this->mrl_items);
+
+        if ($dnGross > 0 && $count > 0) {
+            $grossPerBox = round($dnGross / $count, 2);
+            for ($i = 0; $i < $count; $i++) {
+                if ($i === $count - 1) {
+                    $this->mrl_items[$i]['mrl_gross_weight'] = round($dnGross - ($grossPerBox * ($count - 1)), 2);
+                } else {
+                    $this->mrl_items[$i]['mrl_gross_weight'] = $grossPerBox;
+                }
+            }
+        }
     }
 
     public function updatedProductTarePerSack()
@@ -172,6 +208,10 @@ class BatchManagement extends Component
             $this->product_tare_per_sack = str_replace(',', '.', trim($this->product_tare_per_sack));
         }
 
+        if ($this->pack_type === 'Box') {
+            $this->product_kg_per_sack = $this->product_kg_per_sack ?: 25.20;
+        }
+
         $this->validate([
             'batch_code' => 'required|string',
             'customer_id' => 'required|exists:customers,id',
@@ -180,7 +220,7 @@ class BatchManagement extends Component
             'origin_id' => 'required|exists:origins,id',
             'material_code' => 'nullable|string',
             'pack_type' => 'required|string',
-            'product_kg_per_sack' => 'required|numeric|min:0.01',
+            'product_kg_per_sack' => $this->pack_type === 'Box' ? 'nullable|numeric|min:0.01' : 'required|numeric|min:0.01',
             'product_tare_per_sack' => 'required|numeric|min:0',
             'date_of_receipt' => 'required|date',
             'mrl_items' => 'required|array|min:1',

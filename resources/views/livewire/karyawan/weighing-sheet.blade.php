@@ -321,47 +321,114 @@
         </div>
 
         <!-- PROCESS STAGE SWITCHER TABS -->
-        <div class="flex flex-col sm:flex-row items-center justify-between bg-zinc-950 p-2 rounded-2xl border border-zinc-800 gap-2">
-            <div class="flex items-center gap-1.5 w-full sm:w-auto">
-                <button type="button" wire:click="setProcessStage(1)" class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-black uppercase transition-all flex items-center justify-center gap-1.5 {{ $process_stage === 1 ? 'bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/20' : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200' }}">
-                    <span>🟢</span> Proses 1 (Pemisahan Utama)
+        <div class="flex flex-col sm:flex-row items-center justify-between bg-zinc-950 p-2.5 rounded-2xl border border-zinc-800 gap-3">
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <button type="button" wire:click="setProcessStage(1)" class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-black uppercase transition-all flex items-center justify-center gap-2 {{ $process_stage === 1 ? 'bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/20' : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200' }}">
+                    <span>🟢</span> 
+                    <span>Proses 1 (Pemasukan Awal)</span>
+                    @if($p1_is_locked)
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase {{ $process_stage === 1 ? 'bg-zinc-950 text-emerald-400' : 'bg-emerald-950 text-emerald-300 border border-emerald-800' }}">
+                            🔒 Terkunci ({{ $p1_product_sack }} Sak)
+                        </span>
+                    @endif
                 </button>
-                <button type="button" wire:click="setProcessStage(2)" class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-black uppercase transition-all flex items-center justify-center gap-1.5 {{ $process_stage === 2 ? 'bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/20' : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200' }}">
-                    <span>⚡</span> Proses 2 (Pemisahan Lanjutan + Bit Stem)
+                <button type="button" wire:click="setProcessStage(2)" class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-black uppercase transition-all flex items-center justify-center gap-2 {{ $process_stage === 2 ? 'bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/20' : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200' }}">
+                    <span>⚡</span> 
+                    <span>Proses 2 (Lanjutan + Bit Stem)</span>
+                    @if($p2_product_sack > 0)
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase {{ $process_stage === 2 ? 'bg-zinc-950 text-amber-400' : 'bg-amber-950 text-amber-300 border border-amber-800' }}">
+                            P2: {{ $p2_product_sack }} Sak
+                        </span>
+                    @endif
                 </button>
             </div>
-            <span class="text-[11px] font-bold text-zinc-400 px-3 hidden md:inline">
-                {{ $process_stage === 1 ? 'Tahap 1: Produk Jadi & Debu' : 'Tahap 2: Form Lengkap (+ Bit Stem / Gagang)' }}
-            </span>
+            
+            <div class="hidden lg:flex items-center gap-2 bg-zinc-900 px-3.5 py-1.5 rounded-xl border border-zinc-800 text-xs font-bold">
+                <span class="text-zinc-400">Total Output (P1 + P2):</span>
+                <strong class="text-emerald-400 font-mono">{{ $separation_product_sack }} Sak ({{ number_format($separation_product_kg, 2) }} kg)</strong>
+            </div>
         </div>
+
         <div class="space-y-5">
             @if($process_stage === 1)
                 <!-- PROSES 1 FORM: PRODUK JADI PROSES 1 & DEBU PROSES 1 -->
-                <div class="bg-zinc-950 p-5 rounded-2xl border border-emerald-900/60 space-y-4 shadow">
+                @if($p1_is_locked)
+                    <!-- P1 LOCKED STATUS BANNER -->
+                    <div class="bg-emerald-950/80 border border-emerald-500/50 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-11 h-11 rounded-2xl bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-2xl shrink-0 border border-emerald-500/30">
+                                🔒
+                            </div>
+                            <div>
+                                <h5 class="text-sm font-black text-emerald-300 flex items-center gap-2">
+                                    Bagian Proses 1 Telah Selesai & Terkunci
+                                    <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-900 text-emerald-200 border border-emerald-700">Terkunci</span>
+                                </h5>
+                                <p class="text-xs text-zinc-300 mt-1">
+                                    Produk P1: <strong class="text-emerald-400 font-mono">{{ $p1_product_sack }} Sak</strong> (<strong class="text-emerald-400 font-mono">{{ number_format($p1_product_kg, 2) }} kg Netto</strong>) • Debu P1: <strong class="text-orange-400 font-mono">{{ number_format($p1_dust_netto_kg, 2) }} kg</strong>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2.5 w-full sm:w-auto">
+                            @if(!in_array($status, ['CLOSED', 'locked']))
+                                <button type="button" wire:click="unlockProses1" class="flex-1 sm:flex-none px-4 py-2.5 min-h-[44px] rounded-xl bg-zinc-900 hover:bg-zinc-800 text-amber-400 border border-amber-500/50 text-xs font-bold transition-all shadow flex items-center justify-center gap-1.5">
+                                    <span>🔓</span> Buka Kunci P1 (Edit)
+                                </button>
+                            @endif
+                            <button type="button" wire:click="setProcessStage(2)" class="flex-1 sm:flex-none px-5 py-2.5 min-h-[44px] rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 text-white text-xs font-black transition-all shadow flex items-center justify-center gap-1.5">
+                                <span>Lanjut ke Proses 2</span> <span>➔</span>
+                            </button>
+                        </div>
+                    </div>
+                @endif
+
+                <div class="bg-zinc-950 p-5 rounded-2xl border {{ $p1_is_locked ? 'border-emerald-800/40 bg-zinc-950/60' : 'border-emerald-900/60' }} space-y-4 shadow">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800/80 pb-2">
-                        <h4 class="text-xs font-black uppercase text-emerald-400 tracking-wider">1. Form Produk Jadi (Rajangan) - Proses 1 <span class="text-red-400">*</span></h4>
+                        <div class="flex items-center gap-2">
+                            <h4 class="text-xs font-black uppercase text-emerald-400 tracking-wider">1. Form Produk Jadi (Rajangan) - Proses 1 <span class="text-red-400">*</span></h4>
+                            @if($p1_is_locked)
+                                <span class="text-[9px] font-black uppercase bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800">🔒 Terkunci (Read-Only)</span>
+                            @endif
+                        </div>
                         <span class="text-[10px] font-bold text-emerald-300 bg-emerald-950 px-2.5 py-1 rounded border border-emerald-800 shrink-0">Pemasukan Awal</span>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-[11px] font-bold uppercase text-zinc-300 mb-1">Jumlah Produk Jadi (Sak/Karung) <span class="text-red-400">*</span></label>
-                            <input type="number" id="separation_product_sack_input" min="0" step="1" inputmode="numeric" wire:model.live.debounce.500ms="p1_product_sack" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border {{ $errors->has('separation_product_sack') ? 'border-red-500 ring-2 ring-red-500/50' : 'border-emerald-500/80' }} text-emerald-400 text-base font-black outline-none focus:border-emerald-500" placeholder="0">
+                            <input type="number" id="separation_product_sack_input" min="0" step="1" inputmode="numeric" 
+                                wire:model.live.debounce.500ms="p1_product_sack" 
+                                {{ ($p1_is_locked || in_array($status, ['CLOSED', 'locked'])) ? 'disabled readonly' : '' }} 
+                                class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border {{ $errors->has('p1_product_sack') ? 'border-red-500 ring-2 ring-red-500/50' : 'border-emerald-500/80' }} text-emerald-400 text-base font-black outline-none focus:border-emerald-500 {{ ($p1_is_locked || in_array($status, ['CLOSED', 'locked'])) ? 'opacity-80 cursor-not-allowed bg-zinc-950' : '' }}" 
+                                placeholder="0">
+                            @error('p1_product_sack') <span class="text-red-400 text-[10px] font-bold block mt-1">{{ $message }}</span> @enderror
                         </div>
 
                         <div>
-                            <label class="block text-[11px] font-bold uppercase text-amber-400 mb-1">Remnant Gross (kg) <span class="text-zinc-500 font-normal">(Sisa Produk per Kg)</span></label>
-                            <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="p1_remnant_gross_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-amber-500/80 text-amber-300 text-sm font-bold outline-none focus:border-amber-500" placeholder="0.00">
+                            <label class="block text-[11px] font-bold uppercase text-amber-400 mb-1">Remnant Gross P1 (kg) <span class="text-zinc-500 font-normal">(Sisa Produk per Kg)</span></label>
+                            <input type="text" inputmode="decimal" 
+                                wire:model.live.debounce.500ms="p1_remnant_gross_kg" 
+                                {{ ($p1_is_locked || in_array($status, ['CLOSED', 'locked'])) ? 'disabled readonly' : '' }} 
+                                class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-amber-500/80 text-amber-300 text-sm font-bold outline-none focus:border-amber-500 {{ ($p1_is_locked || in_array($status, ['CLOSED', 'locked'])) ? 'opacity-80 cursor-not-allowed bg-zinc-950' : '' }}" 
+                                placeholder="0.00">
                         </div>
 
                         <div>
-                            <label class="block text-[11px] font-bold uppercase text-amber-400 mb-1">Remnant Tare (kg)</label>
-                            <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="p1_remnant_tare_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-amber-500/80 text-amber-300 text-sm font-bold outline-none focus:border-amber-500" placeholder="0.00">
+                            <label class="block text-[11px] font-bold uppercase text-amber-400 mb-1">Remnant Tare P1 (kg)</label>
+                            <input type="text" inputmode="decimal" 
+                                wire:model.live.debounce.500ms="p1_remnant_tare_kg" 
+                                {{ ($p1_is_locked || in_array($status, ['CLOSED', 'locked'])) ? 'disabled readonly' : '' }} 
+                                class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-amber-500/80 text-amber-300 text-sm font-bold outline-none focus:border-amber-500 {{ ($p1_is_locked || in_array($status, ['CLOSED', 'locked'])) ? 'opacity-80 cursor-not-allowed bg-zinc-950' : '' }}" 
+                                placeholder="0.00">
                         </div>
 
                         <div>
                             <label class="block text-[11px] font-bold uppercase text-amber-400 mb-1">Tare Produk Per Sak (kg/sak)</label>
-                            <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="product_tare_per_sack" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-bold text-sm outline-none focus:border-amber-400" placeholder="0.20">
+                            <input type="text" inputmode="decimal" 
+                                wire:model.live.debounce.500ms="product_tare_per_sack" 
+                                {{ ($p1_is_locked || in_array($status, ['CLOSED', 'locked'])) ? 'disabled readonly' : '' }} 
+                                class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-bold text-sm outline-none focus:border-amber-400 {{ ($p1_is_locked || in_array($status, ['CLOSED', 'locked'])) ? 'opacity-80 cursor-not-allowed' : '' }}" 
+                                placeholder="0.20">
                         </div>
 
                         <div>
@@ -372,17 +439,22 @@
                         <div class="flex flex-col justify-end">
                             <div class="bg-emerald-950 px-4 py-2.5 rounded-xl border border-emerald-800 flex items-center justify-between">
                                 <span class="text-xs font-bold text-emerald-400 uppercase">Remnant Netto P1:</span>
-                                <span class="text-emerald-300 text-base font-black">{{ number_format($p1_remnant_netto_kg, 2) }} kg</span>
+                                <span class="text-emerald-300 text-base font-black font-mono">{{ number_format($p1_remnant_netto_kg, 2) }} kg</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- 3. Debu / Dust Multi-Row Slot Table (Proses 1) -->
-                <div class="bg-zinc-950 p-5 rounded-2xl border border-orange-900/60 space-y-4 shadow">
+                <div class="bg-zinc-950 p-5 rounded-2xl border {{ $p1_is_locked ? 'border-orange-900/40 bg-zinc-950/60' : 'border-orange-900/60' }} space-y-4 shadow">
                     <div class="flex items-center justify-between border-b border-zinc-800/80 pb-2">
-                        <h4 class="text-xs font-black uppercase text-orange-400 tracking-wider">3. Debu / Dust (Multi-Slot Wadah) - Proses 1</h4>
-                        @if(!in_array($status, ['CLOSED', 'locked']))
+                        <div class="flex items-center gap-2">
+                            <h4 class="text-xs font-black uppercase text-orange-400 tracking-wider">3. Debu / Dust (Multi-Slot Wadah) - Proses 1</h4>
+                            @if($p1_is_locked)
+                                <span class="text-[9px] font-black uppercase bg-orange-950 text-orange-300 px-2 py-0.5 rounded border border-orange-800">🔒 Terkunci</span>
+                            @endif
+                        </div>
+                        @if(! $p1_is_locked && !in_array($status, ['CLOSED', 'locked']))
                             <button type="button" wire:click="addP1DustRow" class="px-3.5 py-1.5 bg-orange-950 text-orange-300 border border-orange-800 hover:bg-orange-900 rounded-xl text-xs font-bold flex items-center gap-1 shadow">
                                 ➕ Tambah Slot Wadah P1
                             </button>
@@ -405,17 +477,27 @@
                                     <tr wire:key="p1-dust-row-{{ $idx }}">
                                         <td class="py-2 text-zinc-400 font-bold">{{ $idx + 1 }}</td>
                                         <td class="py-2 pr-3">
-                                            <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="p1_dust_items.{{ $idx }}.gross_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-orange-400 font-bold text-xs outline-none focus:border-orange-500" placeholder="0.00">
+                                            <input type="text" inputmode="decimal" 
+                                                wire:model.live.debounce.500ms="p1_dust_items.{{ $idx }}.gross_kg" 
+                                                {{ ($p1_is_locked || in_array($status, ['CLOSED', 'locked'])) ? 'disabled readonly' : '' }} 
+                                                class="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-orange-400 font-bold text-xs outline-none focus:border-orange-500 {{ ($p1_is_locked || in_array($status, ['CLOSED', 'locked'])) ? 'opacity-80 cursor-not-allowed' : '' }}" 
+                                                placeholder="0.00">
                                         </td>
                                         <td class="py-2 pr-3">
-                                            <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="p1_dust_items.{{ $idx }}.tare_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-orange-400 font-bold text-xs outline-none focus:border-orange-500" placeholder="0.00">
+                                            <input type="text" inputmode="decimal" 
+                                                wire:model.live.debounce.500ms="p1_dust_items.{{ $idx }}.tare_kg" 
+                                                {{ ($p1_is_locked || in_array($status, ['CLOSED', 'locked'])) ? 'disabled readonly' : '' }} 
+                                                class="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-orange-400 font-bold text-xs outline-none focus:border-orange-500 {{ ($p1_is_locked || in_array($status, ['CLOSED', 'locked'])) ? 'opacity-80 cursor-not-allowed' : '' }}" 
+                                                placeholder="0.00">
                                         </td>
                                         <td class="py-2 font-mono text-orange-400 font-bold">
                                             {{ number_format((float) str_replace(',', '.', $dItem['netto_kg'] ?? 0), 2) }} kg
                                         </td>
                                         <td class="py-2 text-center">
-                                            @if(count($p1_dust_items) > 1 && !in_array($status, ['CLOSED', 'locked']))
+                                            @if(count($p1_dust_items) > 1 && ! $p1_is_locked && !in_array($status, ['CLOSED', 'locked']))
                                                 <button type="button" wire:click="removeP1DustRow({{ $idx }})" class="px-2.5 py-1 bg-red-950 text-red-400 border border-red-800 hover:bg-red-900 rounded-lg text-xs font-bold">✕ Hapus</button>
+                                            @elseif($p1_is_locked)
+                                                <span class="text-[10px] text-zinc-500">🔒</span>
                                             @endif
                                         </td>
                                     </tr>
@@ -428,8 +510,50 @@
                         <span class="text-orange-400 font-mono text-sm">Total Debu Netto P1: {{ number_format($p1_dust_netto_kg, 2) }} kg</span>
                     </div>
                 </div>
+
+                <!-- BOTTOM ACTION BUTTON TO COMPLETE AND LOCK PROCESS 1 -->
+                @if(! $p1_is_locked && !in_array($status, ['CLOSED', 'locked']))
+                    <div class="bg-zinc-950 p-4 sm:p-5 rounded-2xl border border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+                        <div class="text-xs text-zinc-400 text-center sm:text-left">
+                            <strong class="text-zinc-200 block mb-0.5">Sudah selesai proses pemisahan tahap pertama?</strong>
+                            Kunci bagian Proses 1 untuk mengamankan data dan lanjut mengisi Proses 2.
+                        </div>
+                        <button type="button" wire:click="lockProses1" class="w-full sm:w-auto px-6 py-3.5 min-h-[48px] rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 text-white font-black text-xs shadow-xl shadow-emerald-950/60 flex items-center justify-center gap-2 transition-all">
+                            <span>🔒</span> Selesai & Kunci Proses 1 (Lanjut ke Proses 2)
+                        </button>
+                    </div>
+                @endif
+
             @else
                 <!-- PROSES 2 FORM: PRODUK JADI PROSES 2, BIT STEM, DEBU TERKUNCI (P1) & DEBU PROSES 2 -->
+                
+                <!-- PROSES 1 BASELINE REFERENCE BANNER -->
+                <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">📦</span>
+                        <div>
+                            <span class="text-[10px] font-black uppercase text-zinc-400 tracking-wider block">Baseline Data Dari Proses 1:</span>
+                            <p class="text-xs font-bold text-zinc-200 mt-0.5">
+                                Produk P1: <span class="text-emerald-400 font-mono font-black">{{ $p1_product_sack }} Sak</span> (<span class="text-emerald-300 font-mono">{{ number_format($p1_product_kg, 2) }} kg Netto</span>) • Debu P1: <span class="text-orange-400 font-mono">{{ number_format($p1_dust_netto_kg, 2) }} kg</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        @if($p1_is_locked)
+                            <span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-emerald-950 text-emerald-300 border border-emerald-800">
+                                🔒 P1 Terkunci
+                            </span>
+                        @else
+                            <span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-amber-950 text-amber-300 border border-amber-800">
+                                ⚠️ P1 Belum Dikunci
+                            </span>
+                        @endif
+                        <button type="button" wire:click="setProcessStage(1)" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] font-bold border border-zinc-700">
+                            🔍 Lihat / Ubah P1
+                        </button>
+                    </div>
+                </div>
+
                 <div class="bg-zinc-950 p-5 rounded-2xl border border-emerald-900/60 space-y-4 shadow transition-all animate-in fade-in duration-300">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800/80 pb-2">
                         <h4 class="text-xs font-black uppercase text-emerald-400 tracking-wider">1. Form Produk Jadi (Rajangan) - Proses 2 <span class="text-red-400">*</span></h4>
@@ -439,17 +563,29 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-[11px] font-bold uppercase text-zinc-300 mb-1">Jumlah Produk Jadi P2 (Sak/Karung) <span class="text-red-400">*</span></label>
-                            <input type="number" id="separation_product_sack_input" min="0" step="1" inputmode="numeric" wire:model.live.debounce.500ms="p2_product_sack" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-emerald-500/80 text-emerald-400 text-base font-black outline-none focus:border-emerald-500" placeholder="0">
+                            <input type="number" id="p2_product_sack_input" min="0" step="1" inputmode="numeric" 
+                                wire:model.live.debounce.500ms="p2_product_sack" 
+                                {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} 
+                                class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-emerald-500/80 text-emerald-400 text-base font-black outline-none focus:border-emerald-500" 
+                                placeholder="0">
                         </div>
 
                         <div>
                             <label class="block text-[11px] font-bold uppercase text-amber-400 mb-1">Remnant Gross P2 (kg) <span class="text-zinc-500 font-normal">(Sisa Produk per Kg)</span></label>
-                            <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="p2_remnant_gross_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-amber-500/80 text-amber-300 text-sm font-bold outline-none focus:border-amber-500" placeholder="0.00">
+                            <input type="text" inputmode="decimal" 
+                                wire:model.live.debounce.500ms="p2_remnant_gross_kg" 
+                                {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} 
+                                class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-amber-500/80 text-amber-300 text-sm font-bold outline-none focus:border-amber-500" 
+                                placeholder="0.00">
                         </div>
 
                         <div>
                             <label class="block text-[11px] font-bold uppercase text-amber-400 mb-1">Remnant Tare P2 (kg)</label>
-                            <input type="text" inputmode="decimal" wire:model.live.debounce.500ms="p2_remnant_tare_kg" {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-amber-500/80 text-amber-300 text-sm font-bold outline-none focus:border-amber-500" placeholder="0.00">
+                            <input type="text" inputmode="decimal" 
+                                wire:model.live.debounce.500ms="p2_remnant_tare_kg" 
+                                {{ in_array($status, ['CLOSED', 'locked']) ? 'disabled' : '' }} 
+                                class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-amber-500/80 text-amber-300 text-sm font-bold outline-none focus:border-amber-500" 
+                                placeholder="0.00">
                         </div>
 
                         <div>
@@ -459,18 +595,18 @@
 
                         <div class="flex flex-col justify-end lg:col-span-2">
                             <div class="bg-emerald-950 px-4 py-2.5 rounded-xl border border-emerald-800 flex items-center justify-between">
-                                <span class="text-xs font-bold text-emerald-400 uppercase">Kombinasi Netto Produk Total (P1 + P2):</span>
-                                <span class="text-emerald-300 text-base font-black">{{ number_format($separation_product_kg, 2) }} kg</span>
+                                <span class="text-xs font-bold text-emerald-400 uppercase">Kombinasi Netto Total Produk (P1 + P2):</span>
+                                <span class="text-emerald-300 text-base font-black font-mono">{{ $separation_product_sack }} Sak ({{ number_format($separation_product_kg, 2) }} kg)</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="pt-2 border-t border-zinc-800/60 flex flex-wrap items-center gap-4 text-xs font-bold text-zinc-400">
-                        <span>P1 Netto: <strong class="text-zinc-300 font-mono">{{ number_format($p1_product_kg, 2) }} kg</strong></span>
+                    <div class="pt-2.5 border-t border-zinc-800/60 flex flex-wrap items-center gap-4 text-xs font-bold text-zinc-400">
+                        <span>P1 Netto: <strong class="text-zinc-200 font-mono">{{ number_format($p1_product_kg, 2) }} kg ({{ $p1_product_sack }} Sak)</strong></span>
                         <span>•</span>
-                        <span>P2 Netto: <strong class="text-zinc-300 font-mono">{{ number_format($p2_product_kg, 2) }} kg</strong></span>
+                        <span>P2 Netto: <strong class="text-zinc-200 font-mono">{{ number_format($p2_product_kg, 2) }} kg ({{ $p2_product_sack }} Sak)</strong></span>
                         <span>•</span>
-                        <span>Netto Produk Total (PDF): <strong class="text-emerald-400 font-mono">{{ number_format($separation_product_kg, 2) }} kg</strong></span>
+                        <span>Total Gabungan (PDF & Stock): <strong class="text-emerald-400 font-mono">{{ number_format($separation_product_kg, 2) }} kg ({{ $separation_product_sack }} Sak)</strong></span>
                     </div>
                 </div>
 

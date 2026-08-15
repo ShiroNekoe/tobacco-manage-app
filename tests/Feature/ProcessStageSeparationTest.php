@@ -158,4 +158,56 @@ class ProcessStageSeparationTest extends TestCase
             ->assertSet('p2_dust_items.0.gross_kg', '7')
             ->assertSet('p2_dust_items.0.netto_kg', 6.30);
     }
+
+    public function test_lock_and_unlock_process_1_behavior(): void
+    {
+        $worker = User::factory()->create(['role' => 'karyawan', 'shift' => 'Shift 1']);
+        $customer = Customer::create(['name' => 'PT Lock Test', 'code' => 'CUST-LCK']);
+        $prodType = ProductType::create(['code' => 'P-LCK', 'name' => 'PAITON LCK']);
+        $origin = Origin::create(['region_name' => 'PAITON LCK']);
+        $dn = DeliveryNote::create(['dn_number' => 'DN-LCK-01', 'customer_id' => $customer->id, 'delivery_date' => Carbon::now()]);
+
+        $batch = Batch::create([
+            'batch_code' => 'BCH-LCK-001',
+            'customer_id' => $customer->id,
+            'delivery_note_id' => $dn->id,
+            'product_type_id' => $prodType->id,
+            'origin_id' => $origin->id,
+            'pack_type' => 'Bale',
+            'product_kg_per_sack' => 25.20,
+            'product_tare_per_sack' => 0.20,
+            'date_of_receipt' => Carbon::now(),
+            'status' => 'OPEN',
+            'mrl_netto_weight' => 500.00,
+        ]);
+
+        // 1. Worker enters P1 data and locks Process 1
+        Livewire::actingAs($worker)
+            ->test(WeighingSheet::class, ['batch_id' => $batch->id])
+            ->set('p1_product_sack', 8)
+            ->set('p1_remnant_gross_kg', 5.20)
+            ->set('p1_remnant_tare_kg', 0.20)
+            ->call('lockProses1')
+            ->assertSet('p1_is_locked', true)
+            ->assertSet('process_stage', 2)
+            ->assertDispatched('swal:alert');
+
+        // Check persistence in database
+        $freshBatch = Batch::find($batch->id);
+        $this->assertTrue($freshBatch->separation_p1_data['is_locked']);
+        $this->assertEquals(8, $freshBatch->separation_p1_data['product_sack']);
+
+        // 2. Worker can unlock Process 1
+        Livewire::actingAs($worker)
+            ->test(WeighingSheet::class, ['batch_id' => $batch->id])
+            ->assertSet('p1_is_locked', true)
+            ->assertSet('process_stage', 2)
+            ->call('unlockProses1')
+            ->assertSet('p1_is_locked', false)
+            ->assertSet('process_stage', 1)
+            ->assertDispatched('swal:alert');
+
+        $freshBatch2 = Batch::find($batch->id);
+        $this->assertFalse($freshBatch2->separation_p1_data['is_locked']);
+    }
 }

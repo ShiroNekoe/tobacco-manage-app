@@ -58,6 +58,7 @@ class WeighingSheet extends Component
     public int $process_stage = 1;
 
     // Process 1 Separation Data
+    public bool $p1_is_locked = false;
     public int $p1_product_sack = 0;
     public $p1_remnant_gross_kg = 0;
     public $p1_remnant_tare_kg = 0;
@@ -174,11 +175,13 @@ class WeighingSheet extends Component
         $p2Data = $batch->separation_p2_data ?? [];
 
         if (! empty($p1Data)) {
+            $this->p1_is_locked = (bool) ($p1Data['is_locked'] ?? false);
             $this->p1_product_sack = (int) ($p1Data['product_sack'] ?? 0);
             $this->p1_remnant_gross_kg = (float) ($p1Data['product_remnant_gross_kg'] ?? 0);
             $this->p1_remnant_tare_kg = (float) ($p1Data['product_remnant_tare_kg'] ?? 0);
             $this->p1_dust_items = ! empty($p1Data['dust_items']) && is_array($p1Data['dust_items']) ? $p1Data['dust_items'] : [];
         } else {
+            $this->p1_is_locked = false;
             $this->p1_product_sack = (int) ($batch->separation_product_sack ?? 0);
             $this->p1_remnant_gross_kg = (float) ($batch->separation_product_remnant_gross_kg ?? 0);
             $this->p1_remnant_tare_kg = (float) ($batch->separation_product_remnant_tare_kg ?? 0);
@@ -220,7 +223,7 @@ class WeighingSheet extends Component
 
         $this->separation_waste_kg = (float) ($batch->separation_waste_kg ?? 0);
 
-        // Auto detect process_stage: set to 2 if Bit Stem has non-zero values
+        // Auto detect process_stage: set to 2 if P1 is locked OR Bit Stem/P2 has non-zero values
         $hasBitStemValues = false;
         if (! empty($this->bit_stem_items)) {
             foreach ($this->bit_stem_items as $bsi) {
@@ -230,7 +233,7 @@ class WeighingSheet extends Component
                 }
             }
         }
-        if ((float)($batch->separation_bits_stem_kg ?? 0) > 0 || $hasBitStemValues) {
+        if ($this->p1_is_locked || (float)($batch->separation_bits_stem_kg ?? 0) > 0 || $hasBitStemValues || $this->p2_product_sack > 0) {
             $this->process_stage = 2;
         } else {
             $this->process_stage = 1;
@@ -349,15 +352,6 @@ class WeighingSheet extends Component
 
     public function updated($property = null)
     {
-        if ($property === 'separation_product_sack') {
-            $this->p1_product_sack = (int) $this->separation_product_sack;
-        }
-        if ($property === 'separation_product_remnant_gross_kg') {
-            $this->p1_remnant_gross_kg = $this->separation_product_remnant_gross_kg;
-        }
-        if ($property === 'separation_product_remnant_tare_kg') {
-            $this->p1_remnant_tare_kg = $this->separation_product_remnant_tare_kg;
-        }
         $this->recalculateTotals();
     }
 
@@ -366,27 +360,37 @@ class WeighingSheet extends Component
         $this->recalculateTotals();
     }
 
-    public function updatedSeparationProductSack()
+    public function lockProses1()
     {
-        $this->p1_product_sack = (int) $this->separation_product_sack;
         $this->recalculateTotals();
+        if ($this->p1_product_sack <= 0 && (float) $this->p1_product_kg <= 0) {
+            $this->addError('p1_product_sack', 'Harap isi jumlah sak atau netto Produk Jadi Proses 1 terlebih dahulu.');
+            session()->flash('error', '⚠️ Harap isi jumlah sak atau netto Produk Jadi Proses 1 terlebih dahulu sebelum mengunci!');
+            return;
+        }
+
+        $this->p1_is_locked = true;
+        $this->process_stage = 2;
+        $this->recalculateTotals();
+        $this->saveBatch('ACTIVE');
+        $this->dispatch('swal:alert', [
+            'icon' => 'success',
+            'title' => 'Proses 1 Selesai & Dikunci!',
+            'text' => 'Data Proses 1 (' . $this->p1_product_sack . ' Sak, ' . number_format($this->p1_product_kg, 2) . ' kg Netto) berhasil dikunci. Anda sekarang diarahkan ke Form Proses 2.',
+        ]);
     }
 
-    public function updatedSeparationProductKg()
+    public function unlockProses1()
     {
+        $this->p1_is_locked = false;
+        $this->process_stage = 1;
         $this->recalculateTotals();
-    }
-
-    public function updatedSeparationProductRemnantGrossKg()
-    {
-        $this->p1_remnant_gross_kg = $this->separation_product_remnant_gross_kg;
-        $this->recalculateTotals();
-    }
-
-    public function updatedSeparationProductRemnantTareKg()
-    {
-        $this->p1_remnant_tare_kg = $this->separation_product_remnant_tare_kg;
-        $this->recalculateTotals();
+        $this->saveBatch('ACTIVE');
+        $this->dispatch('swal:alert', [
+            'icon' => 'info',
+            'title' => 'Kunci Proses 1 Dibuka',
+            'text' => 'Form Proses 1 sekarang dapat diedit kembali.',
+        ]);
     }
 
     public function addBitStemRow()
@@ -639,6 +643,7 @@ class WeighingSheet extends Component
         }
 
         $p1Payload = [
+            'is_locked' => $this->p1_is_locked,
             'product_sack' => $this->p1_product_sack,
             'product_remnant_gross_kg' => $this->p1_remnant_gross_kg,
             'product_remnant_tare_kg' => $this->p1_remnant_tare_kg,
@@ -734,6 +739,7 @@ class WeighingSheet extends Component
         $discrepancy = round(((float) $batch->dn_netto_weight) - $this->totalNettoKg, 2);
 
         $p1Payload = [
+            'is_locked' => $this->p1_is_locked,
             'product_sack' => $this->p1_product_sack,
             'product_remnant_gross_kg' => $this->p1_remnant_gross_kg,
             'product_remnant_tare_kg' => $this->p1_remnant_tare_kg,

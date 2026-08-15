@@ -26,6 +26,21 @@
         }
     </style>
 
+    <!-- Tailwind CSS CDN Fallback for Shared Hosting -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
@@ -539,5 +554,6 @@
             });
         })();
     </script>
+    @livewireScripts
 </body>
 </html>

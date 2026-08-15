@@ -109,7 +109,7 @@ class PdfCertificateRenderTest extends TestCase
 
         $html = view('certificates.process-certificate-pdf', compact('batch'))->render();
 
-        $this->assertStringContainsString('Gross qty. based on actual weighing during the process.', $html);
+        $this->assertStringContainsString('Gross qty. based on average minus teoritical tare weight', $html);
         $this->assertStringNotContainsString('Gross qty. Based on Delivery Note.', $html);
     }
 }

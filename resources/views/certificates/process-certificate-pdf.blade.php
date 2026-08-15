@@ -133,7 +133,7 @@
         <strong>Remark :</strong>
         <ol>
             @if($isBoxOrC48)
-                <li>Gross qty. based on actual weighing during the process.</li>
+                <li>Gross qty. based on average minus teoritical tare weight</li>
             @else
                 <li>Gross qty. Based on Delivery Note.</li>
             @endif
@@ -187,7 +187,7 @@
         <strong>Remark :</strong>
         <ol>
             @if($isBoxOrC48)
-                <li>Gross qty. based on actual weighing during the process.</li>
+                <li>Gross qty. based on average minus teoritical tare weight</li>
             @else
                 <li>Gross qty. Based on Material receipt list.</li>
             @endif

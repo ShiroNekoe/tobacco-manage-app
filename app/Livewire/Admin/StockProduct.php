@@ -171,7 +171,7 @@ class StockProduct extends Component
             'origin' => $originInfo['origin'],
             'origin_code' => $originInfo['originCode'],
             'material_code' => $batch->material_code ?: ($batch->productType ? $batch->productType->name : 'Rajangan'),
-            'pack_type' => 'Sak',
+            'pack_type' => 'Karung',
             'date_of_receipt' => $batch->date_of_receipt ? $batch->date_of_receipt->format('d M Y') : '-',
             // Standar Berat Per Sak (Konfigurasi Batch)
             'std_gross_per_sack' => $stdGrossPerSack,

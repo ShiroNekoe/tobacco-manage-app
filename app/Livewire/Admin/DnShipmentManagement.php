@@ -873,7 +873,7 @@ class DnShipmentManagement extends Component
             'remaining_netto_before' => $remainingNettoBefore,
             'remaining_sacks_after' => $remainingSacksAfter,
             'remaining_netto_after' => $remainingNettoAfter,
-            'pack_type' => 'Sak',
+            'pack_type' => 'Karung',
         ];
     }
 

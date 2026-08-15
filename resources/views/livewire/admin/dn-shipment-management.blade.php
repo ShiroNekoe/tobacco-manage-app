@@ -512,7 +512,7 @@
 
                                 <!-- Real-time Lot Subtotal & Stock Status Badge -->
                                 <div class="space-y-2">
-                                    <div class="flex flex-wrap items-center justify-between gap-2 text-xs bg-zinc-900 px-3.5 py-2 rounded-xl border border-zinc-800">
+                                    <div class="flex flex-wrap items-center justify-between gap-2 text-xs bg-zinc-900 px-3.5 py-2.5 rounded-xl border border-zinc-800">
                                         <div class="flex items-center gap-3 font-mono text-[11px] text-zinc-400">
                                             <span>Total Karung: <strong class="text-cyan-400">{{ $item['total_sacks'] }} Krg</strong></span>
                                             <span>•</span>
@@ -531,21 +531,25 @@
                                         $lotStock = !empty($item['batch_id']) ? $this->getLotStockInfo((int)$item['batch_id'], (int)($item['total_sacks'] ?? 0), (float)($item['total_netto_kg'] ?? 0)) : null;
                                     @endphp
                                     @if($lotStock)
-                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 px-3.5 py-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800/80 text-[11px] font-mono">
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-[11px] font-mono shadow-inner">
                                         <div class="flex items-center justify-between sm:justify-start gap-2 text-zinc-400">
-                                            <span class="text-[10px] text-zinc-500 uppercase font-bold">Produksi Batch:</span>
-                                            <span class="text-zinc-200 font-bold">{{ $lotStock['produced_sacks'] }} {{ $lotStock['pack_type'] }} ({{ number_format($lotStock['produced_netto_kg'], 2) }} kg)</span>
+                                            <span class="text-[10px] text-zinc-500 uppercase font-bold">Jumlah di Gudang:</span>
+                                            <span class="text-zinc-200 font-bold">{{ $lotStock['produced_sacks'] }} Karung ({{ number_format($lotStock['produced_netto_kg'], 2) }} kg)</span>
                                         </div>
                                         <div class="flex items-center justify-between sm:justify-start gap-2 text-zinc-400">
                                             <span class="text-[10px] text-amber-500/80 uppercase font-bold">Terkirim Sblmnya:</span>
-                                            <span class="text-amber-400 font-bold">{{ $lotStock['shipped_sacks'] }} {{ $lotStock['pack_type'] }} ({{ number_format($lotStock['shipped_netto_kg'], 2) }} kg)</span>
+                                            <span class="text-amber-400 font-bold">{{ $lotStock['shipped_sacks'] }} Karung ({{ number_format($lotStock['shipped_netto_kg'], 2) }} kg)</span>
                                         </div>
                                         <div class="flex items-center justify-between sm:justify-start gap-2 text-zinc-400">
                                             <span class="text-[10px] text-emerald-500/80 uppercase font-bold">Sisa Gudang:</span>
                                             <span class="font-black {{ $lotStock['remaining_sacks_after'] > 0 ? 'text-emerald-400' : ($lotStock['remaining_sacks_after'] == 0 ? 'text-amber-300' : 'text-red-400') }}">
-                                                {{ $lotStock['remaining_sacks_after'] }} {{ $lotStock['pack_type'] }} ({{ number_format($lotStock['remaining_netto_after'], 2) }} kg)
+                                                {{ $lotStock['remaining_sacks_after'] }} Karung ({{ number_format($lotStock['remaining_netto_after'], 2) }} kg)
                                             </span>
                                         </div>
+                                    </div>
+                                    @else
+                                    <div class="px-3.5 py-2 rounded-xl bg-zinc-950/60 border border-zinc-800/60 text-[11px] text-zinc-500 italic flex items-center gap-2">
+                                        <span>ℹ️ Pilih <strong>Kode Batch / No. Batch</strong> di pojok kanan atas lot ini untuk memuat rincian stok gudang otomatis (Jumlah di Gudang, Terkirim Sblmnya, dan Sisa Gudang).</span>
                                     </div>
                                     @endif
                                 </div>

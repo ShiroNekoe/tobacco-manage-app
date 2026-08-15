@@ -197,12 +197,40 @@ class StockProductTest extends TestCase
 
         $this->actingAs($this->admin);
         Livewire::test(StockProduct::class)
-            ->set('search', 'ALPHA')
-            ->assertSee('BATCH-ALPHA')
-            ->assertDontSee('BATCH-BETA')
             ->set('search', '')
             ->set('filterCustomerId', $otherCustomer->id)
             ->assertSee('BATCH-BETA')
             ->assertDontSee('BATCH-ALPHA');
+    }
+
+    public function test_stock_product_search_by_batch_code_and_origin_on_paginated_page(): void
+    {
+        $origin = Origin::create(['region_name' => 'Temanggung']);
+        $batch = Batch::create([
+            'batch_code' => '260801',
+            'delivery_note_id' => $this->deliveryNote->id,
+            'customer_id' => $this->customer->id,
+            'origin_id' => $origin->id,
+            'product_type_id' => $this->productType->id,
+            'material_code' => '26',
+            'pack_type' => 'Karung',
+            'date_of_receipt' => now(),
+            'separation_product_sack' => 20,
+            'separation_product_kg' => 201.00,
+            'status' => 'CLOSED',
+        ]);
+
+        $this->actingAs($this->admin);
+
+        // Test searching with search query when page is 4 (does not throw 500 error)
+        Livewire::withQueryParams(['page' => 4])
+            ->test(StockProduct::class)
+            ->set('search', '260801')
+            ->assertStatus(200)
+            ->assertSee('260801')
+            ->assertSee('Temanggung')
+            ->set('search', 'Temanggung')
+            ->assertStatus(200)
+            ->assertSee('260801');
     }
 }

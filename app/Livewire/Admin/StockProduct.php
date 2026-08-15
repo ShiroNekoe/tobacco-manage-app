@@ -222,7 +222,14 @@ class StockProduct extends Component
                             ->orWhere('code', 'like', "%{$s}%");
                     })
                     ->orWhereHas('origin', function ($oq) use ($s) {
-                        $oq->where('name', 'like', "%{$s}%");
+                        $oq->where('region_name', 'like', "%{$s}%");
+                    })
+                    ->orWhereHas('batchOrigins.origin', function ($boq) use ($s) {
+                        $boq->where('region_name', 'like', "%{$s}%");
+                    })
+                    ->orWhereHas('productType', function ($ptq) use ($s) {
+                        $ptq->where('name', 'like', "%{$s}%")
+                            ->orWhere('code', 'like', "%{$s}%");
                     });
             });
         }
@@ -292,8 +299,14 @@ class StockProduct extends Component
         }, SORT_REGULAR, $descending);
 
         // Paginate collection manually
-        $currentPage = $this->getPage();
         $totalCount = $sortedRows->count();
+        $maxPage = max(1, (int) ceil($totalCount / $this->perPage));
+        $currentPage = $this->getPage();
+        if ($currentPage > $maxPage) {
+            $currentPage = 1;
+            $this->setPage(1);
+        }
+
         $pagedItems = $sortedRows->slice(($currentPage - 1) * $this->perPage, $this->perPage)->values();
 
         $paginator = new \Illuminate\Pagination\LengthAwarePaginator(

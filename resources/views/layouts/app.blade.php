@@ -211,6 +211,19 @@
                              <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
                             <span class="truncate">Jenis Muatan</span>
                         </a>
+
+                        <!-- 5. Jenis Kemasan (Pack Type) -->
+                        <a href="{{ route('admin.master-data', ['activeTab' => 'pack_types']) }}"
+                           @if(request()->routeIs('admin.master-data*'))
+                           @click.prevent="activeMasterDataTab = 'pack_types'; sidebarOpen = false; $dispatch('switch-master-data-tab', 'pack_types'); window.history.replaceState({}, '', '{{ route('admin.master-data') }}?activeTab=pack_types')"
+                           @else
+                           @click="sidebarOpen = false"
+                           @endif
+                           :class="activeMasterDataTab === 'pack_types' ? 'bg-amber-600 text-white font-black shadow-md shadow-amber-900/30' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200'"
+                           class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all">
+                             <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+                            <span class="truncate">Jenis Kemasan</span>
+                        </a>
                     </div>
                 </div>
                 @endif

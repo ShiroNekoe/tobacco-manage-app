@@ -7,6 +7,7 @@ use App\Models\BatchOrigin;
 use App\Models\Customer;
 use App\Models\DeliveryNote;
 use App\Models\Origin;
+use App\Models\PackType;
 use App\Models\ProductType;
 use App\Models\WeighingItem;
 use Carbon\Carbon;
@@ -83,9 +84,15 @@ class BatchManagement extends Component
         $this->showCreateModal = true;
     }
 
+    public function isBoxPackType(?string $type = null): bool
+    {
+        $packType = strtolower(trim($type ?? $this->pack_type ?? ''));
+        return str_contains($packType, 'box') || str_contains($packType, 'c48') || str_contains($packType, 'c-48');
+    }
+
     public function updatedPackType($value)
     {
-        if ($value === 'Box') {
+        if ($this->isBoxPackType($value)) {
             $this->autoDistributeDnGrossForBox();
         }
         $this->recalculateMrlTotals();
@@ -94,7 +101,7 @@ class BatchManagement extends Component
     public function updatedTargetSackCount()
     {
         $this->generateMrlRowsFromTargetCount();
-        if ($this->pack_type === 'Box') {
+        if ($this->isBoxPackType()) {
             $this->autoDistributeDnGrossForBox();
         }
         $this->recalculateMrlTotals();
@@ -102,7 +109,7 @@ class BatchManagement extends Component
 
     public function updatedDnGrossWeightInput()
     {
-        if ($this->pack_type === 'Box') {
+        if ($this->isBoxPackType()) {
             $this->autoDistributeDnGrossForBox();
         }
         $this->recalculateMrlTotals();
@@ -110,7 +117,7 @@ class BatchManagement extends Component
 
     public function autoDistributeDnGrossForBox(): void
     {
-        if ($this->pack_type !== 'Box') {
+        if (! $this->isBoxPackType()) {
             return;
         }
 
@@ -208,7 +215,7 @@ class BatchManagement extends Component
             $this->product_tare_per_sack = str_replace(',', '.', trim($this->product_tare_per_sack));
         }
 
-        if ($this->pack_type === 'Box') {
+        if ($this->isBoxPackType()) {
             $this->product_kg_per_sack = $this->product_kg_per_sack ?: 25.20;
         }
 
@@ -220,7 +227,7 @@ class BatchManagement extends Component
             'origin_id' => 'required|exists:origins,id',
             'material_code' => 'nullable|string',
             'pack_type' => 'required|string',
-            'product_kg_per_sack' => $this->pack_type === 'Box' ? 'nullable|numeric|min:0.01' : 'required|numeric|min:0.01',
+            'product_kg_per_sack' => $this->isBoxPackType() ? 'nullable|numeric|min:0.01' : 'required|numeric|min:0.01',
             'product_tare_per_sack' => 'required|numeric|min:0',
             'date_of_receipt' => 'required|date',
             'mrl_items' => 'required|array|min:1',
@@ -470,6 +477,17 @@ class BatchManagement extends Component
         $productTypes = ProductType::orderBy('name')->get();
         $origins = Origin::orderBy('region_name')->get();
 
-        return view('livewire.admin.batch-management', compact('batches', 'customers', 'productTypes', 'origins'));
+        $packTypes = PackType::where('is_active', true)->orderBy('id')->get();
+        if ($packTypes->isEmpty()) {
+            $packTypes = collect([
+                (object)['code' => 'Bale', 'name' => 'Bale'],
+                (object)['code' => 'Sack', 'name' => 'Sack (Karung)'],
+                (object)['code' => 'Box', 'name' => 'Box'],
+                (object)['code' => 'C48', 'name' => 'C48'],
+                (object)['code' => 'Box/C48', 'name' => 'Box / C48'],
+            ]);
+        }
+
+        return view('livewire.admin.batch-management', compact('batches', 'customers', 'productTypes', 'origins', 'packTypes'));
     }
 }

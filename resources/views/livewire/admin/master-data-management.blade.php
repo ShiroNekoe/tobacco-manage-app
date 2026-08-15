@@ -32,7 +32,8 @@ class="space-y-6">
                     activeTab === 'customers' ? '🏢 Master Pelanggan (Customer)' :
                     activeTab === 'products' ? '🏷️ Jenis Produk (Product Type)' :
                     activeTab === 'origins' ? '🗺️ Asal Tembakau (Primary Origin)' :
-                    activeTab === 'materials' ? '📦 Jenis Muatan (Material Type)' : 'Master Data'
+                    activeTab === 'materials' ? '📦 Jenis Muatan (Material Type)' :
+                    activeTab === 'pack_types' ? '📦 Jenis Kemasan (Pack Type)' : 'Master Data'
                 ">Master Pelanggan</span>
             </div>
         </div>
@@ -43,7 +44,7 @@ class="space-y-6">
         <!-- Search & Actions Top Bar -->
         <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-4 sm:p-5 shadow-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <div class="relative flex-1">
-                <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari dalam daftar {{ $activeTab === 'customers' ? 'pelanggan' : ($activeTab === 'products' ? 'jenis produk' : ($activeTab === 'origins' ? 'asal tembakau' : 'jenis muatan')) }}..." class="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-amber-500 outline-none">
+                <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari dalam daftar {{ $activeTab === 'customers' ? 'pelanggan' : ($activeTab === 'products' ? 'jenis produk' : ($activeTab === 'origins' ? 'asal tembakau' : ($activeTab === 'materials' ? 'jenis muatan' : 'jenis kemasan'))) }}..." class="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-amber-500 outline-none">
                 <span class="absolute left-3.5 top-3 text-zinc-500 text-xs">🔍</span>
             </div>
 
@@ -62,6 +63,10 @@ class="space-y-6">
             @elseif($activeTab === 'materials')
                 <button wire:click="openMaterialModal()" class="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-600 to-amber-700 text-white hover:from-amber-500 text-xs font-black transition-all shadow-md shadow-amber-900/30 flex items-center justify-center gap-1.5 whitespace-nowrap">
                     <span>➕ Tambah Jenis Muatan</span>
+                </button>
+            @elseif($activeTab === 'pack_types')
+                <button wire:click="openPackTypeModal()" class="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-600 to-amber-700 text-white hover:from-amber-500 text-xs font-black transition-all shadow-md shadow-amber-900/30 flex items-center justify-center gap-1.5 whitespace-nowrap">
+                    <span>➕ Tambah Jenis Kemasan</span>
                 </button>
             @endif
         </div>
@@ -270,6 +275,71 @@ class="space-y-6">
                     </div>
                 </div>
             @endif
+
+            <!-- TAB 5: PACK TYPES (JENIS KEMASAN) -->
+            @if($activeTab === 'pack_types')
+                <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl">
+                    <div class="border-b border-zinc-800 pb-3">
+                        <h3 class="text-sm font-black text-amber-400 uppercase tracking-wider">Daftar Jenis Kemasan (Pack Types)</h3>
+                        <p class="text-xs text-zinc-400 mt-0.5">Master data opsi jenis kemasan saat Input MRL Pre-Launch & Pembuatan Batch (Bale, Sack, Box, C48, dsb.)</p>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-zinc-300">
+                            <thead class="bg-zinc-950 text-zinc-400 font-bold uppercase border-b border-zinc-800">
+                                <tr>
+                                    <th class="px-4 py-3">Kode Kemasan</th>
+                                    <th class="px-4 py-3">Nama Jenis Kemasan</th>
+                                    <th class="px-4 py-3">Deskripsi</th>
+                                    <th class="px-4 py-3 text-center">Status</th>
+                                    <th class="px-4 py-3 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-zinc-800/80 font-sans">
+                                @forelse($packTypes as $pt)
+                                    <tr class="hover:bg-zinc-800/40 transition-colors">
+                                        <td class="px-4 py-3 font-mono font-bold text-amber-400">{{ $pt->code }}</td>
+                                        <td class="px-4 py-3 font-bold text-zinc-100 flex items-center gap-1.5">
+                                            @if(stripos($pt->code, 'box') !== false || stripos($pt->code, 'c48') !== false)
+                                                <span class="text-base">📦</span>
+                                            @elseif(stripos($pt->code, 'sack') !== false)
+                                                <span class="text-base">🛍️</span>
+                                            @else
+                                                <span class="text-base">🏷️</span>
+                                            @endif
+                                            <span>{{ $pt->name }}</span>
+                                        </td>
+                                        <td class="px-4 py-3 text-zinc-400">{{ $pt->description ?: '-' }}</td>
+                                        <td class="px-4 py-3 text-center">
+                                            @if($pt->is_active)
+                                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-950 text-emerald-400 border border-emerald-800">
+                                                    Aktif
+                                                </span>
+                                            @else
+                                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-zinc-800 text-zinc-500 border border-zinc-700">
+                                                    Nonaktif
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td class="px-4 py-3 text-center whitespace-nowrap space-x-1.5">
+                                            <button wire:click="openPackTypeModal({{ $pt->id }})" class="px-3 py-1.5 text-xs font-bold rounded-xl bg-zinc-800 text-zinc-200 hover:bg-zinc-700">
+                                                ✏️ Edit
+                                            </button>
+                                            <button wire:click="deletePackType({{ $pt->id }})" onclick="return confirm('Hapus jenis kemasan ini?')" class="px-3 py-1.5 text-xs font-bold rounded-xl bg-red-950 text-red-400 border border-red-800 hover:bg-red-900">
+                                                🗑️ Hapus
+                                            </button>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="px-4 py-8 text-center text-zinc-500">Tidak ada data jenis kemasan yang cocok.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
         </div>
 
     <!-- CUSTOMER MODAL -->
@@ -418,6 +488,50 @@ class="space-y-6">
                 <div class="flex justify-end space-x-3 pt-3 border-t border-zinc-800">
                     <button type="button" wire:click="$set('showMaterialModal', false)" class="px-4 py-2.5 rounded-xl bg-zinc-800 text-zinc-300 font-bold">Batal</button>
                     <button type="submit" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white font-black">Simpan Jenis Muatan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
+
+    <!-- PACK TYPE MODAL -->
+    @if($showPackTypeModal)
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl my-auto">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <h3 class="text-base font-black text-amber-400">Form Data Jenis Kemasan (Pack Type)</h3>
+                <button type="button" wire:click="$set('showPackTypeModal', false)" class="text-zinc-400 hover:text-white text-2xl font-bold p-1 leading-none">&times;</button>
+            </div>
+            <form wire:submit.prevent="savePackType" class="space-y-3 text-xs">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold uppercase text-zinc-300 mb-1">Kode Kemasan <span class="text-red-400">*</span></label>
+                        <input type="text" wire:model="pack_type_code" class="w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-amber-300 font-mono outline-none focus:border-amber-500" placeholder="Bale / Sack / Box / C48">
+                        @error('pack_type_code') <span class="text-red-400 font-bold block mt-1">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label class="block font-bold uppercase text-zinc-300 mb-1">Nama Jenis Kemasan <span class="text-red-400">*</span></label>
+                        <input type="text" wire:model="pack_type_name" class="w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 outline-none focus:border-amber-500" placeholder="Box / C48 / Sack (Karung)">
+                        @error('pack_type_name') <span class="text-red-400 font-bold block mt-1">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-bold uppercase text-zinc-300 mb-1">Deskripsi / Keterangan Kemasan</label>
+                    <input type="text" wire:model="pack_type_description" class="w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 outline-none" placeholder="Keterangan jenis kemasan">
+                    @error('pack_type_description') <span class="text-red-400 font-bold block mt-1">{{ $message }}</span> @enderror
+                </div>
+
+                <div class="pt-1">
+                    <label class="flex items-center space-x-2 cursor-pointer select-none">
+                        <input type="checkbox" wire:model="pack_type_is_active" class="rounded border-zinc-700 text-amber-600 focus:ring-amber-500 w-4 h-4 bg-zinc-950">
+                        <span class="text-xs font-bold text-zinc-200">Status Aktif (Tampilkan di opsi dropdown Buat Batch)</span>
+                    </label>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-3 border-t border-zinc-800">
+                    <button type="button" wire:click="$set('showPackTypeModal', false)" class="px-4 py-2.5 rounded-xl bg-zinc-800 text-zinc-300 font-bold">Batal</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white font-black">Simpan Jenis Kemasan</button>
                 </div>
             </form>
         </div>

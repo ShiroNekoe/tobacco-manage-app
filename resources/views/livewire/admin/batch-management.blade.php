@@ -263,13 +263,13 @@
                     <div>
                         <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Jenis Kemasan (Pack Type) <span class="text-red-400">*</span></label>
                         <select wire:model.live="pack_type" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-bold text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50">
-                            <option value="Bale" class="bg-zinc-950 text-zinc-100">Bale</option>
-                            <option value="Sack" class="bg-zinc-950 text-zinc-100">Sack (Karung)</option>
-                            <option value="Box" class="bg-zinc-950 text-zinc-100">Box</option>
+                            @foreach($packTypes as $pt)
+                                <option value="{{ $pt->code }}" class="bg-zinc-950 text-zinc-100">{{ $pt->name }}</option>
+                            @endforeach
                         </select>
                     </div>
 
-                    @if($pack_type === 'Box')
+                    @if($this->isBoxPackType())
                         <div>
                             <label class="block text-xs font-bold uppercase text-amber-400 mb-1">Jumlah Box Penerimaan (Box) <span class="text-red-400">*</span></label>
                             <input type="number" min="1" max="500" wire:model.live.debounce.300ms="target_sack_count" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-amber-500/80 text-amber-300 font-bold text-sm outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50 placeholder-zinc-600/70" placeholder="Contoh: 5">
@@ -305,7 +305,7 @@
                                 📦 Input Wajib MRL Pre-Launch Penerimaan Gudang
                             </h4>
                             <p class="text-xs text-zinc-400 mt-0.5">
-                                @if($pack_type === 'Box')
+                                @if($this->isBoxPackType())
                                     Ketik jumlah box di samping atau masukkan DN Gross untuk pembagian berat Gross otomatis per box.
                                 @else
                                     Ketik jumlah sak/bale di samping untuk membuat daftar baris berat Gross secara otomatis.
@@ -316,13 +316,13 @@
                         <!-- Numeric Sack Count Generator Input -->
                         <div class="flex items-center space-x-2.5 shrink-0 bg-zinc-900/80 px-3.5 py-2 rounded-xl border border-zinc-800">
                             <label class="text-xs font-bold uppercase text-amber-400 whitespace-nowrap">
-                                Jumlah {{ $pack_type === 'Box' ? 'Box' : 'Sak / Bale' }}:
+                                Jumlah {{ $this->isBoxPackType() ? 'Box' : 'Sak / Bale' }}:
                             </label>
                             <input type="number" min="1" max="500" 
                                 wire:model.live.debounce.300ms="target_sack_count"
                                 class="w-20 px-3 py-1.5 text-center rounded-lg bg-zinc-950 border border-amber-500/80 text-amber-400 font-mono font-black text-base outline-none focus:border-amber-400"
                                 placeholder="32">
-                            <span class="text-xs text-zinc-300 font-bold">{{ $pack_type === 'Box' ? 'Box' : 'Unit' }}</span>
+                            <span class="text-xs text-zinc-300 font-bold">{{ $this->isBoxPackType() ? 'Box' : 'Unit' }}</span>
                         </div>
                     </div>
 
@@ -331,7 +331,7 @@
                         <div class="flex flex-wrap items-center justify-between gap-2 px-1">
                             <div class="flex items-center space-x-2">
                                 <span class="text-xs font-black uppercase text-amber-400 tracking-wider">
-                                    Daftar Baris MRL ({{ count($mrl_items) }} {{ $pack_type === 'Box' ? 'Box' : 'Sak / Bale' }})
+                                    Daftar Baris MRL ({{ count($mrl_items) }} {{ $this->isBoxPackType() ? 'Box' : 'Sak / Bale' }})
                                 </span>
                                 <span class="text-[10px] text-amber-300 font-bold bg-amber-950/80 px-2 py-0.5 rounded-md border border-amber-800/60">
                                     Gross Weight
@@ -351,7 +351,7 @@
                                             #{{ $item['sack_number'] }}
                                         </div>
                                         <div class="hidden sm:block">
-                                            <span class="text-[11px] font-black uppercase tracking-wider text-zinc-300 block">{{ $pack_type === 'Box' ? 'Box' : 'Sak' }} #{{ $item['sack_number'] }}</span>
+                                            <span class="text-[11px] font-black uppercase tracking-wider text-zinc-300 block">{{ $this->isBoxPackType() ? 'Box' : 'Sak' }} #{{ $item['sack_number'] }}</span>
                                             <span class="text-[9px] text-amber-400/80 font-bold uppercase">Gross Wt</span>
                                         </div>
                                     </div>
@@ -370,7 +370,7 @@
                                     <!-- Hapus Action Button -->
                                     @if(count($mrl_items) > 1)
                                         <button type="button" wire:click="removeMrlItemRow({{ $index }})" 
-                                            title="Hapus {{ $pack_type === 'Box' ? 'Box' : 'Sak' }} #{{ $item['sack_number'] }}"
+                                            title="Hapus {{ $this->isBoxPackType() ? 'Box' : 'Sak' }} #{{ $item['sack_number'] }}"
                                             class="text-zinc-500 hover:text-red-400 text-2xl font-bold px-1.5 py-0.5 leading-none transition-colors shrink-0">
                                             &times;
                                         </button>
@@ -383,8 +383,8 @@
                     <!-- MRL Real-Time Calculated Summary Cards -->
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-zinc-950 p-4 rounded-2xl border border-zinc-800/80 text-xs">
                         <div>
-                            <span class="text-zinc-500 block text-[10px] uppercase font-bold">Total {{ $pack_type === 'Box' ? 'Box' : 'Sak/Bale' }}</span>
-                            <strong class="text-amber-400 font-mono text-base block">{{ count($mrl_items) }} {{ $pack_type === 'Box' ? 'Box' : 'Unit' }}</strong>
+                            <span class="text-zinc-500 block text-[10px] uppercase font-bold">Total {{ $this->isBoxPackType() ? 'Box' : 'Sak/Bale' }}</span>
+                            <strong class="text-amber-400 font-mono text-base block">{{ count($mrl_items) }} {{ $this->isBoxPackType() ? 'Box' : 'Unit' }}</strong>
                         </div>
                         <div>
                             <span class="text-zinc-500 block text-[10px] uppercase font-bold">Total DN Gross</span>
@@ -410,7 +410,7 @@
                         Batal
                     </button>
                     <button type="submit" class="px-6 py-3 min-h-[48px] rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white font-black text-xs hover:from-amber-500 shadow-lg">
-                        Simpan MRL & Launch Batch ({{ count($mrl_items) }} {{ $pack_type === 'Box' ? 'Box' : 'Sak' }})
+                        Simpan MRL & Launch Batch ({{ count($mrl_items) }} {{ $this->isBoxPackType() ? 'Box' : 'Sak' }})
                     </button>
                 </div>
             </form>

@@ -119,10 +119,24 @@
             @endforeach
         </tbody>
     </table>
+    @php
+        $isBoxOrC48 = false;
+        foreach($batches as $b) {
+            $pt = strtolower($b->pack_type ?? '');
+            if (str_contains($pt, 'box') || str_contains($pt, 'c48') || str_contains($pt, 'c-48')) {
+                $isBoxOrC48 = true;
+                break;
+            }
+        }
+    @endphp
     <div class="remarks-box">
         <strong>Remark :</strong>
         <ol>
-            <li>Gross qty. Based on Delivery Note.</li>
+            @if($isBoxOrC48)
+                <li>Gross qty. based on actual weighing during the process.</li>
+            @else
+                <li>Gross qty. Based on Delivery Note.</li>
+            @endif
             <li>Tare qty. Based on actual weighing during the process.</li>
         </ol>
         @foreach($batches as $b)
@@ -172,7 +186,11 @@
     <div class="remarks-box">
         <strong>Remark :</strong>
         <ol>
-            <li>Gross qty. Based on Material receipt list.</li>
+            @if($isBoxOrC48)
+                <li>Gross qty. based on actual weighing during the process.</li>
+            @else
+                <li>Gross qty. Based on Material receipt list.</li>
+            @endif
             <li>Tare qty. Based on actual weighing during the process.</li>
             @foreach($batches as $b)
                 @if(!empty($b->discrepancy_explanation))

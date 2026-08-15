@@ -115,6 +115,51 @@ class MasterDataManagementTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_create_edit_delete_pack_type(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        Livewire::actingAs($admin)
+            ->test(MasterDataManagement::class)
+            ->call('setTab', 'pack_types')
+            ->assertSet('activeTab', 'pack_types')
+            ->set('pack_type_code', 'CUSTOM-BOX')
+            ->set('pack_type_name', 'Custom Heavy Box')
+            ->set('pack_type_description', 'Kemasan box kayu khusus')
+            ->set('pack_type_is_active', true)
+            ->call('savePackType')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('pack_types', [
+            'code' => 'CUSTOM-BOX',
+            'name' => 'Custom Heavy Box',
+        ]);
+
+        $pt = \App\Models\PackType::where('code', 'CUSTOM-BOX')->first();
+
+        // Test editing
+        Livewire::actingAs($admin)
+            ->test(MasterDataManagement::class)
+            ->call('openPackTypeModal', $pt->id)
+            ->set('pack_type_name', 'Custom Heavy Box Premium')
+            ->call('savePackType')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('pack_types', [
+            'id' => $pt->id,
+            'name' => 'Custom Heavy Box Premium',
+        ]);
+
+        // Test deleting
+        Livewire::actingAs($admin)
+            ->test(MasterDataManagement::class)
+            ->call('deletePackType', $pt->id);
+
+        $this->assertDatabaseMissing('pack_types', [
+            'id' => $pt->id,
+        ]);
+    }
+
     public function test_category_menu_renders_all_four_categories(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

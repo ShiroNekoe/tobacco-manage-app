@@ -5,6 +5,7 @@ namespace App\Livewire\Admin;
 use App\Models\Customer;
 use App\Models\MaterialType;
 use App\Models\Origin;
+use App\Models\PackType;
 use App\Models\ProductType;
 use App\Models\SystemSetting;
 use Illuminate\Support\Facades\Auth;
@@ -12,7 +13,7 @@ use Livewire\Component;
 
 class MasterDataManagement extends Component
 {
-    public string $activeTab = 'customers'; // customers, products, origins, materials
+    public string $activeTab = 'customers'; // customers, products, origins, materials, pack_types
 
     protected $queryString = [
         'activeTab' => ['except' => 'customers'],
@@ -50,6 +51,14 @@ class MasterDataManagement extends Component
     public float $default_sack_weight = 50.00;
     public float $default_tare_weight = 0.70;
     public bool $is_active = true;
+
+    // Pack Type Form Fields (Jenis Kemasan)
+    public bool $showPackTypeModal = false;
+    public ?int $pack_type_id = null;
+    public string $pack_type_code = '';
+    public string $pack_type_name = '';
+    public string $pack_type_description = '';
+    public bool $pack_type_is_active = true;
 
     public function mount()
     {
@@ -338,6 +347,78 @@ class MasterDataManagement extends Component
         $this->is_active = true;
     }
 
+    // --- PACK TYPE ACTIONS ---
+    public function openPackTypeModal(?int $id = null)
+    {
+        $this->ensureAdminAccess();
+        $this->resetPackTypeFields();
+
+        if ($id) {
+            $pt = PackType::findOrFail($id);
+            $this->pack_type_id = $pt->id;
+            $this->pack_type_code = $pt->code;
+            $this->pack_type_name = $pt->name;
+            $this->pack_type_description = $pt->description ?? '';
+            $this->pack_type_is_active = (bool) $pt->is_active;
+        }
+
+        $this->showPackTypeModal = true;
+    }
+
+    public function savePackType()
+    {
+        $this->ensureAdminAccess();
+        $this->validate([
+            'pack_type_code' => 'required|string|max:50|unique:pack_types,code,' . $this->pack_type_id,
+            'pack_type_name' => 'required|string|max:100',
+            'pack_type_description' => 'nullable|string|max:255',
+            'pack_type_is_active' => 'boolean',
+        ]);
+
+        PackType::updateOrCreate(
+            ['id' => $this->pack_type_id],
+            [
+                'code' => trim($this->pack_type_code),
+                'name' => trim($this->pack_type_name),
+                'description' => trim($this->pack_type_description),
+                'is_active' => $this->pack_type_is_active,
+            ]
+        );
+
+        $this->showPackTypeModal = false;
+        $this->resetPackTypeFields();
+        session()->flash('message', 'Data Jenis Kemasan (Pack Type) berhasil disimpan.');
+        $this->dispatch('swal:alert', [
+            'icon' => 'success',
+            'title' => 'Berhasil!',
+            'text' => 'Data Jenis Kemasan berhasil disimpan.',
+        ]);
+    }
+
+    public function deletePackType(int $id)
+    {
+        $this->ensureAdminAccess();
+        PackType::findOrFail($id)->delete();
+        session()->flash('message', 'Jenis Kemasan berhasil dihapus.');
+        $this->dispatch('swal:alert', [
+            'icon' => 'success',
+            'title' => 'Terhapus!',
+            'text' => 'Jenis Kemasan berhasil dihapus.',
+        ]);
+    }
+
+    protected function resetPackTypeFields()
+    {
+        $this->reset([
+            'pack_type_id',
+            'pack_type_code',
+            'pack_type_name',
+            'pack_type_description',
+            'pack_type_is_active',
+        ]);
+        $this->pack_type_is_active = true;
+    }
+
     public function render()
     {
         $search = '%' . trim($this->search) . '%';
@@ -374,6 +455,14 @@ class MasterDataManagement extends Component
         $materials = $materialsQuery->orderBy('id')->get();
         $totalMaterials = MaterialType::count();
 
+        // Pack Types (Jenis Kemasan)
+        $packTypesQuery = PackType::query();
+        if ($this->search && $this->activeTab === 'pack_types') {
+            $packTypesQuery->where(fn ($q) => $q->where('name', 'like', $search)->orWhere('code', 'like', $search)->orWhere('description', 'like', $search));
+        }
+        $packTypes = $packTypesQuery->orderBy('id')->get();
+        $totalPackTypes = PackType::count();
+
         return view('livewire.admin.master-data-management', compact(
             'customers',
             'totalCustomers',
@@ -382,7 +471,9 @@ class MasterDataManagement extends Component
             'origins',
             'totalOrigins',
             'materials',
-            'totalMaterials'
+            'totalMaterials',
+            'packTypes',
+            'totalPackTypes'
         ));
     }
 }

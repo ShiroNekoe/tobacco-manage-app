@@ -76,4 +76,40 @@ class PdfCertificateRenderTest extends TestCase
         $this->assertStringContainsString('PERCENTAGE (YIELD)', $html);
         $this->assertStringContainsString('100,00%', $html);
     }
+
+    public function test_pdf_certificate_renders_actual_weighing_remark_for_box_and_c48_pack_types(): void
+    {
+        $customer = Customer::create(['name' => 'PT. Box Customer', 'code' => 'BOX-CUST']);
+        $prodType = ProductType::create(['code' => 'BOX-P10', 'name' => 'BOX P10']);
+        $origin = Origin::create(['region_name' => 'TEMANGGUNG']);
+        $dn = DeliveryNote::create([
+            'dn_number' => 'DN-2026-BOX-01',
+            'customer_id' => $customer->id,
+            'delivery_date' => Carbon::now(),
+        ]);
+
+        $batch = Batch::create([
+            'batch_code' => 'BATCH-TEST-BOX-PDF',
+            'customer_id' => $customer->id,
+            'delivery_note_id' => $dn->id,
+            'product_type_id' => $prodType->id,
+            'origin_id' => $origin->id,
+            'pack_type' => 'Box', // or C48
+            'date_of_receipt' => Carbon::now(),
+            'dn_total_pack' => 5,
+            'dn_gross_weight' => 1000.00,
+            'dn_tare_weight' => 25.00,
+            'dn_netto_weight' => 975.00,
+            'mrl_total_pack' => 5,
+            'mrl_gross_weight' => 1000.00,
+            'mrl_tare_weight' => 25.00,
+            'mrl_netto_weight' => 975.00,
+            'status' => 'locked',
+        ]);
+
+        $html = view('certificates.process-certificate-pdf', compact('batch'))->render();
+
+        $this->assertStringContainsString('Gross qty. based on actual weighing during the process.', $html);
+        $this->assertStringNotContainsString('Gross qty. Based on Delivery Note.', $html);
+    }
 }

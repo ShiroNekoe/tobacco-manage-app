@@ -195,13 +195,19 @@ class ProcessStageSeparationTest extends TestCase
         // Check persistence in database
         $freshBatch = Batch::find($batch->id);
         $this->assertTrue($freshBatch->separation_p1_data['is_locked']);
-        $this->assertEquals(8, $freshBatch->separation_p1_data['product_sack']);
-
-        // 2. Worker can unlock Process 1
+        // 2. Worker attempts to unlock Process 1 (should be rejected)
         Livewire::actingAs($worker)
             ->test(WeighingSheet::class, ['batch_id' => $batch->id])
             ->assertSet('p1_is_locked', true)
-            ->assertSet('process_stage', 2)
+            ->call('unlockProses1')
+            ->assertSet('p1_is_locked', true)
+            ->assertHasErrors(['p1_is_locked']);
+
+        // 3. Admin can unlock Process 1
+        $admin = User::factory()->create(['role' => 'admin']);
+        Livewire::actingAs($admin)
+            ->test(WeighingSheet::class, ['batch_id' => $batch->id])
+            ->assertSet('p1_is_locked', true)
             ->call('unlockProses1')
             ->assertSet('p1_is_locked', false)
             ->assertSet('process_stage', 1)

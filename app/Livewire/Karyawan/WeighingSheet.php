@@ -388,14 +388,25 @@ class WeighingSheet extends Component
 
     public function unlockProses1()
     {
+        $user = Auth::user();
+        if (! $user || ! ($user->isAdmin() || $user->isSupervisor())) {
+            $this->addError('p1_is_locked', 'Hanya Admin atau Supervisor yang memiliki hak akses untuk membuka kunci Proses 1.');
+            $this->dispatch('swal:alert', [
+                'icon' => 'error',
+                'title' => 'Akses Ditolak!',
+                'text' => 'Hanya Admin atau Supervisor yang dapat membuka kembali data Proses 1 yang telah terkunci.',
+            ]);
+            return;
+        }
+
         $this->p1_is_locked = false;
         $this->process_stage = 1;
         $this->recalculateTotals();
         $this->saveBatch('ACTIVE');
         $this->dispatch('swal:alert', [
             'icon' => 'info',
-            'title' => 'Kunci Proses 1 Dibuka',
-            'text' => 'Form Proses 1 sekarang dapat diedit kembali.',
+            'title' => 'Kunci Proses 1 Dibuka (Admin)',
+            'text' => 'Data Proses 1 sekarang dapat diedit kembali.',
         ]);
     }
 

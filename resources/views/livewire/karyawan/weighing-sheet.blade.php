@@ -369,11 +369,18 @@
                                 </p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2.5 w-full sm:w-auto">
-                            @if(!in_array($status, ['CLOSED', 'locked']))
+                        <div class="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+                            @php
+                                $canUnlockP1 = auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isSupervisor());
+                            @endphp
+                            @if($canUnlockP1 && !in_array($status, ['CLOSED', 'locked']))
                                 <button type="button" wire:click="unlockProses1" class="flex-1 sm:flex-none px-4 py-2.5 min-h-[44px] rounded-xl bg-zinc-900 hover:bg-zinc-800 text-amber-400 border border-amber-500/50 text-xs font-bold transition-all shadow flex items-center justify-center gap-1.5">
-                                    <span>🔓</span> Buka Kunci P1 (Edit)
+                                    <span>🔓</span> Buka Kunci P1 (Admin)
                                 </button>
+                            @elseif(!$canUnlockP1)
+                                <span class="text-[11px] text-zinc-400 font-bold bg-zinc-900/90 px-3 py-2 rounded-xl border border-zinc-800 flex items-center gap-1.5">
+                                    <span>🔒</span> Hanya Admin yang dapat membuka kunci
+                                </span>
                             @endif
                             <button type="button" wire:click="setProcessStage(2)" class="flex-1 sm:flex-none px-5 py-2.5 min-h-[44px] rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 text-white text-xs font-black transition-all shadow flex items-center justify-center gap-1.5">
                                 <span>Lanjut ke Proses 2</span> <span>➔</span>
@@ -525,18 +532,25 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
+                        @php
+                            $isAdminOrSpv = auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isSupervisor());
+                        @endphp
                         @if($p1_is_locked)
                             <span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-emerald-950 text-emerald-300 border border-emerald-800">
                                 🔒 P1 Terkunci
                             </span>
+                            <button type="button" wire:click="setProcessStage(1)" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] font-bold border border-zinc-700 flex items-center gap-1.5 transition-all">
+                                <span>{{ $isAdminOrSpv ? '🔍' : '👁️' }}</span> 
+                                <span>{{ $isAdminOrSpv ? 'Lihat / Ubah P1 (Admin)' : 'Lihat Detail P1' }}</span>
+                            </button>
                         @else
                             <span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-amber-950 text-amber-300 border border-amber-800">
                                 ⚠️ P1 Belum Dikunci
                             </span>
+                            <button type="button" wire:click="setProcessStage(1)" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-amber-300 text-[11px] font-bold border border-amber-500/40 flex items-center gap-1.5 transition-all">
+                                <span>🔍</span> <span>Lihat / Ubah P1</span>
+                            </button>
                         @endif
-                        <button type="button" wire:click="setProcessStage(1)" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] font-bold border border-zinc-700">
-                            🔍 Lihat / Ubah P1
-                        </button>
                     </div>
                 </div>
 

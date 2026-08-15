@@ -352,6 +352,12 @@ class WeighingSheet extends Component
 
     public function updated($property = null)
     {
+        if ($property === 'separation_product_remnant_gross_kg') {
+            $this->p1_remnant_gross_kg = $this->separation_product_remnant_gross_kg;
+        }
+        if ($property === 'separation_product_remnant_tare_kg') {
+            $this->p1_remnant_tare_kg = $this->separation_product_remnant_tare_kg;
+        }
         $this->recalculateTotals();
     }
 

@@ -510,20 +510,6 @@
                         <span class="text-orange-400 font-mono text-sm">Total Debu Netto P1: {{ number_format($p1_dust_netto_kg, 2) }} kg</span>
                     </div>
                 </div>
-
-                <!-- BOTTOM ACTION BUTTON TO COMPLETE AND LOCK PROCESS 1 -->
-                @if(! $p1_is_locked && !in_array($status, ['CLOSED', 'locked']))
-                    <div class="bg-zinc-950 p-4 sm:p-5 rounded-2xl border border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
-                        <div class="text-xs text-zinc-400 text-center sm:text-left">
-                            <strong class="text-zinc-200 block mb-0.5">Sudah selesai proses pemisahan tahap pertama?</strong>
-                            Kunci bagian Proses 1 untuk mengamankan data dan lanjut mengisi Proses 2.
-                        </div>
-                        <button type="button" wire:click="lockProses1" class="w-full sm:w-auto px-6 py-3.5 min-h-[48px] rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 text-white font-black text-xs shadow-xl shadow-emerald-950/60 flex items-center justify-center gap-2 transition-all">
-                            <span>🔒</span> Selesai & Kunci Proses 1 (Lanjut ke Proses 2)
-                        </button>
-                    </div>
-                @endif
-
             @else
                 <!-- PROSES 2 FORM: PRODUK JADI PROSES 2, BIT STEM, DEBU TERKUNCI (P1) & DEBU PROSES 2 -->
                 
@@ -779,6 +765,19 @@
                     </div>
                 </div>
             </div>
+
+            <!-- BOTTOM ACTION BUTTON TO COMPLETE AND LOCK PROCESS 1 (PLACED BELOW UNCOUNTABLE WASTE) -->
+            @if($process_stage === 1 && ! $p1_is_locked && !in_array($status, ['CLOSED', 'locked']))
+                <div class="bg-zinc-950 p-5 rounded-2xl border border-emerald-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+                    <div class="text-xs text-zinc-300 text-center sm:text-left">
+                        <strong class="text-emerald-400 text-sm font-black block mb-0.5">Sudah selesai proses pemisahan tahap pertama?</strong>
+                        Kunci bagian Proses 1 untuk mengamankan data dan lanjut mengisi Proses 2.
+                    </div>
+                    <button type="button" wire:click="lockProses1" class="w-full sm:w-auto px-6 py-3.5 min-h-[48px] rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 text-white font-black text-xs shadow-xl shadow-emerald-950/60 flex items-center justify-center gap-2 transition-all shrink-0">
+                        <span>🔒</span> Selesai & Kunci Proses 1 (Lanjut ke Proses 2)
+                    </button>
+                </div>
+            @endif
         </div>
     </div>
 

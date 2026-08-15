@@ -386,7 +386,7 @@
                                             Lot #{{ $item['item_no'] }}
                                         </span>
                                         <span class="text-xs font-bold text-zinc-200">
-                                            {{ $item['origin'] ?: 'Pilih Asal Utama' }} — <span class="font-mono text-cyan-400">{{ $item['origin_code'] ?: '-' }}</span>
+                                            {{ $item['origin'] ?: 'Pilih Asal Utama' }}@if(!empty($item['origin_code'])) — <span class="font-mono text-cyan-400">{{ $item['origin_code'] }}</span>@endif
                                         </span>
                                         <span class="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider
                                             {{ ($item['material_type'] ?? 'Product') === 'Product' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' :
@@ -438,6 +438,7 @@
                                     <div>
                                         <label class="block text-[10px] font-bold uppercase text-cyan-400 mb-1">2. Kode Material</label>
                                         <select wire:model.live="items.{{ $index }}.origin_code" class="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-cyan-300 font-mono font-bold text-xs focus:border-cyan-500 outline-none">
+                                            <option value="">-- Kosongkan (Tanpa Kode) --</option>
                                             @foreach($codesList as $code)
                                                 <option value="{{ $code }}">{{ $code }}</option>
                                             @endforeach

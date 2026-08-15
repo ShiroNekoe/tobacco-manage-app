@@ -64,7 +64,7 @@ class DnShipmentManagement extends Component
         'items.*.batch_id' => 'nullable|exists:batches,id',
         'items.*.batch_code' => 'nullable|string|max:100',
         'items.*.origin' => 'required|string|max:100',
-        'items.*.origin_code' => 'required|string|max:100',
+        'items.*.origin_code' => 'nullable|string|max:100',
         'items.*.material_type' => 'nullable|string|max:100',
         'items.*.standard_sack_count' => 'required|integer|min:1',
         'items.*.standard_gross_per_sack' => 'required|numeric|min:0.01',
@@ -461,7 +461,7 @@ class DnShipmentManagement extends Component
         $availableCodes = $map[$origin] ?? [];
 
         if (! empty($availableCodes)) {
-            if (! in_array($this->items[$index]['origin_code'], $availableCodes)) {
+            if (! in_array($this->items[$index]['origin_code'], $availableCodes) && ! empty($this->items[$index]['origin_code'])) {
                 $this->items[$index]['origin_code'] = $availableCodes[0];
             }
         }
@@ -621,7 +621,7 @@ class DnShipmentManagement extends Component
                     'batch_code' => !empty($it['batch_code']) ? $it['batch_code'] : null,
                     'item_no' => $idx + 1,
                     'origin' => $it['origin'],
-                    'origin_code' => $it['origin_code'],
+                    'origin_code' => !empty($it['origin_code']) ? $it['origin_code'] : null,
                     'material_type' => $it['material_type'] ?? 'Product',
                     'standard_sack_count' => (int) $it['standard_sack_count'],
                     'standard_gross_per_sack' => (float) $it['standard_gross_per_sack'],
@@ -717,7 +717,7 @@ class DnShipmentManagement extends Component
             'items.*.batch_id' => 'nullable|exists:batches,id',
             'items.*.batch_code' => 'nullable|string|max:100',
             'items.*.origin' => 'required|string|max:100',
-            'items.*.origin_code' => 'required|string|max:100',
+            'items.*.origin_code' => 'nullable|string|max:100',
             'items.*.material_type' => 'nullable|string|max:100',
             'items.*.standard_sack_count' => 'required|integer|min:1',
             'items.*.standard_gross_per_sack' => 'required|numeric|min:0.01',
@@ -756,7 +756,7 @@ class DnShipmentManagement extends Component
                     'batch_code' => !empty($it['batch_code']) ? $it['batch_code'] : null,
                     'item_no' => $idx + 1,
                     'origin' => $it['origin'],
-                    'origin_code' => $it['origin_code'],
+                    'origin_code' => !empty($it['origin_code']) ? $it['origin_code'] : null,
                     'material_type' => $it['material_type'] ?? 'Product',
                     'standard_sack_count' => (int) $it['standard_sack_count'],
                     'standard_gross_per_sack' => (float) $it['standard_gross_per_sack'],

@@ -689,4 +689,54 @@ class DnShipmentManagementTest extends TestCase
             ->assertSet('items.0.total_tare_kg', 1.20)
             ->assertSet('items.0.total_netto_kg', 180.00);
     }
+
+    public function test_shipment_can_be_saved_with_empty_origin_code_and_pdf_renders_cleanly(): void
+    {
+        $this->actingAs($this->admin);
+
+        $origin = \App\Models\Origin::create(['region_name' => 'Lombok']);
+        $dn = \App\Models\DeliveryNote::create([
+            'dn_number' => 'DN-LBK-TEST-01',
+            'customer_id' => $this->customer->id,
+            'delivery_date' => '2026-08-11',
+            'status' => 'received',
+        ]);
+
+        $batch = \App\Models\Batch::create([
+            'batch_code' => 'LBK-001',
+            'delivery_note_id' => $dn->id,
+            'date_of_receipt' => '2026-08-11',
+            'customer_id' => $this->customer->id,
+            'product_type_id' => $this->productType->id,
+            'origin_id' => $origin->id,
+            'material_code' => '',
+            'pack_type' => 'Karung',
+            'product_kg_per_sack' => 50.70,
+            'product_tare_per_sack' => 0.70,
+            'separation_product_sack' => 10,
+            'separation_product_kg' => 500.00,
+            'status' => 'approved',
+        ]);
+
+        Livewire::test(DnShipmentManagement::class)
+            ->call('openCreateModal')
+            ->set('shipment_date', '2026-08-11')
+            ->set('customer_id', $this->customer->id)
+            ->set('items.0.origin', 'Lombok')
+            ->set('items.0.origin_code', '') // Empty origin_code
+            ->set('items.0.standard_sack_count', 10)
+            ->set('items.0.standard_gross_per_sack', 50.70)
+            ->set('items.0.standard_tare_per_sack', 0.70)
+            ->set('items.0.standard_netto_per_sack', 50.00)
+            ->call('saveShipment')
+            ->assertHasNoErrors();
+
+        $savedItem = \App\Models\DnShipmentItem::latest('id')->first();
+        $this->assertNull($savedItem->origin_code);
+
+        // Verify PDF route / render
+        $shipment = $savedItem->dnShipment;
+        $response = $this->get(route('dn-shipments.pdf', $shipment->id));
+        $response->assertStatus(200);
+    }
 }

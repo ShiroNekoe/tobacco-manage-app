@@ -125,7 +125,7 @@
                             <br><span style="font-size: 8px; color: #666; font-family: monospace;">(Batch: {{ $item->batch_code }})</span>
                         @endif
                     </td>
-                    <td><strong>{{ $item->origin_code }}</strong></td>
+                    <td><strong>{{ $item->origin_code ?: '' }}</strong></td>
                     <td>
                         <strong>{{ ($item->material_type ?? 'Product') === 'Product' ? 'Produk' : (($item->material_type ?? '') === 'Bits / Stem' ? 'Bits / Stem' : 'Dust') }}</strong>
                     </td>
@@ -166,7 +166,7 @@
 
         <div class="sack-breakdown-box">
             <div class="sack-lot-title">
-                Lot #{{ $item->item_no ?: ($index + 1) }}: <strong>{{ $item->origin }}</strong> ({{ $item->origin_code }})
+                Lot #{{ $item->item_no ?: ($index + 1) }}: <strong>{{ $item->origin }}</strong>@if(!empty($item->origin_code)) ({{ $item->origin_code }})@endif
                 — <span style="color: #047857; font-weight: bold;">[{{ ($item->material_type ?? 'Product') === 'Product' ? 'Produk Utama' : (($item->material_type ?? '') === 'Bits / Stem' ? 'Bits / Stem (Gagang)' : 'Dust (Debu)') }}]</span>
                 @if($item->batch_code)
                     <span style="color: #666; font-size: 8.5px; font-weight: normal;">[Batch: {{ $item->batch_code }}]</span>

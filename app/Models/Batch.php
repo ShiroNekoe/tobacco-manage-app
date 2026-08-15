@@ -162,6 +162,11 @@ class Batch extends Model
         return $this->hasMany(BatchInterimSeparation::class);
     }
 
+    public function dnShipmentItems(): HasMany
+    {
+        return $this->hasMany(DnShipmentItem::class);
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');

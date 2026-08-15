@@ -568,4 +568,84 @@ class DnShipmentManagementTest extends TestCase
             'total_netto_kg' => 125.50,
         ]);
     }
+
+    public function test_dn_number_is_empty_on_create_modal_and_optional_on_save(): void
+    {
+        $origin = \App\Models\Origin::create(['region_name' => 'Kendal', 'code' => 'KDL']);
+        $dn = \App\Models\DeliveryNote::create([
+            'dn_number' => 'DN-INBOUND-OPT-01',
+            'customer_id' => $this->customer->id,
+            'delivery_date' => '2026-08-11',
+            'status' => 'received',
+        ]);
+
+        $batch = \App\Models\Batch::create([
+            'batch_code' => 'BCH-OPT-001',
+            'delivery_note_id' => $dn->id,
+            'date_of_receipt' => '2026-08-11',
+            'customer_id' => $this->customer->id,
+            'product_type_id' => $this->productType->id,
+            'origin_id' => $origin->id,
+            'material_code' => "Kendal'24",
+            'product_kg_per_sack' => 50.00,
+            'product_tare_per_sack' => 0.70,
+            'separation_product_sack' => 30,
+            'separation_product_kg' => 1500.00,
+            'status' => 'approved',
+        ]);
+
+        $this->actingAs($this->admin);
+
+        // Verify dn_number is empty on openCreateModal and saving with empty dn_number succeeds
+        Livewire::test(DnShipmentManagement::class)
+            ->call('openCreateModal')
+            ->assertSet('dn_number', '') // Should be empty by default without forced prefix
+            ->set('shipment_date', '2026-08-11')
+            ->set('customer_id', $this->customer->id)
+            ->call('selectBatchForLot', 0, $batch->id)
+            ->call('saveShipment')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('dn_shipments', [
+            'customer_id' => $this->customer->id,
+            'total_sacks' => 30,
+            'total_netto_kg' => 1500.00,
+        ]);
+    }
+
+    public function test_get_lot_stock_info_computes_real_time_batch_stock(): void
+    {
+        $origin = \App\Models\Origin::create(['region_name' => 'Madura', 'code' => 'MDR']);
+        $dn = \App\Models\DeliveryNote::create([
+            'dn_number' => 'DN-INBOUND-STOCK-01',
+            'customer_id' => $this->customer->id,
+            'delivery_date' => '2026-08-11',
+            'status' => 'received',
+        ]);
+
+        $batch = \App\Models\Batch::create([
+            'batch_code' => 'BCH-STOCK-REALTIME',
+            'delivery_note_id' => $dn->id,
+            'date_of_receipt' => '2026-08-11',
+            'customer_id' => $this->customer->id,
+            'product_type_id' => $this->productType->id,
+            'origin_id' => $origin->id,
+            'material_code' => "Madura'24",
+            'pack_type' => 'Karung',
+            'separation_product_sack' => 40,
+            'separation_product_kg' => 2000.00,
+            'status' => 'approved',
+        ]);
+
+        $component = new DnShipmentManagement();
+        $stockInfo = $component->getLotStockInfo($batch->id, 15, 750.00);
+
+        $this->assertNotNull($stockInfo);
+        $this->assertEquals(40, $stockInfo['produced_sacks']);
+        $this->assertEquals(2000.00, $stockInfo['produced_netto_kg']);
+        $this->assertEquals(0, $stockInfo['shipped_sacks']);
+        $this->assertEquals(40, $stockInfo['remaining_sacks_before']);
+        $this->assertEquals(25, $stockInfo['remaining_sacks_after']); // 40 - 15 = 25
+        $this->assertEquals(1250.00, $stockInfo['remaining_netto_after']); // 2000 - 750 = 1250
+    }
 }

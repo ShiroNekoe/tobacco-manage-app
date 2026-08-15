@@ -299,8 +299,8 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <!-- No Surat Jalan -->
                         <div>
-                            <label class="block text-[11px] font-bold text-zinc-300 uppercase mb-1">No. Surat Jalan (DN) <span class="text-red-400">*</span></label>
-                            <input type="text" wire:model="dn_number" class="w-full px-3 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 text-amber-300 font-mono font-bold text-xs focus:border-amber-500 outline-none">
+                            <label class="block text-[11px] font-bold text-zinc-300 uppercase mb-1">No. Surat Jalan (DN) <span class="text-zinc-500 font-normal text-[10px]">(Opsional)</span></label>
+                            <input type="text" wire:model="dn_number" placeholder="Contoh: 001/SJ/2026 atau kosongkan" class="w-full px-3 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 text-amber-300 font-mono font-bold text-xs focus:border-amber-500 outline-none">
                             @error('dn_number') <span class="text-red-400 text-[10px] mt-1 block">{{ $message }}</span> @enderror
                         </div>
 
@@ -510,19 +510,44 @@
                                     @endif
                                 </div>
 
-                                <!-- Real-time Lot Subtotal Badge -->
-                                <div class="flex flex-wrap items-center justify-between gap-2 text-xs bg-zinc-900 px-3.5 py-2 rounded-xl border border-zinc-800">
-                                    <div class="flex items-center gap-3 font-mono text-[11px] text-zinc-400">
-                                        <span>Total Karung: <strong class="text-cyan-400">{{ $item['total_sacks'] }} Krg</strong></span>
-                                        <span>•</span>
-                                        <span>Gross: <strong class="text-zinc-200">{{ number_format($item['total_gross_kg'], 2) }} kg</strong></span>
-                                        <span>•</span>
-                                        <span>Tare: <strong class="text-zinc-200">{{ number_format($item['total_tare_kg'], 2) }} kg</strong></span>
+                                <!-- Real-time Lot Subtotal & Stock Status Badge -->
+                                <div class="space-y-2">
+                                    <div class="flex flex-wrap items-center justify-between gap-2 text-xs bg-zinc-900 px-3.5 py-2 rounded-xl border border-zinc-800">
+                                        <div class="flex items-center gap-3 font-mono text-[11px] text-zinc-400">
+                                            <span>Total Karung: <strong class="text-cyan-400">{{ $item['total_sacks'] }} Krg</strong></span>
+                                            <span>•</span>
+                                            <span>Gross: <strong class="text-zinc-200">{{ number_format($item['total_gross_kg'], 2) }} kg</strong></span>
+                                            <span>•</span>
+                                            <span>Tare: <strong class="text-zinc-200">{{ number_format($item['total_tare_kg'], 2) }} kg</strong></span>
+                                        </div>
+                                        <div class="font-mono text-xs">
+                                            <span class="text-zinc-400">Subtotal Netto:</span>
+                                            <strong class="text-emerald-400 font-black text-sm ml-1">{{ number_format($item['total_netto_kg'], 2) }} kg</strong>
+                                        </div>
                                     </div>
-                                    <div class="font-mono text-xs">
-                                        <span class="text-zinc-400">Subtotal Netto:</span>
-                                        <strong class="text-emerald-400 font-black text-sm ml-1">{{ number_format($item['total_netto_kg'], 2) }} kg</strong>
+
+                                    <!-- Stock Info for Selected Batch -->
+                                    @php
+                                        $lotStock = !empty($item['batch_id']) ? $this->getLotStockInfo((int)$item['batch_id'], (int)($item['total_sacks'] ?? 0), (float)($item['total_netto_kg'] ?? 0)) : null;
+                                    @endphp
+                                    @if($lotStock)
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 px-3.5 py-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800/80 text-[11px] font-mono">
+                                        <div class="flex items-center justify-between sm:justify-start gap-2 text-zinc-400">
+                                            <span class="text-[10px] text-zinc-500 uppercase font-bold">Produksi Batch:</span>
+                                            <span class="text-zinc-200 font-bold">{{ $lotStock['produced_sacks'] }} {{ $lotStock['pack_type'] }} ({{ number_format($lotStock['produced_netto_kg'], 2) }} kg)</span>
+                                        </div>
+                                        <div class="flex items-center justify-between sm:justify-start gap-2 text-zinc-400">
+                                            <span class="text-[10px] text-amber-500/80 uppercase font-bold">Terkirim Sblmnya:</span>
+                                            <span class="text-amber-400 font-bold">{{ $lotStock['shipped_sacks'] }} {{ $lotStock['pack_type'] }} ({{ number_format($lotStock['shipped_netto_kg'], 2) }} kg)</span>
+                                        </div>
+                                        <div class="flex items-center justify-between sm:justify-start gap-2 text-zinc-400">
+                                            <span class="text-[10px] text-emerald-500/80 uppercase font-bold">Sisa Gudang:</span>
+                                            <span class="font-black {{ $lotStock['remaining_sacks_after'] > 0 ? 'text-emerald-400' : ($lotStock['remaining_sacks_after'] == 0 ? 'text-amber-300' : 'text-red-400') }}">
+                                                {{ $lotStock['remaining_sacks_after'] }} {{ $lotStock['pack_type'] }} ({{ number_format($lotStock['remaining_netto_after'], 2) }} kg)
+                                            </span>
+                                        </div>
                                     </div>
+                                    @endif
                                 </div>
                             </div>
                         @endforeach

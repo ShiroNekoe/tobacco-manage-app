@@ -51,7 +51,7 @@ class DnShipmentManagement extends Component
     public array $items = [];
 
     protected $rules = [
-        'dn_number' => 'required|string|max:100',
+        'dn_number' => 'nullable|string|max:100',
         'shipment_date' => 'required|date',
         'customer_id' => 'nullable|exists:customers,id',
         'product_type_id' => 'nullable|exists:product_types,id',
@@ -186,7 +186,7 @@ class DnShipmentManagement extends Component
     public function openCreateModal(): void
     {
         $this->resetForm();
-        $this->dn_number = $this->generateNextDnNumber();
+        $this->dn_number = '';
         $this->shipment_date = date('Y-m-d');
 
         // Select first customer if available
@@ -702,7 +702,7 @@ class DnShipmentManagement extends Component
 
         $this->recomputeAllItemTotals();
         $this->validate([
-            'dn_number' => 'required|string|max:100|unique:dn_shipments,dn_number,' . $this->editingShipmentId,
+            'dn_number' => 'nullable|string|max:100',
             'shipment_date' => 'required|date',
             'customer_id' => 'nullable|exists:customers,id',
             'product_type_id' => 'nullable|exists:product_types,id',
@@ -829,6 +829,50 @@ class DnShipmentManagement extends Component
         $this->status = 'Shipped';
         $this->items = [];
         $this->resetErrorBag();
+    }
+
+    /**
+     * Compute Real-time Stock Information for a Lot's selected batch
+     */
+    public function getLotStockInfo(?int $batchId, int $currentLotSacks = 0, float $currentLotNetto = 0.0): ?array
+    {
+        if (! $batchId) return null;
+
+        $batch = Batch::with(['dnShipmentItems'])->find($batchId);
+        if (! $batch) return null;
+
+        $producedStdSacks = (int) ($batch->separation_product_sack ?: 0);
+        $hasRemnant = (float) ($batch->separation_product_remnant_kg ?: 0) > 0;
+        $producedTotalSacks = $producedStdSacks + ($hasRemnant ? 1 : 0);
+        $producedNettoKg = (float) ($batch->separation_product_kg ?: 0);
+
+        // Calculate shipped sacks/netto from other shipments
+        $shipmentItemsQuery = $batch->dnShipmentItems();
+        if ($this->editingShipmentId) {
+            $shipmentItemsQuery->where('dn_shipment_id', '!=', $this->editingShipmentId);
+        }
+        $otherShipments = $shipmentItemsQuery->get();
+
+        $shippedSacks = (int) $otherShipments->sum('total_sacks');
+        $shippedNettoKg = (float) $otherShipments->sum('total_netto_kg');
+
+        $remainingSacksBefore = max(0, $producedTotalSacks - $shippedSacks);
+        $remainingNettoBefore = max(0.0, round($producedNettoKg - $shippedNettoKg, 2));
+
+        $remainingSacksAfter = max(0, $remainingSacksBefore - $currentLotSacks);
+        $remainingNettoAfter = max(0.0, round($remainingNettoBefore - $currentLotNetto, 2));
+
+        return [
+            'produced_sacks' => $producedTotalSacks,
+            'produced_netto_kg' => $producedNettoKg,
+            'shipped_sacks' => $shippedSacks,
+            'shipped_netto_kg' => $shippedNettoKg,
+            'remaining_sacks_before' => $remainingSacksBefore,
+            'remaining_netto_before' => $remainingNettoBefore,
+            'remaining_sacks_after' => $remainingSacksAfter,
+            'remaining_netto_after' => $remainingNettoAfter,
+            'pack_type' => $batch->pack_type ?: 'Karung',
+        ];
     }
 
     public function render()

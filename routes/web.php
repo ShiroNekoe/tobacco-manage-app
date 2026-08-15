@@ -6,6 +6,7 @@ use App\Livewire\Admin\AdminTracking;
 use App\Livewire\Admin\BatchManagement;
 use App\Livewire\Admin\DnShipmentManagement;
 use App\Livewire\Admin\MasterDataManagement;
+use App\Livewire\Admin\StockProduct;
 use App\Livewire\Admin\UserManagement;
 use App\Livewire\Auth\Login;
 use App\Livewire\Customer\CustomerDashboard;
@@ -57,6 +58,7 @@ Route::middleware(['auth'])->group(function () {
     // 2. Admin & Supervisor Management Routes
     Route::middleware(['role:admin,supervisor'])->group(function () {
         Route::get('/admin/batches', BatchManagement::class)->name('admin.batches');
+        Route::get('/admin/stock', StockProduct::class)->name('admin.stock');
         Route::get('/admin/dn-shipments', DnShipmentManagement::class)->name('admin.dn-shipments');
         Route::get('/admin/tracking', AdminTracking::class)->name('admin.tracking');
         Route::get('/admin/master-data', MasterDataManagement::class)->name('admin.master-data');

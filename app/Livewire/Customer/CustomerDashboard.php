@@ -68,6 +68,17 @@ class CustomerDashboard extends Component
     public string $profileNewPassword = '';
     public string $profileNewPasswordConfirmation = '';
 
+    // ==========================================
+    // 5. CUSTOMER STOCK PRODUCT STATE
+    // ==========================================
+    public string $stockSearch = '';
+    public string $stockOriginFilter = '';
+    public string $stockStatusFilter = 'all'; // 'all', 'available', 'partial', 'depleted'
+    public string $stockSortField = 'id';
+    public string $stockSortDirection = 'desc';
+    public ?int $selectedStockBatchId = null;
+    public bool $showStockDetailModal = false;
+
     // General Search & Filter for Table / Lists
     public string $search = '';
     public ?int $filter_product_type_id = null;
@@ -290,10 +301,37 @@ class CustomerDashboard extends Component
 
     public function setTab(string $tab)
     {
-        $validTabs = ['batch_overview', 'historical_analytics', 'yield_calculator', 'reconciliation', 'certificates', 'dn_shipments', 'profile'];
+        $validTabs = ['batch_overview', 'historical_analytics', 'yield_calculator', 'reconciliation', 'certificates', 'dn_shipments', 'stock_product', 'profile'];
         if (in_array($tab, $validTabs)) {
             $this->activeTab = $tab;
         }
+    }
+
+    public function sortByStock(string $field): void
+    {
+        if ($this->stockSortField === $field) {
+            $this->stockSortDirection = $this->stockSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->stockSortField = $field;
+            $this->stockSortDirection = 'asc';
+        }
+    }
+
+    public function showStockBatchDetail(int $batchId): void
+    {
+        $this->selectedStockBatchId = $batchId;
+        $this->showStockDetailModal = true;
+    }
+
+    public function closeStockDetailModal(): void
+    {
+        $this->selectedStockBatchId = null;
+        $this->showStockDetailModal = false;
+    }
+
+    public function resetStockFilters(): void
+    {
+        $this->reset(['stockSearch', 'stockOriginFilter', 'stockStatusFilter']);
     }
 
     public function selectBatch(int $batchId)
@@ -404,7 +442,7 @@ class CustomerDashboard extends Component
     protected function getBaseQuery()
     {
         $user = Auth::user();
-        $query = Batch::with(['customer', 'deliveryNote', 'productType', 'origin', 'batchOrigins.origin', 'supervisorApprovedBy'])
+        $query = Batch::with(['customer', 'deliveryNote', 'productType', 'origin', 'batchOrigins.origin', 'supervisorApprovedBy', 'dnShipmentItems.dnShipment'])
             ->where('supervisor_approval_status', Batch::APPROVAL_APPROVED);
 
         if ($user->isCustomer() && $user->customer_id) {
@@ -578,6 +616,11 @@ class CustomerDashboard extends Component
         $pendingShipmentsCount = $customerShipments->where('status', '!=', 'Approved')->count();
         $approvedShipmentsCount = $customerShipments->where('status', 'Approved')->count();
 
+        // ----------------------------------------------------
+        // 5. DATA FOR STOCK PRODUCTS (SISA STOCK DI TPMS)
+        // ----------------------------------------------------
+        $customerStockData = $this->computeCustomerStockData($allApprovedBatches);
+
         return view('livewire.customer.customer-dashboard', compact(
             'allApprovedBatches',
             'overviewBatches',
@@ -592,8 +635,116 @@ class CustomerDashboard extends Component
             'approvedBatches',
             'customerShipments',
             'pendingShipmentsCount',
-            'approvedShipmentsCount'
+            'approvedShipmentsCount',
+            'customerStockData'
         ));
+    }
+
+    /**
+     * Compute Stock Products data for customer
+     */
+    protected function computeCustomerStockData($allCustomerBatches): array
+    {
+        // 1. Filter by stock search
+        $filteredBatches = $allCustomerBatches;
+        if (!empty($this->stockSearch)) {
+            $s = strtolower(trim($this->stockSearch));
+            $filteredBatches = $filteredBatches->filter(function ($b) use ($s) {
+                $originInfo = self::resolveOriginAndCode($b);
+                return str_contains(strtolower($b->batch_code), $s)
+                    || str_contains(strtolower($b->material_code ?? ''), $s)
+                    || str_contains(strtolower($b->deliveryNote->dn_number ?? ''), $s)
+                    || str_contains(strtolower($originInfo['origin']), $s)
+                    || str_contains(strtolower($originInfo['originCode']), $s);
+            });
+        }
+
+        // 2. Compute stock metrics for filtered batches
+        $computedRows = $filteredBatches->map(function ($b) {
+            $stock = \App\Livewire\Admin\StockProduct::computeBatchStock($b);
+            $stock['inbound_dn'] = $b->deliveryNote ? $b->deliveryNote->dn_number : ($b->custom_dn_remark ?: '-');
+            $stock['inbound_date'] = $b->date_of_receipt ? $b->date_of_receipt->format('d/m/Y') : '-';
+            $stock['inbound_gross_kg'] = (float) ($b->dn_gross_weight ?: 0);
+            $stock['inbound_packs'] = (int) ($b->dn_total_pack ?: ($b->mrl_total_pack ?: 0));
+            $stock['mrl_gross_kg'] = (float) ($b->mrl_gross_weight ?: 0);
+            return $stock;
+        });
+
+        // 3. Filter by Origin
+        if (!empty($this->stockOriginFilter)) {
+            $computedRows = $computedRows->filter(function ($row) {
+                return strcasecmp($row['origin'], $this->stockOriginFilter) === 0
+                    || strcasecmp($row['origin_code'], $this->stockOriginFilter) === 0;
+            });
+        }
+
+        // 4. Filter by Stock Status
+        if ($this->stockStatusFilter !== 'all') {
+            $computedRows = $computedRows->filter(function ($row) {
+                return $row['status'] === $this->stockStatusFilter;
+            });
+        }
+
+        // 5. Global KPI Stats across all approved batches of this customer
+        $stockStats = [
+            'total_produced_sacks' => 0,
+            'total_produced_netto_kg' => 0.0,
+            'total_shipped_sacks' => 0,
+            'total_shipped_netto_kg' => 0.0,
+            'total_remaining_sacks' => 0,
+            'total_remaining_netto_kg' => 0.0,
+            'available_batches_count' => 0,
+            'partial_batches_count' => 0,
+            'depleted_batches_count' => 0,
+        ];
+
+        foreach ($allCustomerBatches as $b) {
+            $st = \App\Livewire\Admin\StockProduct::computeBatchStock($b);
+            $stockStats['total_produced_sacks'] += $st['produced_sacks'];
+            $stockStats['total_produced_netto_kg'] += $st['produced_netto_kg'];
+            $stockStats['total_shipped_sacks'] += $st['shipped_sacks'];
+            $stockStats['total_shipped_netto_kg'] += $st['shipped_netto_kg'];
+            $stockStats['total_remaining_sacks'] += $st['remaining_sacks'];
+            $stockStats['total_remaining_netto_kg'] += $st['remaining_netto_kg'];
+
+            if ($st['status'] === 'available') {
+                $stockStats['available_batches_count']++;
+            } elseif ($st['status'] === 'partial') {
+                $stockStats['partial_batches_count']++;
+            } elseif ($st['status'] === 'depleted') {
+                $stockStats['depleted_batches_count']++;
+            }
+        }
+
+        // 6. Sort
+        $sortField = $this->stockSortField;
+        $descending = $this->stockSortDirection === 'desc';
+        $sortedRows = $computedRows->sortBy(function ($row) use ($sortField) {
+            return $row[$sortField] ?? 0;
+        }, SORT_REGULAR, $descending)->values();
+
+        // 7. Selected Batch detail for modal
+        $selectedBatchStock = null;
+        if ($this->selectedStockBatchId) {
+            $selectedBatchModel = $allCustomerBatches->firstWhere('id', $this->selectedStockBatchId);
+            if (!$selectedBatchModel) {
+                $selectedBatchModel = Batch::with(['customer', 'origin', 'productType', 'deliveryNote', 'batchOrigins.origin', 'dnShipmentItems.dnShipment'])->find($this->selectedStockBatchId);
+            }
+            if ($selectedBatchModel) {
+                $selectedBatchStock = \App\Livewire\Admin\StockProduct::computeBatchStock($selectedBatchModel);
+                $selectedBatchStock['inbound_dn'] = $selectedBatchModel->deliveryNote ? $selectedBatchModel->deliveryNote->dn_number : ($selectedBatchModel->custom_dn_remark ?: '-');
+                $selectedBatchStock['inbound_date'] = $selectedBatchModel->date_of_receipt ? $selectedBatchModel->date_of_receipt->format('d M Y') : '-';
+                $selectedBatchStock['inbound_gross_kg'] = (float) ($selectedBatchModel->dn_gross_weight ?: 0);
+                $selectedBatchStock['inbound_packs'] = (int) ($selectedBatchModel->dn_total_pack ?: ($selectedBatchModel->mrl_total_pack ?: 0));
+                $selectedBatchStock['mrl_gross_kg'] = (float) ($selectedBatchModel->mrl_gross_weight ?: 0);
+            }
+        }
+
+        return [
+            'stockItems' => $sortedRows,
+            'stockStats' => $stockStats,
+            'selectedBatchStock' => $selectedBatchStock,
+        ];
     }
 
     /**

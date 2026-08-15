@@ -72,6 +72,9 @@ Route::middleware(['auth'])->group(function () {
     // 3. Customer Portal Route
     Route::middleware(['role:customer,admin,supervisor'])->group(function () {
         Route::get('/customer/dashboard', CustomerDashboard::class)->name('customer.dashboard');
+        Route::get('/customer/stock', function () {
+            return redirect()->route('customer.dashboard', ['activeTab' => 'stock_product']);
+        })->name('customer.stock');
 
         // Customer REST API Endpoints with Server-side Tenant Isolation
         Route::prefix('api/customer')->group(function () {

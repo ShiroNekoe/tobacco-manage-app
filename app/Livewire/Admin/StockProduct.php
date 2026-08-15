@@ -131,12 +131,19 @@ class StockProduct extends Component
         $remainingGrossKg = max(0.0, round($producedGrossKg - $shippedGrossKg, 2));
         $remainingTareKg = max(0.0, round($producedTareKg - $shippedTareKg, 2));
 
+        // If all sacks have been shipped out, remaining weight in warehouse is 0
+        if ($remainingSacks === 0 && $shippedSacks >= $producedTotalSacks && $producedTotalSacks > 0) {
+            $remainingNettoKg = 0.00;
+            $remainingGrossKg = 0.00;
+            $remainingTareKg = 0.00;
+        }
+
         // 4. Status Stock
         if ($producedTotalSacks <= 0 && $producedNettoKg <= 0) {
             $status = 'unproduced';
             $statusLabel = 'Belum Ada Output';
             $statusColor = 'zinc';
-        } elseif ($remainingSacks <= 0 && $remainingNettoKg <= 0) {
+        } elseif ($remainingSacks <= 0 || $remainingNettoKg <= 0) {
             $status = 'depleted';
             $statusLabel = 'Habis Terkirim';
             $statusColor = 'neutral';

@@ -587,7 +587,7 @@ class DnShipmentManagementTest extends TestCase
             'product_type_id' => $this->productType->id,
             'origin_id' => $origin->id,
             'material_code' => "Kendal'24",
-            'product_kg_per_sack' => 50.00,
+            'product_kg_per_sack' => 50.70,
             'product_tare_per_sack' => 0.70,
             'separation_product_sack' => 30,
             'separation_product_kg' => 1500.00,
@@ -647,5 +647,46 @@ class DnShipmentManagementTest extends TestCase
         $this->assertEquals(40, $stockInfo['remaining_sacks_before']);
         $this->assertEquals(25, $stockInfo['remaining_sacks_after']); // 40 - 15 = 25
         $this->assertEquals(1250.00, $stockInfo['remaining_netto_after']); // 2000 - 750 = 1250
+    }
+
+    public function test_selecting_batch_with_custom_gross_and_tare_populates_correct_weights(): void
+    {
+        $this->actingAs($this->admin);
+
+        $origin = \App\Models\Origin::create(['region_name' => 'Temanggung']);
+        $dn = \App\Models\DeliveryNote::create([
+            'dn_number' => 'DN-TMG-01',
+            'customer_id' => $this->customer->id,
+            'delivery_date' => '2026-08-11',
+            'status' => 'received',
+        ]);
+
+        $batch = \App\Models\Batch::create([
+            'batch_code' => '260801',
+            'delivery_note_id' => $dn->id,
+            'date_of_receipt' => '2026-08-11',
+            'customer_id' => $this->customer->id,
+            'product_type_id' => $this->productType->id,
+            'origin_id' => $origin->id,
+            'material_code' => '26',
+            'pack_type' => 'Karung',
+            'product_kg_per_sack' => 30.20, // Gross Standard = 30.20 kg
+            'product_tare_per_sack' => 0.20, // Tare Standard = 0.20 kg
+            'separation_product_sack' => 6,
+            'separation_product_kg' => 180.00,
+            'status' => 'approved',
+        ]);
+
+        Livewire::test(DnShipmentManagement::class)
+            ->call('openCreateModal')
+            ->call('selectBatchForLot', 0, $batch->id)
+            ->assertSet('items.0.standard_gross_per_sack', 30.20)
+            ->assertSet('items.0.standard_tare_per_sack', 0.20)
+            ->assertSet('items.0.standard_netto_per_sack', 30.00)
+            ->assertSet('items.0.standard_sack_count', 6)
+            ->assertSet('items.0.total_sacks', 6)
+            ->assertSet('items.0.total_gross_kg', 181.20)
+            ->assertSet('items.0.total_tare_kg', 1.20)
+            ->assertSet('items.0.total_netto_kg', 180.00);
     }
 }

@@ -264,10 +264,12 @@ class DnShipmentManagement extends Component
             $subOrigins = $batch->batchOrigins;
             $totalAlloc = $subOrigins->sum('allocated_kg') ?: 1;
             $totalSacks = (int) ($batch->separation_product_sack ?: ($batch->product_sack_count ?: (count($subOrigins) * 10)));
-            $tarePerSack = (float) ($batch->product_tare_per_sack ?: 0.70);
-            $kgPerSack = (float) ($batch->product_kg_per_sack ?: 50.00);
-            $grossPerSack = round($kgPerSack + $tarePerSack, 2);
+            $tarePerSack = (float) ($batch->product_tare_per_sack ?? 0.20);
+            $grossPerSack = (float) ($batch->product_kg_per_sack ?: 50.20);
+            $nettoPerSack = max(0.0, round($grossPerSack - $tarePerSack, 2));
             $remnantKg = (float) ($batch->separation_product_remnant_kg ?: ($batch->product_remnant_kg ?: 0));
+            $remnantGross = (float) ($batch->separation_product_remnant_gross_kg ?? 0);
+            $remnantTare = (float) ($batch->separation_product_remnant_tare_kg ?? $tarePerSack);
 
             $newLots = [];
             foreach ($subOrigins as $sIdx => $bo) {
@@ -276,7 +278,7 @@ class DnShipmentManagement extends Component
                 $lotSacks = max(1, (int) round($totalSacks * $share));
 
                 $isLast = ($sIdx === count($subOrigins) - 1);
-                $hasRem = ($isLast && $remnantKg > 0);
+                $hasRem = ($isLast && ($remnantKg > 0 || $remnantGross > 0));
 
                 $newLots[] = [
                     'item_no' => 0, // will be re-indexed
@@ -288,11 +290,11 @@ class DnShipmentManagement extends Component
                     'standard_sack_count' => $lotSacks,
                     'standard_gross_per_sack' => $grossPerSack,
                     'standard_tare_per_sack' => $tarePerSack,
-                    'standard_netto_per_sack' => $kgPerSack,
+                    'standard_netto_per_sack' => $nettoPerSack,
                     'has_remnant' => $hasRem,
-                    'remnant_gross_kg' => $hasRem ? round($remnantKg + 0.70, 2) : 0.00,
-                    'remnant_tare_kg' => $hasRem ? 0.70 : 0.00,
-                    'remnant_netto_kg' => $hasRem ? $remnantKg : 0.00,
+                    'remnant_gross_kg' => $hasRem ? ($remnantGross ?: round($remnantKg + $remnantTare, 2)) : 0.00,
+                    'remnant_tare_kg' => $hasRem ? ($remnantTare ?: $tarePerSack) : 0.00,
+                    'remnant_netto_kg' => $hasRem ? ($remnantKg ?: max(0.0, round($remnantGross - $remnantTare, 2))) : 0.00,
                     'total_sacks' => $lotSacks + ($hasRem ? 1 : 0),
                     'total_gross_kg' => 0.00,
                     'total_tare_kg' => 0.00,
@@ -401,27 +403,27 @@ class DnShipmentManagement extends Component
                 $this->items[$index]['standard_sack_count'] = (int) $sackCount;
             }
 
-            $tarePerSack = $batch->product_tare_per_sack ?: 0.70;
-            if ((float) $tarePerSack > 0) {
-                $this->items[$index]['standard_tare_per_sack'] = (float) $tarePerSack;
-            }
+            $tarePerSack = (float) ($batch->product_tare_per_sack ?? 0.20);
+            $this->items[$index]['standard_tare_per_sack'] = $tarePerSack;
 
-            $kgPerSack = $batch->product_kg_per_sack ?: 50.00;
-            if ((float) $kgPerSack > 0) {
-                $this->items[$index]['standard_gross_per_sack'] = round((float) $kgPerSack + (float) $tarePerSack, 2);
-                $this->items[$index]['standard_netto_per_sack'] = (float) $kgPerSack;
-            }
+            $grossPerSack = (float) ($batch->product_kg_per_sack ?: 50.20);
+            $this->items[$index]['standard_gross_per_sack'] = $grossPerSack;
+            $this->items[$index]['standard_netto_per_sack'] = max(0.0, round($grossPerSack - $tarePerSack, 2));
 
-            $remnantKg = $batch->separation_product_remnant_kg ?: ($batch->product_remnant_kg ?? null);
-            if ($remnantKg && (float) $remnantKg > 0) {
+            $remnantKg = (float) ($batch->separation_product_remnant_kg ?: ($batch->product_remnant_kg ?? 0));
+            $remnantGross = (float) ($batch->separation_product_remnant_gross_kg ?? 0);
+            $remnantTare = (float) ($batch->separation_product_remnant_tare_kg ?? $tarePerSack);
+
+            if ($remnantGross > 0 || $remnantKg > 0) {
                 $this->items[$index]['has_remnant'] = true;
-                $this->items[$index]['remnant_tare_kg'] = 0.70;
-                $this->items[$index]['remnant_netto_kg'] = (float) $remnantKg;
-                $this->items[$index]['remnant_gross_kg'] = round((float) $remnantKg + 0.70, 2);
+                $this->items[$index]['remnant_tare_kg'] = $remnantTare ?: $tarePerSack;
+                $this->items[$index]['remnant_gross_kg'] = $remnantGross ?: round($remnantKg + ($remnantTare ?: $tarePerSack), 2);
+                $this->items[$index]['remnant_netto_kg'] = $remnantKg ?: max(0.0, round($remnantGross - $remnantTare, 2));
             } else {
                 $this->items[$index]['has_remnant'] = false;
                 $this->items[$index]['remnant_netto_kg'] = 0.00;
                 $this->items[$index]['remnant_gross_kg'] = 0.00;
+                $this->items[$index]['remnant_tare_kg'] = 0.00;
             }
         }
     }

@@ -800,7 +800,7 @@ class CustomerDashboard extends Component
         $originSeparation = [];
 
         if ($batch->batchOrigins && $batch->batchOrigins->count() > 0) {
-            $totalAllocated = $batch->batchOrigins->sum('allocated_kg');
+            $totalAllocated = (float) $batch->batchOrigins->sum('allocated_kg');
             foreach ($batch->batchOrigins as $bo) {
                 $alloc = (float) $bo->allocated_kg;
                 $share = $totalAllocated > 0 ? ($alloc / $totalAllocated) : (1 / max(1, $batch->batchOrigins->count()));
@@ -810,21 +810,25 @@ class CustomerDashboard extends Component
                 $boDiffPct = $boDnGross > 0 ? round(($boDiffKg / $boDnGross) * 100, 2) : 0.00;
                 $boPacks = max(1, (int) round($share * ($batch->mrl_total_pack ?: ($batch->dn_total_pack ?: 65))));
 
+                $boInput = $alloc > 0 ? $alloc : round($processedInput * $share, 2);
                 $boProd = round($productOutput * $share, 2);
                 $boStem = round($bitsStem * $share, 2);
                 $boDust = round($dust * $share, 2);
                 $boVar = round($variance * $share, 2);
 
-                $boProdPct = $alloc > 0 ? round(($boProd / $alloc) * 100, 2) : $productYieldPct;
-                $boStemPct = $alloc > 0 ? round(($boStem / $alloc) * 100, 2) : round(($bitsStem / max(1, $processedInput)) * 100, 2);
-                $boDustPct = $alloc > 0 ? round(($boDust / $alloc) * 100, 2) : round(($dust / max(1, $processedInput)) * 100, 2);
+                $boProdPct = $boInput > 0 ? round(($boProd / $boInput) * 100, 2) : $productYieldPct;
+                $boStemPct = $boInput > 0 ? round(($boStem / $boInput) * 100, 2) : 0.0;
+                $boDustPct = $boInput > 0 ? round(($boDust / $boInput) * 100, 2) : 0.0;
                 $boVarPct = max(0, round(100.00 - ($boProdPct + $boStemPct + $boDustPct), 2));
 
-                $orgName = $bo->origin ? $bo->origin->region_name : 'Origin';
+                $originInfo = self::resolveOriginAndCode($bo->origin ?? $batch->origin, $batch->material_code);
+                $displayName = $originInfo['originCode'] !== '-' && $originInfo['originCode'] !== $originInfo['origin']
+                    ? $originInfo['origin'] . ' (' . $originInfo['originCode'] . ')'
+                    : $originInfo['origin'];
 
                 $originReconciliation[] = [
-                    'name' => $orgName,
-                    'dnNumber' => $batch->deliveryNote->dn_number ?? 'DN-2026-0025',
+                    'name' => $displayName,
+                    'dnNumber' => $batch->deliveryNote->dn_number ?? ($batch->custom_dn_remark ?: '-'),
                     'receiver' => $receiverName,
                     'packs' => $boPacks,
                     'dnGross' => $boDnGross,
@@ -835,19 +839,34 @@ class CustomerDashboard extends Component
                 ];
 
                 $originSeparation[] = [
-                    'name' => $orgName,
+                    'name' => $displayName,
+                    'inputKg' => $boInput,
+                    'productKg' => $boProd,
                     'productPct' => $boProdPct,
+                    'bitsStemKg' => $boStem,
                     'bitsStemPct' => $boStemPct,
+                    'dustKg' => $boDust,
                     'dustPct' => $boDustPct,
+                    'varianceKg' => $boVar,
                     'variancePct' => $boVarPct,
+                    'totalKg' => round($boProd + $boStem + $boDust + $boVar, 2),
                     'totalPct' => 100.00,
                 ];
             }
         } else {
-            $orgName = $batch->origin ? $batch->origin->region_name : 'Default Origin';
+            $originInfo = self::resolveOriginAndCode($batch);
+            $displayName = $originInfo['originCode'] !== '-' && $originInfo['originCode'] !== $originInfo['origin']
+                ? $originInfo['origin'] . ' (' . $originInfo['originCode'] . ')'
+                : $originInfo['origin'];
+
+            $actualProdPct = $processedInput > 0 ? round(($productOutput / $processedInput) * 100, 2) : (float) $batch->yield_product_pct;
+            $actualStemPct = $processedInput > 0 ? round(($bitsStem / $processedInput) * 100, 2) : (float) ($batch->yield_bits_stem_pct ?: 0);
+            $actualDustPct = $processedInput > 0 ? round(($dust / $processedInput) * 100, 2) : (float) ($batch->yield_dust_pct ?: 0);
+            $actualWastePct = $processedInput > 0 ? round(($variance / $processedInput) * 100, 2) : (float) ($batch->yield_waste_pct ?: max(0, round(100.00 - ($actualProdPct + $actualStemPct + $actualDustPct), 2)));
+
             $originReconciliation[] = [
-                'name' => $orgName,
-                'dnNumber' => $batch->deliveryNote->dn_number ?? 'DN-2026-0025',
+                'name' => $displayName,
+                'dnNumber' => $batch->deliveryNote->dn_number ?? ($batch->custom_dn_remark ?: '-'),
                 'receiver' => $receiverName,
                 'packs' => $batch->mrl_total_pack ?: ($batch->dn_total_pack ?: 65),
                 'dnGross' => $dnGross,
@@ -856,17 +875,24 @@ class CustomerDashboard extends Component
                 'differencePct' => $diffPct,
                 'status' => 'Confirmed',
             ];
+
             $originSeparation[] = [
-                'name' => $orgName,
-                'productPct' => $productYieldPct,
-                'bitsStemPct' => (float) ($batch->yield_bits_stem_pct ?: 18.56),
-                'dustPct' => (float) ($batch->yield_dust_pct ?: 1.85),
-                'variancePct' => (float) ($batch->yield_waste_pct ?: 0.63),
+                'name' => $displayName,
+                'inputKg' => $processedInput,
+                'productKg' => $productOutput,
+                'productPct' => $actualProdPct,
+                'bitsStemKg' => $bitsStem,
+                'bitsStemPct' => $actualStemPct,
+                'dustKg' => $dust,
+                'dustPct' => $actualDustPct,
+                'varianceKg' => $variance,
+                'variancePct' => $actualWastePct,
+                'totalKg' => $materialBalanceTotal,
                 'totalPct' => 100.00,
             ];
         }
 
-        // Stepper Timestamps
+        // Stepper Timestamps & Dynamic Statuses
         $baseDate = $batch->date_of_receipt ? $batch->date_of_receipt->copy() : now();
         $dateStr = $baseDate->format('d M Y');
 
@@ -939,20 +965,116 @@ class CustomerDashboard extends Component
             }
         }
 
+        // Dynamic 5-Stage Stepper Calculation
+        $step1Done = true;
+        $step1Time = $batch->date_of_receipt ? $batch->date_of_receipt->format('d M Y') : ($batch->created_at ? $batch->created_at->format('d M Y') : $dateStr);
+
+        $step2Done = !empty($batch->delivery_note_id) || !empty($batch->deliveryNote) || $batch->dn_gross_weight > 0;
+        $step2Time = $batch->created_at ? $batch->created_at->format('d M Y H:i') : ($batch->date_of_receipt ? $batch->date_of_receipt->format('d M Y') : $dateStr);
+
+        $step3Done = (float)$batch->mrl_gross_weight > 0 || (float)$batch->mrl_netto_weight > 0;
+        $step3Time = $batch->mrl_approved_at ? $batch->mrl_approved_at->format('d M Y H:i') : ($batch->date_of_receipt ? $batch->date_of_receipt->format('d M Y') : $dateStr);
+
+        $step4Done = $batch->isApprovedBySupervisor() || ((float)$batch->separation_product_kg > 0 && $batch->isClosed());
+        $step4InProgress = !$step4Done && (float)$batch->separation_product_kg > 0;
+        $step4Time = $batch->supervisor_approved_at 
+            ? $batch->supervisor_approved_at->format('d M Y H:i') 
+            : ($batch->locked_at ? $batch->locked_at->format('d M Y H:i') : ($batch->last_saved_at ? $batch->last_saved_at->format('d M Y H:i') : ($step4Done ? $dateStr : 'Pending')));
+
+        $step5Done = !empty($dnShippedInfo['is_approved']);
+        $step5Shipped = !empty($dnShippedInfo['has_shipment']) && !$step5Done;
+        $step5Time = $step5Done 
+            ? ($dnShippedInfo['approved_at'] ?: $dnShippedInfo['shipment_date'] . ' (Approved)') 
+            : ($step5Shipped ? $dnShippedInfo['shipment_date'] . ' (Shipped)' : 'Pending');
+
         $stepper = [
-            ['title' => 'Material Arrived', 'time' => $dateStr . ' 07:12', 'done' => true],
-            ['title' => 'DN Received Recorded', 'time' => $dateStr . ' 07:35', 'done' => true],
-            ['title' => 'MRL Weighed & Diff Checked', 'time' => $dateStr . ' 08:35', 'done' => true],
-            ['title' => 'Product Output Separated', 'time' => $dateStr . ' 16:20', 'done' => (bool) $batch->separation_product_kg],
-            ['title' => 'DN Shipped & Customer Approval', 'time' => !empty($dnShippedInfo['has_shipment']) ? ($dnShippedInfo['shipment_date'] . ($dnShippedInfo['is_approved'] ? ' (Approved)' : ' (Shipped)')) : 'Pending', 'done' => !empty($dnShippedInfo['is_approved'])],
+            [
+                'step' => 1,
+                'title' => 'Material Arrived',
+                'subtitle' => 'Penerimaan Fisik',
+                'time' => $step1Time,
+                'done' => $step1Done,
+                'state' => 'completed',
+                'detail' => ($batch->dn_total_pack ?: ($batch->mrl_total_pack ?: 65)) . ' Packs',
+            ],
+            [
+                'step' => 2,
+                'title' => 'DN Received Recorded',
+                'subtitle' => 'Pencatatan Surat Jalan',
+                'time' => $step2Time,
+                'done' => $step2Done,
+                'state' => $step2Done ? 'completed' : 'pending',
+                'detail' => ($batch->deliveryNote->dn_number ?? ($batch->custom_dn_remark ?: 'DN Inbound')) . ' • Gross: ' . number_format($dnGross, 2) . ' kg',
+            ],
+            [
+                'step' => 3,
+                'title' => 'MRL Weighed & Diff Checked',
+                'subtitle' => 'Penimbangan & Verifikasi',
+                'time' => $step3Time,
+                'done' => $step3Done,
+                'state' => $step3Done ? 'completed' : 'pending',
+                'detail' => 'Netto: ' . number_format($mrlNetto, 2) . ' kg • Selisih: ' . ($diffKg >= 0 ? '+' : '') . number_format($diffKg, 2) . ' kg',
+            ],
+            [
+                'step' => 4,
+                'title' => 'Product Output Separated',
+                'subtitle' => 'Hasil Separasi & ACC',
+                'time' => $step4Time,
+                'done' => $step4Done,
+                'state' => $step4Done ? 'completed' : ($step4InProgress ? 'in_progress' : 'pending'),
+                'detail' => 'Output: ' . number_format($productOutput, 2) . ' kg (' . number_format($productYieldPct, 2) . '% Yield)' . ($batch->isApprovedBySupervisor() ? ' • ACC' : ''),
+            ],
+            [
+                'step' => 5,
+                'title' => 'DN Shipped & Customer Approval',
+                'subtitle' => 'Pengiriman & Approval',
+                'time' => $step5Time,
+                'done' => $step5Done,
+                'state' => $step5Done ? 'completed' : ($step5Shipped ? 'in_progress' : 'pending'),
+                'detail' => !empty($dnShippedInfo['has_shipment']) ? ($dnShippedInfo['dn_number'] . ' • ' . number_format($dnShippedInfo['total_netto_kg'], 2) . ' kg Netto') : 'Belum Ada Pengiriman',
+            ],
         ];
+
+        // Overall Audit Status Summary
+        $completedStepsCount = ($step1Done ? 1 : 0) + ($step2Done ? 1 : 0) + ($step3Done ? 1 : 0) + ($step4Done ? 1 : 0) + ($step5Done ? 1 : 0);
+        if ($completedStepsCount === 5) {
+            $overallStageStatus = [
+                'badge' => 'All 5 Stages Verified & Customer Approved',
+                'type' => 'success',
+                'description' => 'Seluruh tahapan dari penerimaan, verifikasi MRL, proses separasi, hingga pengiriman dan persetujuan customer telah tervalidasi lengkap.',
+            ];
+        } elseif ($step5Shipped) {
+            $overallStageStatus = [
+                'badge' => 'Stage 4 Verified • Outbound DN Shipped (Awaiting Customer Approval)',
+                'type' => 'warning',
+                'description' => 'Produksi telah selesai dan di-ACC. Surat Jalan Pengiriman (' . $dnShippedInfo['dn_number'] . ') telah diterbitkan dan menunggu persetujuan (Approval) Anda.',
+            ];
+        } elseif ($step4Done) {
+            $overallStageStatus = [
+                'badge' => 'Stage 4 Verified (ACC Approved) • Ready for Outbound Dispatch',
+                'type' => 'info',
+                'description' => 'Proses separasi telah tuntas dan disetujui (ACC) oleh Supervisor. Barang siap dijadwalkan untuk pengiriman (DN Shipped).',
+            ];
+        } elseif ($step4InProgress) {
+            $overallStageStatus = [
+                'badge' => 'Stage 3 Verified • Awaiting Supervisor Approval (ACC)',
+                'type' => 'amber',
+                'description' => 'Hasil separasi telah dicatat dan sedang menunggu review & persetujuan (ACC) dari Supervisor Produksi.',
+            ];
+        } else {
+            $overallStageStatus = [
+                'badge' => "Stage {$completedStepsCount} of 5 Completed",
+                'type' => 'neutral',
+                'description' => 'Tahapan operasional sedang berlangsung sesuai alur kontrol kualitas pabrik.',
+            ];
+        }
 
         return [
             'batchPosition' => "Batch {$batchPositionNumber} of {$totalBatchesCount}",
             'reportingLabel' => $reportingLabel,
             'reportingFormat' => $reportingFormat,
             'customerName' => $batch->customer->name ?? 'PT Falih Nur Gemilang',
-            'deliveryNote' => $batch->deliveryNote->dn_number ?? 'DN-2026-0025',
+            'deliveryNote' => $batch->deliveryNote->dn_number ?? ($batch->custom_dn_remark ?: 'DN-2026-0025'),
             'receiptDate' => $dateStr,
             'originName' => self::resolveOriginAndCode($batch)['origin'],
             'originCode' => self::resolveOriginAndCode($batch)['originCode'],
@@ -960,7 +1082,7 @@ class CustomerDashboard extends Component
 
             // Inbound & Outbound DN Tracking
             'dnReceived' => [
-                'dn_number' => $batch->deliveryNote->dn_number ?? 'DN-2026-0025',
+                'dn_number' => $batch->deliveryNote->dn_number ?? ($batch->custom_dn_remark ?: 'DN-2026-0025'),
                 'receiver' => $receiverName,
                 'receipt_date' => $dateStr,
                 'gross_kg' => $dnGross,
@@ -988,6 +1110,8 @@ class CustomerDashboard extends Component
             'totalPacks' => array_sum(array_column($originReconciliation, 'packs')),
             'originSeparation' => $originSeparation,
             'stepper' => $stepper,
+            'overallStageStatus' => $overallStageStatus,
+            'completedStepsCount' => $completedStepsCount,
 
             // Process Balance Table items
             'balanceItems' => [

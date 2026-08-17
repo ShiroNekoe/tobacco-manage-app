@@ -292,8 +292,9 @@ class="space-y-6">
                     <span class="text-amber-500">🛍️</span>
                 </div>
                 <div class="font-mono font-black text-base lg:text-lg text-amber-400">
-                    {{ number_format($batchOverviewData['dnGross'] ?? 3247.60, 2, '.', ',') }} <span class="text-[11px] font-normal text-zinc-400">kg</span>
+                    {{ number_format($batchOverviewData['dnGross'] ?? 3247.60, 2, '.', ',') }} <span class="text-[10px] font-semibold text-zinc-400">kg Gross</span>
                 </div>
+                <div class="text-[9px] text-zinc-500 font-sans">Bobot kotor surat jalan</div>
             </div>
 
             <!-- 2. MRL Gross -->
@@ -303,8 +304,9 @@ class="space-y-6">
                     <span class="text-amber-500">🛍️</span>
                 </div>
                 <div class="font-mono font-black text-base lg:text-lg text-amber-400">
-                    {{ number_format($batchOverviewData['mrlGross'] ?? 3251.90, 2, '.', ',') }} <span class="text-[11px] font-normal text-zinc-400">kg</span>
+                    {{ number_format($batchOverviewData['mrlGross'] ?? 3251.90, 2, '.', ',') }} <span class="text-[10px] font-semibold text-zinc-400">kg Gross</span>
                 </div>
+                <div class="text-[9px] text-zinc-500 font-sans">Bobot kotor timbang fisik</div>
             </div>
 
             <!-- 3. Receiving Difference -->
@@ -314,8 +316,9 @@ class="space-y-6">
                     <span class="text-cyan-400">⚖️</span>
                 </div>
                 <div class="font-mono font-black text-base lg:text-lg text-cyan-300">
-                    {{ ($batchOverviewData['diffKg'] ?? 4.30) >= 0 ? '+' : '' }}{{ number_format($batchOverviewData['diffKg'] ?? 4.30, 2, '.', ',') }} <span class="text-[11px] font-normal text-zinc-400">kg</span>
+                    {{ ($batchOverviewData['diffKg'] ?? 4.30) >= 0 ? '+' : '' }}{{ number_format($batchOverviewData['diffKg'] ?? 4.30, 2, '.', ',') }} <span class="text-[10px] font-semibold text-zinc-400">kg</span>
                 </div>
+                <div class="text-[9px] text-zinc-500 font-sans">Selisih MRL vs DN</div>
             </div>
 
             <!-- 4. MRL Netto -->
@@ -325,8 +328,9 @@ class="space-y-6">
                     <span class="text-amber-500">🛍️</span>
                 </div>
                 <div class="font-mono font-black text-base lg:text-lg text-amber-300">
-                    {{ number_format($batchOverviewData['mrlNetto'] ?? 3173.80, 2, '.', ',') }} <span class="text-[11px] font-normal text-zinc-400">kg</span>
+                    {{ number_format($batchOverviewData['mrlNetto'] ?? 3173.80, 2, '.', ',') }} <span class="text-[10px] font-semibold text-zinc-400">kg Netto</span>
                 </div>
+                <div class="text-[9px] text-zinc-500 font-sans">Bersih setelah tara kemasan</div>
             </div>
 
             <!-- 5. Processed Input -->
@@ -336,19 +340,21 @@ class="space-y-6">
                     <span class="text-amber-400">📥</span>
                 </div>
                 <div class="font-mono font-black text-base lg:text-lg text-amber-400">
-                    {{ number_format($batchOverviewData['processedInput'] ?? 3173.70, 2, '.', ',') }} <span class="text-[11px] font-normal text-zinc-400">kg</span>
+                    {{ number_format($batchOverviewData['processedInput'] ?? 3173.70, 2, '.', ',') }} <span class="text-[10px] font-semibold text-zinc-400">kg Netto</span>
                 </div>
+                <div class="text-[9px] text-zinc-500 font-sans">Basis input separasi (100%)</div>
             </div>
 
             <!-- 6. Product Output -->
             <div class="bg-zinc-900 border border-zinc-800/80 rounded-2xl p-3.5 space-y-1 shadow-lg relative overflow-hidden">
                 <div class="flex items-center justify-between text-[11px] font-bold text-zinc-400 uppercase">
                     <span>Product Output</span>
-                    <span class="text-amber-400">📦</span>
+                    <span class="text-emerald-400">📦</span>
                 </div>
-                <div class="font-mono font-black text-base lg:text-lg text-amber-400">
-                    {{ number_format($batchOverviewData['productOutput'] ?? 2442.50, 2, '.', ',') }} <span class="text-[11px] font-normal text-zinc-400">kg</span>
+                <div class="font-mono font-black text-base lg:text-lg text-emerald-400">
+                    {{ number_format($batchOverviewData['productOutput'] ?? 2442.50, 2, '.', ',') }} <span class="text-[10px] font-semibold text-zinc-400">kg Netto</span>
                 </div>
+                <div class="text-[9px] text-zinc-500 font-sans">Hasil rajangan utama bersih</div>
             </div>
 
             <!-- 7. Weighted Product Yield -->
@@ -360,6 +366,7 @@ class="space-y-6">
                 <div class="font-mono font-black text-base lg:text-lg text-emerald-400">
                     {{ number_format($batchOverviewData['weightedProductYield'] ?? 76.96, 2, '.', ',') }}%
                 </div>
+                <div class="text-[9px] text-zinc-500 font-sans">Rendemen produk utama</div>
             </div>
 
             <!-- 8. Process Material Balance -->
@@ -371,6 +378,7 @@ class="space-y-6">
                 <div class="font-mono font-black text-base lg:text-lg text-emerald-400">
                     {{ number_format($batchOverviewData['processMaterialBalance'] ?? 100.00, 2, '.', ',') }}%
                 </div>
+                <div class="text-[9px] text-zinc-500 font-sans">Neraca massa total output</div>
             </div>
         </div>
 
@@ -397,12 +405,12 @@ class="space-y-6">
                         <table class="w-full text-left text-xs text-zinc-300">
                             <thead class="bg-zinc-950/80 text-zinc-400 font-bold uppercase border-b border-zinc-800">
                                 <tr>
-                                    <th class="px-3 py-2.5">Origin</th>
+                                    <th class="px-3 py-2.5">Origin Lot</th>
                                     <th class="px-3 py-2.5">Inbound DN & Receiver</th>
                                     <th class="px-3 py-2.5 text-center">Packs</th>
                                     <th class="px-3 py-2.5 text-right">DN Gross (kg)</th>
                                     <th class="px-3 py-2.5 text-right">MRL Gross (kg)</th>
-                                    <th class="px-3 py-2.5 text-right">Difference</th>
+                                    <th class="px-3 py-2.5 text-right">Difference (kg)</th>
                                     <th class="px-3 py-2.5 text-center">Status</th>
                                 </tr>
                             </thead>
@@ -444,23 +452,9 @@ class="space-y-6">
                                             <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">Confirmed</span>
                                         </td>
                                     </tr>
-                                    <tr>
-                                        <td class="px-3 py-2.5 font-sans font-bold text-zinc-200">LOMBOK P9K5</td>
-                                        <td class="px-3 py-2.5 font-sans">
-                                            <div class="font-mono font-bold text-amber-400 text-xs">DN-2026-0001</div>
-                                            <div class="text-[10px] text-zinc-400 mt-0.5">👤 Recv: Plant Intake Team</div>
-                                        </td>
-                                        <td class="px-3 py-2.5 text-center text-zinc-400">28</td>
-                                        <td class="px-3 py-2.5 text-right text-zinc-300">1,432.00</td>
-                                        <td class="px-3 py-2.5 text-right text-zinc-200 font-bold">1,433.90</td>
-                                        <td class="px-3 py-2.5 text-right font-bold text-cyan-400">+1.90</td>
-                                        <td class="px-3 py-2.5 text-center font-sans">
-                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">Confirmed</span>
-                                        </td>
-                                    </tr>
                                 @endforelse
                                 <tr class="bg-zinc-950/90 font-bold border-t-2 border-zinc-700">
-                                    <td colspan="2" class="px-3 py-2.5 font-sans uppercase text-zinc-100">TOTAL INBOUND</td>
+                                    <td colspan="2" class="px-3 py-2.5 font-sans uppercase text-zinc-100">TOTAL INBOUND (GROSS)</td>
                                     <td class="px-3 py-2.5 text-center text-zinc-300">{{ $batchOverviewData['totalPacks'] ?? 65 }}</td>
                                     <td class="px-3 py-2.5 text-right text-zinc-300">{{ number_format($batchOverviewData['dnGross'] ?? 3247.60, 2, '.', ',') }}</td>
                                     <td class="px-3 py-2.5 text-right text-amber-400">{{ number_format($batchOverviewData['mrlGross'] ?? 3251.90, 2, '.', ',') }}</td>
@@ -630,25 +624,59 @@ class="space-y-6">
             <!-- CARD 3: Receiving Confirmation Status (Stepper) -->
             <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4 flex flex-col justify-between">
                 <div>
-                    <h3 class="text-sm font-black text-zinc-100 uppercase tracking-wide">
-                        Receiving Confirmation Status
-                    </h3>
-                    <p class="text-xs text-zinc-400 mt-0.5">Audit trail alur tahapan operasional dan verifikasi penerimaan</p>
+                    <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                        <div>
+                            <h3 class="text-sm font-black text-zinc-100 uppercase tracking-wide flex items-center gap-2">
+                                <span>📋 Receiving Confirmation Status</span>
+                            </h3>
+                            <p class="text-xs text-zinc-400 mt-0.5">Audit trail alur tahapan operasional dan verifikasi penerimaan fisik pabrik</p>
+                        </div>
+                        <div class="px-2.5 py-1 rounded-full text-[10px] font-bold font-mono {{ ($batchOverviewData['completedStepsCount'] ?? 0) === 5 ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-amber-950 text-amber-300 border border-amber-800' }}">
+                            {{ $batchOverviewData['completedStepsCount'] ?? 0 }} / 5 Stages Completed
+                        </div>
+                    </div>
 
                     <!-- Horizontal Stepper Flow -->
-                    <div class="relative mt-8 mb-4">
-                        <!-- Horizontal Connecting Line -->
-                        <div class="absolute top-4 left-6 right-6 h-0.5 bg-emerald-800 -z-0"></div>
+                    <div class="relative mt-7 mb-4">
+                        <!-- Horizontal Connecting Line (Dynamic Progress) -->
+                        @php
+                            $stepCount = count($batchOverviewData['stepper'] ?? []);
+                            $completedCount = $batchOverviewData['completedStepsCount'] ?? 0;
+                            $lineWidthPct = $stepCount > 1 ? min(100, max(0, (($completedCount - 1) / ($stepCount - 1)) * 100)) : 0;
+                        @endphp
+                        <div class="absolute top-4 left-6 right-6 h-1 bg-zinc-800 rounded-full -z-0">
+                            <div class="h-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-cyan-500 rounded-full transition-all duration-500" style="width: {{ $lineWidthPct }}%"></div>
+                        </div>
 
                         <div class="grid grid-cols-5 gap-2 relative z-10 text-center">
                             @foreach($batchOverviewData['stepper'] ?? [] as $step)
-                                <div class="flex flex-col items-center space-y-2">
-                                    <div class="w-8 h-8 rounded-full bg-emerald-600 border-2 border-emerald-400 flex items-center justify-center text-white shadow-lg shadow-emerald-900/50">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
-                                    </div>
-                                    <div>
-                                        <div class="text-[11px] font-bold text-zinc-200 leading-tight">{{ $step['title'] }}</div>
-                                        <div class="text-[9px] font-mono text-zinc-400 mt-0.5">{{ $step['time'] }}</div>
+                                <div class="flex flex-col items-center space-y-1.5 group">
+                                    @if($step['state'] === 'completed')
+                                        <div class="w-8 h-8 rounded-full bg-emerald-600 border-2 border-emerald-400 flex items-center justify-center text-white shadow-lg shadow-emerald-900/50 transition-transform group-hover:scale-110" title="Completed: {{ $step['title'] }}">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                        </div>
+                                    @elseif($step['state'] === 'in_progress')
+                                        <div class="w-8 h-8 rounded-full bg-amber-500 border-2 border-amber-300 flex items-center justify-center text-zinc-950 shadow-lg shadow-amber-900/50 animate-pulse transition-transform group-hover:scale-110" title="In Progress: {{ $step['title'] }}">
+                                            <span class="text-xs font-black">⏳</span>
+                                        </div>
+                                    @else
+                                        <div class="w-8 h-8 rounded-full bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center text-zinc-400 font-mono text-xs font-bold transition-transform group-hover:scale-110" title="Pending: {{ $step['title'] }}">
+                                            {{ $step['step'] ?? $loop->iteration }}
+                                        </div>
+                                    @endif
+
+                                    <div class="w-full px-0.5">
+                                        <div class="text-[11px] font-bold {{ $step['state'] === 'completed' ? 'text-zinc-100' : ($step['state'] === 'in_progress' ? 'text-amber-300' : 'text-zinc-500') }} leading-tight">
+                                            {{ $step['title'] }}
+                                        </div>
+                                        <div class="text-[9px] font-mono font-semibold mt-0.5 {{ $step['state'] === 'completed' ? 'text-emerald-400' : ($step['state'] === 'in_progress' ? 'text-amber-400' : 'text-zinc-500') }}">
+                                            {{ $step['time'] }}
+                                        </div>
+                                        @if(!empty($step['detail']))
+                                            <div class="text-[8.5px] text-zinc-400 font-sans mt-0.5 truncate hidden sm:block" title="{{ $step['detail'] }}">
+                                                {{ $step['detail'] }}
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             @endforeach
@@ -656,87 +684,121 @@ class="space-y-6">
                     </div>
                 </div>
 
-                <div class="p-3 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-between text-xs text-zinc-400">
-                    <span class="flex items-center">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>
-                        Status: <strong class="text-emerald-400 ml-1">All 5 Stages Verified & ACC Approved</strong>
-                    </span>
-                    <button wire:click="openPreviewModal({{ $currentBatch->id ?? 0 }})" class="text-amber-400 hover:underline font-bold text-xs flex items-center">
-                        View Certificate &rarr;
-                    </button>
+                <!-- Dynamic Stepper Status Banner -->
+                @php
+                    $overallStatus = $batchOverviewData['overallStageStatus'] ?? [];
+                    $statusType = $overallStatus['type'] ?? 'neutral';
+                @endphp
+                <div class="p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs {{ $statusType === 'success' ? 'bg-emerald-950/40 border-emerald-800/80 text-emerald-300' : ($statusType === 'warning' ? 'bg-amber-950/40 border-amber-800/80 text-amber-300' : ($statusType === 'info' ? 'bg-cyan-950/40 border-cyan-800/80 text-cyan-300' : 'bg-zinc-950 border-zinc-800 text-zinc-400')) }}">
+                    <div class="space-y-0.5">
+                        <div class="flex items-center gap-1.5 font-black uppercase tracking-wider text-[11px]">
+                            <span class="w-2 h-2 rounded-full {{ $statusType === 'success' ? 'bg-emerald-400 animate-pulse' : ($statusType === 'warning' ? 'bg-amber-400 animate-pulse' : 'bg-cyan-400') }}"></span>
+                            <span class="{{ $statusType === 'success' ? 'text-emerald-300' : ($statusType === 'warning' ? 'text-amber-300' : ($statusType === 'info' ? 'text-cyan-300' : 'text-zinc-200')) }}">
+                                {{ $overallStatus['badge'] ?? 'Status: In Progress' }}
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-zinc-400 font-sans leading-normal">
+                            {{ $overallStatus['description'] ?? 'Alur tahapan operasional dan verifikasi berjalan sesuai standar kualitas pabrik.' }}
+                        </p>
+                    </div>
+
+                    <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                        @if(!empty($batchOverviewData['dnShipped']['has_shipment']) && empty($batchOverviewData['dnShipped']['is_approved']))
+                            <button wire:click="openApprovalModal({{ $batchOverviewData['dnShipped']['id'] }})" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs transition-all shadow-lg shadow-emerald-900/40 animate-pulse flex items-center gap-1">
+                                <span>✅ Approve DN</span>
+                            </button>
+                        @endif
+                        <button wire:click="openPreviewModal({{ $currentBatch->id ?? 0 }})" class="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-amber-400 hover:text-amber-300 border border-zinc-700 font-bold text-xs transition-all flex items-center gap-1">
+                            <span>View Certificate &rarr;</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <!-- CARD 3: Separation Result by Origin -->
+            <!-- CARD 4: Separation Result by Origin -->
             <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800 pb-3">
                     <div>
                         <h3 class="text-sm font-black text-zinc-100 uppercase tracking-wide">
                             Separation Result by Origin
                         </h3>
-                        <p class="text-xs text-zinc-400 mt-0.5">Komposisi output separasi tembakau per asal asal tembakau</p>
+                        <p class="text-xs text-zinc-400 mt-0.5">Komposisi output separasi tembakau per asal tembakau (Kuantitas Bersih / Netto)</p>
                     </div>
                     <!-- Legend -->
                     <div class="flex items-center flex-wrap gap-2 text-[10px] font-bold">
-                        <span class="flex items-center"><span class="w-2.5 h-2.5 rounded bg-emerald-500 mr-1"></span> Product</span>
-                        <span class="flex items-center"><span class="w-2.5 h-2.5 rounded bg-amber-500 mr-1"></span> Bits Stem</span>
-                        <span class="flex items-center"><span class="w-2.5 h-2.5 rounded bg-blue-500 mr-1"></span> Dust</span>
-                        <span class="flex items-center"><span class="w-2.5 h-2.5 rounded bg-zinc-500 mr-1"></span> Uncountable Waste</span>
+                        <span class="flex items-center"><span class="w-2.5 h-2.5 rounded bg-emerald-500 mr-1"></span> Product (Netto)</span>
+                        <span class="flex items-center"><span class="w-2.5 h-2.5 rounded bg-amber-500 mr-1"></span> Bits Stem (Netto)</span>
+                        <span class="flex items-center"><span class="w-2.5 h-2.5 rounded bg-blue-500 mr-1"></span> Dust (Netto)</span>
+                        <span class="flex items-center"><span class="w-2.5 h-2.5 rounded bg-zinc-500 mr-1"></span> Uncountable Waste (Netto)</span>
                     </div>
                 </div>
 
-                <!-- Stacked Progress Bars -->
-                <div class="space-y-4 pt-2">
+                <!-- Stacked Progress Bars with Precise Breakdown Values -->
+                <div class="space-y-5 pt-1">
                     @forelse($batchOverviewData['originSeparation'] ?? [] as $os)
-                        <div class="space-y-1.5">
-                            <div class="flex justify-between text-xs font-bold">
-                                <span class="text-zinc-200">{{ $os['name'] }}</span>
-                                <span class="font-mono text-emerald-400">{{ number_format($os['productPct'], 2) }}% Yield</span>
+                        <div class="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 space-y-2.5">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-zinc-100 uppercase tracking-wide">{{ $os['name'] }}</span>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-zinc-800 text-zinc-300 border border-zinc-700">
+                                        Input Netto: {{ number_format($os['inputKg'] ?? 0, 2, '.', ',') }} kg
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-2 font-mono text-xs">
+                                    <span class="text-zinc-400">Product Yield:</span>
+                                    <span class="font-black text-emerald-400 text-sm">{{ number_format($os['productPct'], 2) }}%</span>
+                                    <span class="text-zinc-400 text-[11px]">({{ number_format($os['productKg'], 2, '.', ',') }} kg Netto)</span>
+                                </div>
                             </div>
+
+                            <!-- Stacked Progress Bar -->
                             <div class="h-6 w-full rounded-xl bg-zinc-950 overflow-hidden flex border border-zinc-800 font-mono text-[10px] font-bold text-zinc-950">
-                                <div style="width: {{ $os['productPct'] }}%" class="bg-emerald-500 flex items-center justify-center text-white" title="Product {{ $os['productPct'] }}%">
+                                <div style="width: {{ max(0, min(100, $os['productPct'])) }}%" class="bg-emerald-500 flex items-center justify-center text-white transition-all" title="Product: {{ number_format($os['productKg'], 2) }} kg ({{ number_format($os['productPct'], 2) }}%)">
                                     {{ $os['productPct'] > 15 ? number_format($os['productPct'], 1) . '%' : '' }}
                                 </div>
-                                <div style="width: {{ $os['bitsStemPct'] }}%" class="bg-amber-500 flex items-center justify-center text-zinc-900" title="Bits Stem {{ $os['bitsStemPct'] }}%">
-                                    {{ $os['bitsStemPct'] > 10 ? number_format($os['bitsStemPct'], 1) . '%' : '' }}
+                                <div style="width: {{ max(0, min(100, $os['bitsStemPct'])) }}%" class="bg-amber-500 flex items-center justify-center text-zinc-900 transition-all" title="Bits Stem: {{ number_format($os['bitsStemKg'], 2) }} kg ({{ number_format($os['bitsStemPct'], 2) }}%)">
+                                    {{ $os['bitsStemPct'] > 8 ? number_format($os['bitsStemPct'], 1) . '%' : '' }}
                                 </div>
-                                <div style="width: {{ $os['dustPct'] }}%" class="bg-blue-500 flex items-center justify-center text-white" title="Dust {{ $os['dustPct'] }}%">
+                                <div style="width: {{ max(0, min(100, $os['dustPct'])) }}%" class="bg-blue-500 flex items-center justify-center text-white transition-all" title="Dust: {{ number_format($os['dustKg'], 2) }} kg ({{ number_format($os['dustPct'], 2) }}%)">
                                     {{ $os['dustPct'] > 5 ? number_format($os['dustPct'], 1) . '%' : '' }}
                                 </div>
-                                <div style="width: {{ $os['variancePct'] }}%" class="bg-zinc-600 flex items-center justify-center text-zinc-300" title="Uncountable Waste {{ $os['variancePct'] }}%">
+                                <div style="width: {{ max(0, min(100, $os['variancePct'])) }}%" class="bg-zinc-600 flex items-center justify-center text-zinc-200 transition-all" title="Uncountable Waste: {{ number_format($os['varianceKg'], 2) }} kg ({{ number_format($os['variancePct'], 2) }}%)">
                                     {{ $os['variancePct'] > 5 ? number_format($os['variancePct'], 1) . '%' : '' }}
+                                </div>
+                            </div>
+
+                            <!-- Detailed Fraction Pills (Kuantitas & Persentase Riil) -->
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-[11px]">
+                                <div class="p-2 rounded-xl bg-emerald-950/30 border border-emerald-900/50 flex flex-col">
+                                    <span class="text-[9px] font-sans font-bold text-emerald-400 uppercase">1. Product Output</span>
+                                    <span class="font-bold text-emerald-300">{{ number_format($os['productKg'], 2, '.', ',') }} kg Netto</span>
+                                    <span class="text-[10px] text-emerald-400 font-semibold">{{ number_format($os['productPct'], 2) }}%</span>
+                                </div>
+                                <div class="p-2 rounded-xl bg-amber-950/30 border border-amber-900/50 flex flex-col">
+                                    <span class="text-[9px] font-sans font-bold text-amber-400 uppercase">2. Bits Stem</span>
+                                    <span class="font-bold text-amber-300">{{ number_format($os['bitsStemKg'], 2, '.', ',') }} kg Netto</span>
+                                    <span class="text-[10px] text-amber-400 font-semibold">{{ number_format($os['bitsStemPct'], 2) }}%</span>
+                                </div>
+                                <div class="p-2 rounded-xl bg-blue-950/30 border border-blue-900/50 flex flex-col">
+                                    <span class="text-[9px] font-sans font-bold text-blue-400 uppercase">3. Dust Output</span>
+                                    <span class="font-bold text-blue-300">{{ number_format($os['dustKg'], 2, '.', ',') }} kg Netto</span>
+                                    <span class="text-[10px] text-blue-400 font-semibold">{{ number_format($os['dustPct'], 2) }}%</span>
+                                </div>
+                                <div class="p-2 rounded-xl bg-zinc-900 border border-zinc-800 flex flex-col">
+                                    <span class="text-[9px] font-sans font-bold text-zinc-400 uppercase">4. Uncountable Waste</span>
+                                    <span class="font-bold text-zinc-300">{{ number_format($os['varianceKg'], 2, '.', ',') }} kg Netto</span>
+                                    <span class="text-[10px] text-zinc-400 font-semibold">{{ number_format($os['variancePct'], 2) }}%</span>
                                 </div>
                             </div>
                         </div>
                     @empty
-                        <div class="space-y-1.5">
-                            <div class="flex justify-between text-xs font-bold">
-                                <span class="text-zinc-200">PAITON P10T5</span>
-                                <span class="font-mono text-emerald-400">79.70%</span>
-                            </div>
-                            <div class="h-6 w-full rounded-xl bg-zinc-950 overflow-hidden flex border border-zinc-800 font-mono text-[10px] font-bold">
-                                <div style="width: 79.70%" class="bg-emerald-500 flex items-center justify-center text-white">79.70%</div>
-                                <div style="width: 18.00%" class="bg-amber-500 flex items-center justify-center text-zinc-900">18.00%</div>
-                                <div style="width: 1.65%" class="bg-blue-500"></div>
-                                <div style="width: 0.65%" class="bg-zinc-600"></div>
-                            </div>
-                        </div>
-                        <div class="space-y-1.5">
-                            <div class="flex justify-between text-xs font-bold">
-                                <span class="text-zinc-200">LOMBOK P9K5</span>
-                                <span class="font-mono text-emerald-400">73.50%</span>
-                            </div>
-                            <div class="h-6 w-full rounded-xl bg-zinc-950 overflow-hidden flex border border-zinc-800 font-mono text-[10px] font-bold">
-                                <div style="width: 73.50%" class="bg-emerald-500 flex items-center justify-center text-white">73.50%</div>
-                                <div style="width: 23.67%" class="bg-amber-500 flex items-center justify-center text-zinc-900">23.67%</div>
-                                <div style="width: 1.87%" class="bg-blue-500"></div>
-                                <div style="width: 0.96%" class="bg-zinc-600"></div>
-                            </div>
+                        <div class="p-6 rounded-2xl bg-zinc-950 border border-zinc-800 text-center text-zinc-500 font-sans text-xs">
+                            Tidak ada rincian separasi origin untuk batch ini.
                         </div>
                     @endforelse
 
                     <!-- Scale Labels -->
-                    <div class="flex justify-between text-[10px] font-mono text-zinc-500 pt-1">
+                    <div class="flex justify-between text-[10px] font-mono text-zinc-500 pt-0.5">
                         <span>0%</span>
                         <span>25%</span>
                         <span>50%</span>
@@ -746,62 +808,104 @@ class="space-y-6">
                 </div>
             </div>
 
-            <!-- CARD 4: Process Material Balance -->
+            <!-- CARD 5: Process Material Balance (Neraca Massa Operasional) -->
             <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4 flex flex-col justify-between">
-                <div>
-                    <h3 class="text-sm font-black text-zinc-100 uppercase tracking-wide">
-                        Process Material Balance
-                    </h3>
-                    <p class="text-xs text-zinc-400 mt-0.5">Neraca massa operasional separasi tembakau</p>
+                <div class="space-y-4">
+                    <div class="border-b border-zinc-800 pb-3">
+                        <h3 class="text-sm font-black text-zinc-100 uppercase tracking-wide">
+                            Process Material Balance
+                        </h3>
+                        <p class="text-xs text-zinc-400 mt-0.5">Neraca massa operasional separasi tembakau (Kuantitas Bobot Bersih / Netto)</p>
+                    </div>
 
-                    <div class="overflow-x-auto mt-4">
+                    <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs text-zinc-300">
                             <thead class="bg-zinc-950/80 text-zinc-400 font-bold uppercase border-b border-zinc-800">
                                 <tr>
-                                    <th class="px-3 py-2.5">Item</th>
-                                    <th class="px-3 py-2.5 text-right">Total (kg)</th>
-                                    <th class="px-3 py-2.5 text-right">% of Processed Input</th>
+                                    <th class="px-3 py-2.5">Item Output (Fraksi)</th>
+                                    <th class="px-3 py-2.5 text-right">Total Netto (kg)</th>
+                                    <th class="px-3 py-2.5 text-right">% of Processed Input (Netto)</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-zinc-800/60 font-mono">
                                 <tr>
                                     <td class="px-3 py-2.5 font-sans font-bold text-zinc-200">Processed Input (MRL Netto)</td>
-                                    <td class="px-3 py-2.5 text-right font-bold text-zinc-100">{{ number_format($batchOverviewData['balanceItems']['inputKg'] ?? 3173.70, 2, '.', ',') }}</td>
-                                    <td class="px-3 py-2.5 text-right text-zinc-300">100.00%</td>
+                                    <td class="px-3 py-2.5 text-right font-bold text-zinc-100">{{ number_format($batchOverviewData['balanceItems']['inputKg'] ?? 3173.70, 2, '.', ',') }} kg Netto</td>
+                                    <td class="px-3 py-2.5 text-right text-zinc-300 font-bold">100.00%</td>
                                 </tr>
                                 <tr>
-                                    <td class="px-3 py-2.5 font-sans text-emerald-400 font-bold">Product Output</td>
-                                    <td class="px-3 py-2.5 text-right text-emerald-400 font-bold">{{ number_format($batchOverviewData['balanceItems']['productKg'] ?? 2442.50, 2, '.', ',') }}</td>
+                                    <td class="px-3 py-2.5 font-sans text-emerald-400 font-bold">1. Product Output (Netto)</td>
+                                    <td class="px-3 py-2.5 text-right text-emerald-400 font-bold">{{ number_format($batchOverviewData['balanceItems']['productKg'] ?? 2442.50, 2, '.', ',') }} kg Netto</td>
                                     <td class="px-3 py-2.5 text-right text-emerald-400 font-bold">{{ number_format($batchOverviewData['balanceItems']['productPct'] ?? 76.96, 2, '.', ',') }}%</td>
                                 </tr>
                                 <tr>
-                                    <td class="px-3 py-2.5 font-sans text-amber-300">Bits Stem Output</td>
-                                    <td class="px-3 py-2.5 text-right text-amber-300">{{ number_format($batchOverviewData['balanceItems']['stemKg'] ?? 589.22, 2, '.', ',') }}</td>
+                                    <td class="px-3 py-2.5 font-sans text-amber-300">2. Bits Stem Output (Netto)</td>
+                                    <td class="px-3 py-2.5 text-right text-amber-300">{{ number_format($batchOverviewData['balanceItems']['stemKg'] ?? 589.22, 2, '.', ',') }} kg Netto</td>
                                     <td class="px-3 py-2.5 text-right text-amber-300">{{ number_format($batchOverviewData['balanceItems']['stemPct'] ?? 18.56, 2, '.', ',') }}%</td>
                                 </tr>
                                 <tr>
-                                    <td class="px-3 py-2.5 font-sans text-blue-300">Dust Output</td>
-                                    <td class="px-3 py-2.5 text-right text-blue-300">{{ number_format($batchOverviewData['balanceItems']['dustKg'] ?? 58.70, 2, '.', ',') }}</td>
+                                    <td class="px-3 py-2.5 font-sans text-blue-300">3. Dust Output (Netto)</td>
+                                    <td class="px-3 py-2.5 text-right text-blue-300">{{ number_format($batchOverviewData['balanceItems']['dustKg'] ?? 58.70, 2, '.', ',') }} kg Netto</td>
                                     <td class="px-3 py-2.5 text-right text-blue-300">{{ number_format($batchOverviewData['balanceItems']['dustPct'] ?? 1.85, 2, '.', ',') }}%</td>
                                 </tr>
                                 <tr>
-                                    <td class="px-3 py-2.5 font-sans text-zinc-400">Uncountable Waste</td>
-                                    <td class="px-3 py-2.5 text-right text-zinc-400">{{ number_format($batchOverviewData['balanceItems']['varianceKg'] ?? 20.28, 2, '.', ',') }}</td>
+                                    <td class="px-3 py-2.5 font-sans text-zinc-400">4. Uncountable Waste (Netto)</td>
+                                    <td class="px-3 py-2.5 text-right text-zinc-400">{{ number_format($batchOverviewData['balanceItems']['varianceKg'] ?? 20.28, 2, '.', ',') }} kg Netto</td>
                                     <td class="px-3 py-2.5 text-right text-zinc-400">{{ number_format($batchOverviewData['balanceItems']['variancePct'] ?? 0.63, 2, '.', ',') }}%</td>
                                 </tr>
                                 <tr class="bg-zinc-950/90 font-bold border-t-2 border-zinc-700">
-                                    <td class="px-3 py-2.5 font-sans uppercase text-zinc-100">Total Balance</td>
-                                    <td class="px-3 py-2.5 text-right text-amber-400">{{ number_format($batchOverviewData['balanceItems']['totalKg'] ?? 3110.70, 2, '.', ',') }}</td>
-                                    <td class="px-3 py-2.5 text-right text-emerald-400">{{ number_format($batchOverviewData['balanceItems']['totalPct'] ?? 100.00, 2, '.', ',') }}%</td>
+                                    <td class="px-3 py-2.5 font-sans uppercase text-zinc-100">Total Balance (Netto Output)</td>
+                                    <td class="px-3 py-2.5 text-right text-amber-400 font-black">{{ number_format($batchOverviewData['balanceItems']['totalKg'] ?? 3110.70, 2, '.', ',') }} kg Netto</td>
+                                    <td class="px-3 py-2.5 text-right text-emerald-400 font-black">{{ number_format($batchOverviewData['balanceItems']['totalPct'] ?? 100.00, 2, '.', ',') }}%</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                </div>
 
-                <div class="mt-4 p-3 rounded-2xl bg-emerald-950/40 border border-emerald-800/80 flex items-center text-xs text-emerald-300">
-                    <svg class="w-4 h-4 mr-2 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <span>Material balance within acceptable variance (&plusmn;2.00%).</span>
+                    <div class="p-3 rounded-2xl bg-emerald-950/40 border border-emerald-800/80 flex items-center text-xs text-emerald-300">
+                        <svg class="w-4 h-4 mr-2 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span>Material balance within acceptable operational tolerance variance (&plusmn;2.00%).</span>
+                    </div>
+
+                    <!-- REMARKS & FORMULA EXPLANATION (CATATAN & PENJELASAN NERACA MASSA) -->
+                    <div class="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-400 space-y-2.5">
+                        <div class="flex items-center gap-2 text-zinc-200 font-bold uppercase tracking-wider text-[11px] border-b border-zinc-800/80 pb-1.5">
+                            <span>💡 Remarks & Penjelasan Neraca Massa (Process Material Balance)</span>
+                        </div>
+
+                        <div class="space-y-2 text-[11px] leading-relaxed text-zinc-300">
+                            <div class="p-2.5 rounded-xl bg-zinc-900/80 border border-zinc-800/80 space-y-1">
+                                <span class="font-bold text-amber-400 block">Mengapa persentase rendemen (Product Yield) berbeda dengan Total Balance 100%?</span>
+                                <p class="text-zinc-300 text-[11px]">
+                                    • <strong class="text-emerald-400 font-mono">Product Yield (misal {{ number_format($batchOverviewData['weightedProductYield'] ?? 76.96, 2) }}%)</strong>: Adalah persentase perolehan tembakau rajangan utama bersih terhadap bahan baku masuk = <code class="text-zinc-200 font-mono font-bold">(Product Output Netto / Processed Input Netto) × 100%</code>.
+                                </p>
+                                <p class="text-zinc-300 text-[11px]">
+                                    • <strong class="text-emerald-400 font-mono">Total Balance (Selalu 100.00%)</strong>: Adalah neraca massa total seluruh output fisik = <code class="text-zinc-200 font-mono font-bold">(Product + Bits Stem + Dust + Uncountable Waste) / Processed Input = 100.00%</code>.
+                                </p>
+                            </div>
+
+                            <ol class="list-decimal pl-4 space-y-1.5 text-[10.5px] text-zinc-400">
+                                <li>
+                                    <strong class="text-zinc-200">Processed Input (MRL Netto):</strong> Total bobot bersih tembakau yang masuk ke mesin separasi setelah dikurangi tara karung/kemasan aktual saat penimbangan kedatangan fisik (MRL). Merupakan basis 100.00%.
+                                </li>
+                                <li>
+                                    <strong class="text-emerald-300">Product Output (Netto):</strong> Bobot bersih hasil utama tembakau rajangan siap kirim.
+                                </li>
+                                <li>
+                                    <strong class="text-amber-300">Bits Stem Output (Netto):</strong> Bobot bersih fraksi gagang/batang tembakau yang berhasil dipisahkan selama perontokan mekanis.
+                                </li>
+                                <li>
+                                    <strong class="text-blue-300">Dust Output (Netto):</strong> Bobot bersih fraksi debu/abu tembakau halus yang tersaring cyclone/filter.
+                                </li>
+                                <li>
+                                    <strong class="text-zinc-300">Uncountable Waste (Netto):</strong> Selisih penyusutan wajar (kehilangan kadar air/partikel mikro mekanik) selama proses: <code class="font-mono text-zinc-200">Input Netto - (Product + Stem + Dust)</code>.
+                                </li>
+                                <li>
+                                    <strong class="text-zinc-200">Total Balance:</strong> Menjamin seluruh kuantitas bahan baku tercatat dan dapat dipertanggungjawabkan (reconciled) secara akurat.
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

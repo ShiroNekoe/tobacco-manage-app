@@ -221,36 +221,55 @@ class CustomerPortalApiController extends Controller
 
         // Stepper timeline events
         $baseDate = $batch->date_of_receipt ? $batch->date_of_receipt->copy() : now();
+        $dateStr = $baseDate->format('d M Y');
+
+        $t1Time = $batch->date_of_receipt ? $batch->date_of_receipt->format('d M Y') : ($batch->created_at ? $batch->created_at->format('d M Y H:i') : $dateStr);
+        $t2Done = !empty($batch->delivery_note_id) || !empty($batch->deliveryNote) || $batch->dn_gross_weight > 0;
+        $t2Time = $batch->created_at ? $batch->created_at->format('d M Y H:i') : $t1Time;
+        $t3Done = (float)$batch->mrl_gross_weight > 0 || (float)$batch->mrl_netto_weight > 0;
+        $t3Time = $batch->mrl_approved_at ? $batch->mrl_approved_at->format('d M Y H:i') : ($batch->date_of_receipt ? $batch->date_of_receipt->format('d M Y') : $dateStr);
+        $t4Done = $batch->isApprovedBySupervisor() || ((float)$batch->separation_product_kg > 0 && $batch->isClosed());
+        $t4Time = $batch->supervisor_approved_at 
+            ? $batch->supervisor_approved_at->format('d M Y H:i') 
+            : ($batch->locked_at ? $batch->locked_at->format('d M Y H:i') : ($batch->last_saved_at ? $batch->last_saved_at->format('d M Y H:i') : ($t4Done ? $dateStr : 'Pending')));
+
+        $linkedShipment = \App\Models\DnShipmentItem::with('dnShipment')->where('batch_id', $batch->id)->orWhere('batch_code', $batch->batch_code)->first();
+        $t5Done = $linkedShipment && $linkedShipment->dnShipment && $linkedShipment->dnShipment->isApprovedByCustomer();
+        $t5Shipped = $linkedShipment && $linkedShipment->dnShipment;
+        $t5Time = $t5Done 
+            ? ($linkedShipment->dnShipment->customer_approved_at ? $linkedShipment->dnShipment->customer_approved_at->format('d M Y H:i') : 'Approved') 
+            : ($t5Shipped ? ($linkedShipment->dnShipment->shipment_date ? $linkedShipment->dnShipment->shipment_date->format('d M Y') . ' (Shipped)' : 'Shipped') : 'Pending');
+
         $timeline = [
             [
                 'step' => 1,
                 'title' => 'Material Arrived',
-                'timestamp' => $baseDate->copy()->setTime(7, 12)->format('d M Y H:i'),
+                'timestamp' => $t1Time,
                 'completed' => true,
             ],
             [
                 'step' => 2,
-                'title' => 'DN Recorded',
-                'timestamp' => $baseDate->copy()->setTime(7, 35)->format('d M Y H:i'),
-                'completed' => true,
+                'title' => 'DN Received Recorded',
+                'timestamp' => $t2Time,
+                'completed' => $t2Done,
             ],
             [
                 'step' => 3,
-                'title' => 'MRL Weighed',
-                'timestamp' => $baseDate->copy()->setTime(8, 10)->format('d M Y H:i'),
-                'completed' => true,
+                'title' => 'MRL Weighed & Diff Checked',
+                'timestamp' => $t3Time,
+                'completed' => $t3Done,
             ],
             [
                 'step' => 4,
-                'title' => 'Difference Reviewed',
-                'timestamp' => $baseDate->copy()->setTime(8, 35)->format('d M Y H:i'),
-                'completed' => true,
+                'title' => 'Product Output Separated',
+                'timestamp' => $t4Time,
+                'completed' => $t4Done,
             ],
             [
                 'step' => 5,
-                'title' => 'Receiving Confirmed',
-                'timestamp' => $baseDate->copy()->setTime(8, 45)->format('d M Y H:i'),
-                'completed' => true,
+                'title' => 'DN Shipped & Customer Approval',
+                'timestamp' => $t5Time,
+                'completed' => $t5Done,
             ],
         ];
 

@@ -116,7 +116,15 @@
                             </td>
                             <td class="px-4 py-4">
                                 <div class="font-bold text-zinc-200">{{ $b->productType->name ?? '-' }}</div>
-                                <div class="text-[11px] text-amber-400 font-semibold">{{ $b->origin->region_name ?? '-' }} ({{ $b->pack_type }})</div>
+                                <div class="text-[11px] text-amber-400 font-semibold space-y-0.5">
+                                    @if(!empty($b->dn_header_details) && is_array($b->dn_header_details) && count($b->dn_header_details) > 0)
+                                        @foreach($b->dn_header_details as $hRow)
+                                            <div>📍 {{ $hRow['raw_origin'] ?? $hRow['clean_region'] }} ({{ $hRow['packs'] }} unit)</div>
+                                        @endforeach
+                                    @else
+                                        📍 {{ $b->origin->region_name ?? '-' }} ({{ $b->pack_type }})
+                                    @endif
+                                </div>
                             </td>
                             <td class="px-4 py-4 text-right font-mono font-bold text-zinc-300">
                                 {{ number_format($b->dn_gross_weight, 2, ',', '.') }}

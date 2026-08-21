@@ -248,10 +248,35 @@ class ProcessingReportImporter
             }
 
             // ===== CREATE BATCH RECORD =====
+            $dnHeaderDetailsArray = [];
+            $dnTotalPackSum = 0;
+            $dnGrossWeightSum = 0;
+            $dnTareWeightSum = 0;
+            $dnNettoWeightSum = 0;
+
             if (!empty($headerOrigins)) {
                 $firstOrigin = $headerOrigins[0]['origin_obj'];
                 $firstPackType = $headerOrigins[0]['pack_type'];
                 $firstMaterialCode = $headerOrigins[0]['material_code'];
+
+                foreach ($headerOrigins as $hOrig) {
+                    $dnHeaderDetailsArray[] = [
+                        'product_type' => 'RAJANGAN',
+                        'raw_origin' => $hOrig['raw_origin'],
+                        'clean_region' => $hOrig['clean_region'],
+                        'material_code' => $hOrig['material_code'],
+                        'packs' => (int) $hOrig['packs'],
+                        'pack_type' => $hOrig['pack_type'],
+                        'gross_kg' => round($hOrig['gross_kg'], 2),
+                        'tare_kg' => round($hOrig['tare_kg'], 2),
+                        'netto_kg' => round($hOrig['netto_kg'], 2),
+                        'dn_number' => $hOrig['dn_number'],
+                    ];
+                    $dnTotalPackSum += (int) $hOrig['packs'];
+                    $dnGrossWeightSum += round($hOrig['gross_kg'], 2);
+                    $dnTareWeightSum += round($hOrig['tare_kg'], 2);
+                    $dnNettoWeightSum += round($hOrig['netto_kg'], 2);
+                }
             } else {
                 $firstOrigin = !empty($parsedSections) ? $parsedSections[0]['origin'] : Origin::first();
                 $firstPackType = !empty($parsedSections) ? $parsedSections[0]['pack_type'] : 'Bale';
@@ -264,7 +289,8 @@ class ProcessingReportImporter
                 'delivery_note_id' => $dn->id,
                 'product_type_id' => $defaultProductType->id,
                 'origin_id' => $firstOrigin->id,
-                'material_code' => $firstMaterialCode,  // ← SEPARATE
+                'material_code' => $firstMaterialCode,
+                'dn_header_details' => $dnHeaderDetailsArray,
                 'pack_type' => $firstPackType,
                 'date_of_receipt' => $receiptDate,
                 'dn_total_pack' => 0,
@@ -366,16 +392,21 @@ class ProcessingReportImporter
             $yieldDust = $processedInputNetto > 0 ? round(($secDust / $processedInputNetto) * 100, 2) : 0;
             $yieldWaste = max(0, round(100 - ($yieldProd + $yieldBits + $yieldDust), 2));
 
+            $finalDnPack = $dnTotalPackSum > 0 ? $dnTotalPackSum : $secSackCount;
+            $finalDnGross = $dnGrossWeightSum > 0 ? $dnGrossWeightSum : round($secGross, 2);
+            $finalDnTare = $dnTareWeightSum > 0 ? $dnTareWeightSum : round($secTare, 2);
+            $finalDnNetto = $dnNettoWeightSum > 0 ? $dnNettoWeightSum : round($secNetto, 2);
+
             // Update Batch totals
             $batch->update([
-                'dn_total_pack' => $secSackCount,
-                'dn_gross_weight' => round($secGross, 2),
-                'dn_tare_weight' => round($secTare, 2),
-                'dn_netto_weight' => round($secNetto, 2),
-                'mrl_total_pack' => $secSackCount,
-                'mrl_gross_weight' => round($secGross, 2),
-                'mrl_tare_weight' => round($secTare, 2),
-                'mrl_netto_weight' => round($secNetto, 2),
+                'dn_total_pack' => $finalDnPack,
+                'dn_gross_weight' => $finalDnGross,
+                'dn_tare_weight' => $finalDnTare,
+                'dn_netto_weight' => $finalDnNetto,
+                'mrl_total_pack' => $finalDnPack,
+                'mrl_gross_weight' => $finalDnGross,
+                'mrl_tare_weight' => $finalDnTare,
+                'mrl_netto_weight' => $finalDnNetto,
                 'discrepancy_dn_vs_mrl_kg' => 0.00,
                 'separation_product_kg' => round($secProd, 2),
                 'separation_bits_stem_kg' => round($secBits, 2),

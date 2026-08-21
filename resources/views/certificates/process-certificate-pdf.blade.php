@@ -102,20 +102,36 @@
         </thead>
         <tbody>
             @foreach($batches as $b)
-                @php
-                    $originDisplay = trim(($b->origin->region_name ?? '') . ' ' . ($b->material_code ?? ''));
-                @endphp
-                <tr>
-                    <td class="text-left">{{ $b->productType->name ?? '-' }}</td>
-                    <td>{{ $originDisplay ?: '-' }}</td>
-                    <td>{{ $b->dn_total_pack }}</td>
-                    <td>{{ $b->pack_type }}</td>
-                    <td class="text-right">{{ number_format($b->dn_gross_weight, 2, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($b->dn_tare_weight, 2, ',', '.') }}</td>
-                    <td class="text-right" style="font-weight:bold;">{{ number_format($b->dn_netto_weight, 2, ',', '.') }}</td>
-                    <td>{{ $b->date_of_receipt ? $b->date_of_receipt->format('d/m/Y') : '-' }}</td>
-                    <td>{{ $b->deliveryNote ? $b->deliveryNote->formatted_dn_number : '-' }}</td>
-                </tr>
+                @if(!empty($b->dn_header_details) && is_array($b->dn_header_details) && count($b->dn_header_details) > 0)
+                    @foreach($b->dn_header_details as $hRow)
+                        <tr>
+                            <td class="text-left">{{ $hRow['product_type'] ?? ($b->productType->name ?? 'RAJANGAN') }}</td>
+                            <td>{{ $hRow['raw_origin'] ?? trim(($b->origin->region_name ?? '') . ' ' . ($b->material_code ?? '')) }}</td>
+                            <td>{{ $hRow['packs'] ?? $b->dn_total_pack }}</td>
+                            <td>{{ $hRow['pack_type'] ?? $b->pack_type }}</td>
+                            <td class="text-right">{{ number_format($hRow['gross_kg'] ?? $b->dn_gross_weight, 2, ',', '.') }}</td>
+                            <td class="text-right">{{ number_format($hRow['tare_kg'] ?? $b->dn_tare_weight, 2, ',', '.') }}</td>
+                            <td class="text-right" style="font-weight:bold;">{{ number_format($hRow['netto_kg'] ?? $b->dn_netto_weight, 2, ',', '.') }}</td>
+                            <td>{{ $b->date_of_receipt ? $b->date_of_receipt->format('d/m/Y') : '-' }}</td>
+                            <td>{{ (!empty($hRow['dn_number']) && $hRow['dn_number'] !== '-') ? $hRow['dn_number'] : ($b->deliveryNote ? $b->deliveryNote->formatted_dn_number : '-') }}</td>
+                        </tr>
+                    @endforeach
+                @else
+                    @php
+                        $originDisplay = trim(($b->origin->region_name ?? '') . ' ' . ($b->material_code ?? ''));
+                    @endphp
+                    <tr>
+                        <td class="text-left">{{ $b->productType->name ?? '-' }}</td>
+                        <td>{{ $originDisplay ?: '-' }}</td>
+                        <td>{{ $b->dn_total_pack }}</td>
+                        <td>{{ $b->pack_type }}</td>
+                        <td class="text-right">{{ number_format($b->dn_gross_weight, 2, ',', '.') }}</td>
+                        <td class="text-right">{{ number_format($b->dn_tare_weight, 2, ',', '.') }}</td>
+                        <td class="text-right" style="font-weight:bold;">{{ number_format($b->dn_netto_weight, 2, ',', '.') }}</td>
+                        <td>{{ $b->date_of_receipt ? $b->date_of_receipt->format('d/m/Y') : '-' }}</td>
+                        <td>{{ $b->deliveryNote ? $b->deliveryNote->formatted_dn_number : '-' }}</td>
+                    </tr>
+                @endif
             @endforeach
         </tbody>
     </table>
@@ -164,22 +180,40 @@
         </thead>
         <tbody>
             @foreach($batches as $b)
-                @php
-                    $originDisplay = trim(($b->origin->region_name ?? '') . ' ' . ($b->material_code ?? ''));
-                @endphp
-                <tr>
-                    <td class="text-left">{{ $b->productType->name ?? '-' }}</td>
-                    <td>{{ $originDisplay ?: '-' }}</td>
-                    <td>{{ $b->mrl_total_pack }}</td>
-                    <td>{{ $b->pack_type }}</td>
-                    <td class="text-right">{{ number_format($b->mrl_gross_weight, 2, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($b->mrl_tare_weight, 2, ',', '.') }}</td>
-                    <td class="text-right" style="font-weight:bold;">{{ number_format($b->mrl_netto_weight, 2, ',', '.') }}</td>
-                    <td>{{ $b->date_of_receipt ? $b->date_of_receipt->format('d/m/Y') : '-' }}</td>
-                    <td class="text-right" style="font-weight:bold;">
-                        {{ number_format($b->discrepancy_dn_vs_mrl_kg, 2, ',', '.') }}
-                    </td>
-                </tr>
+                @if(!empty($b->dn_header_details) && is_array($b->dn_header_details) && count($b->dn_header_details) > 0)
+                    @foreach($b->dn_header_details as $hRow)
+                        <tr>
+                            <td class="text-left">{{ $hRow['product_type'] ?? ($b->productType->name ?? 'RAJANGAN') }}</td>
+                            <td>{{ $hRow['raw_origin'] ?? trim(($b->origin->region_name ?? '') . ' ' . ($b->material_code ?? '')) }}</td>
+                            <td>{{ $hRow['packs'] ?? $b->mrl_total_pack }}</td>
+                            <td>{{ $hRow['pack_type'] ?? $b->pack_type }}</td>
+                            <td class="text-right">{{ number_format($hRow['gross_kg'] ?? $b->mrl_gross_weight, 2, ',', '.') }}</td>
+                            <td class="text-right">{{ number_format($hRow['tare_kg'] ?? $b->mrl_tare_weight, 2, ',', '.') }}</td>
+                            <td class="text-right" style="font-weight:bold;">{{ number_format($hRow['netto_kg'] ?? $b->mrl_netto_weight, 2, ',', '.') }}</td>
+                            <td>{{ $b->date_of_receipt ? $b->date_of_receipt->format('d/m/Y') : '-' }}</td>
+                            <td class="text-right" style="font-weight:bold;">
+                                {{ number_format($b->discrepancy_dn_vs_mrl_kg, 2, ',', '.') }}
+                            </td>
+                        </tr>
+                    @endforeach
+                @else
+                    @php
+                        $originDisplay = trim(($b->origin->region_name ?? '') . ' ' . ($b->material_code ?? ''));
+                    @endphp
+                    <tr>
+                        <td class="text-left">{{ $b->productType->name ?? '-' }}</td>
+                        <td>{{ $originDisplay ?: '-' }}</td>
+                        <td>{{ $b->mrl_total_pack }}</td>
+                        <td>{{ $b->pack_type }}</td>
+                        <td class="text-right">{{ number_format($b->mrl_gross_weight, 2, ',', '.') }}</td>
+                        <td class="text-right">{{ number_format($b->mrl_tare_weight, 2, ',', '.') }}</td>
+                        <td class="text-right" style="font-weight:bold;">{{ number_format($b->mrl_netto_weight, 2, ',', '.') }}</td>
+                        <td>{{ $b->date_of_receipt ? $b->date_of_receipt->format('d/m/Y') : '-' }}</td>
+                        <td class="text-right" style="font-weight:bold;">
+                            {{ number_format($b->discrepancy_dn_vs_mrl_kg, 2, ',', '.') }}
+                        </td>
+                    </tr>
+                @endif
             @endforeach
         </tbody>
     </table>

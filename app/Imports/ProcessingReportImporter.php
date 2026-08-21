@@ -368,6 +368,7 @@ class ProcessingReportImporter
         }
 
         $this->importHistoricalYieldReports($spreadsheet);
+        $this->seedSampleDnShipments();
 
         echo "\n✅ Import complete!\n";
         return [
@@ -375,6 +376,7 @@ class ProcessingReportImporter
             'sacks' => $importedSacksCount,
             'origins' => $importedOriginsCount,
             'separations' => $importedBatchesCount,
+            'shipments' => DnShipment::count(),
         ];
     }
 

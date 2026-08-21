@@ -109,8 +109,8 @@ class ProcessingReportImporter
                 ]
             );
 
-            // ===== PARSE TOP HEADER TABLE ORIGINS (DELIVERY NOTE / MRL) =====
-            $headerOrigins = $this->parseHeaderOrigins($sheet);
+            // ===== PARSE BOTH TOP HEADER TABLES (DELIVERY NOTE & MRL) =====
+            [$dnHeaderRows, $mrlHeaderRows] = $this->parseHeaderTables($sheet);
 
             // Parse sections & material code mapping
             $parsedSections = [];
@@ -254,12 +254,12 @@ class ProcessingReportImporter
             $dnTareWeightSum = 0;
             $dnNettoWeightSum = 0;
 
-            if (!empty($headerOrigins)) {
-                $firstOrigin = $headerOrigins[0]['origin_obj'];
-                $firstPackType = $headerOrigins[0]['pack_type'];
-                $firstMaterialCode = $headerOrigins[0]['material_code'];
+            if (!empty($dnHeaderRows)) {
+                $firstOrigin = $dnHeaderRows[0]['origin_obj'];
+                $firstPackType = $dnHeaderRows[0]['pack_type'];
+                $firstMaterialCode = $dnHeaderRows[0]['material_code'];
 
-                foreach ($headerOrigins as $hOrig) {
+                foreach ($dnHeaderRows as $hOrig) {
                     $dnHeaderDetailsArray[] = [
                         'product_type' => 'RAJANGAN',
                         'raw_origin' => $hOrig['raw_origin'],
@@ -283,6 +283,41 @@ class ProcessingReportImporter
                 $firstMaterialCode = !empty($parsedSections) ? $parsedSections[0]['material_code'] : 'N/A';
             }
 
+            $mrlHeaderDetailsArray = [];
+            $mrlTotalPackSum = 0;
+            $mrlGrossWeightSum = 0;
+            $mrlTareWeightSum = 0;
+            $mrlNettoWeightSum = 0;
+            $mrlDiscrepancySum = 0;
+
+            if (!empty($mrlHeaderRows)) {
+                foreach ($mrlHeaderRows as $mOrig) {
+                    $mrlHeaderDetailsArray[] = [
+                        'product_type' => 'RAJANGAN',
+                        'raw_origin' => $mOrig['raw_origin'],
+                        'clean_region' => $mOrig['clean_region'],
+                        'material_code' => $mOrig['material_code'],
+                        'packs' => (int) $mOrig['packs'],
+                        'pack_type' => $mOrig['pack_type'],
+                        'gross_kg' => round($mOrig['gross_kg'], 2),
+                        'tare_kg' => round($mOrig['tare_kg'], 2),
+                        'netto_kg' => round($mOrig['netto_kg'], 2),
+                        'discrepancy_kg' => round($mOrig['discrepancy_kg'], 2),
+                    ];
+                    $mrlTotalPackSum += (int) $mOrig['packs'];
+                    $mrlGrossWeightSum += round($mOrig['gross_kg'], 2);
+                    $mrlTareWeightSum += round($mOrig['tare_kg'], 2);
+                    $mrlNettoWeightSum += round($mOrig['netto_kg'], 2);
+                    $mrlDiscrepancySum += round($mOrig['discrepancy_kg'], 2);
+                }
+            } else {
+                $mrlHeaderDetailsArray = $dnHeaderDetailsArray;
+                $mrlTotalPackSum = $dnTotalPackSum;
+                $mrlGrossWeightSum = $dnGrossWeightSum;
+                $mrlTareWeightSum = $dnTareWeightSum;
+                $mrlNettoWeightSum = $dnNettoWeightSum;
+            }
+
             $batch = Batch::create([
                 'batch_code' => $batchCode,
                 'customer_id' => $customer->id,
@@ -291,6 +326,7 @@ class ProcessingReportImporter
                 'origin_id' => $firstOrigin->id,
                 'material_code' => $firstMaterialCode,
                 'dn_header_details' => $dnHeaderDetailsArray,
+                'mrl_header_details' => $mrlHeaderDetailsArray,
                 'pack_type' => $firstPackType,
                 'date_of_receipt' => $receiptDate,
                 'dn_total_pack' => 0,
@@ -360,9 +396,9 @@ class ProcessingReportImporter
             }
 
             // Sync BatchOrigin from Header Origins if available (accurate multi-origin per header table)
-            if (!empty($headerOrigins)) {
+            if (!empty($dnHeaderRows)) {
                 BatchOrigin::where('batch_id', $batch->id)->delete();
-                foreach ($headerOrigins as $hOrig) {
+                foreach ($dnHeaderRows as $hOrig) {
                     BatchOrigin::create([
                         'batch_id' => $batch->id,
                         'origin_id' => $hOrig['origin_obj']->id,
@@ -397,17 +433,23 @@ class ProcessingReportImporter
             $finalDnTare = $dnTareWeightSum > 0 ? $dnTareWeightSum : round($secTare, 2);
             $finalDnNetto = $dnNettoWeightSum > 0 ? $dnNettoWeightSum : round($secNetto, 2);
 
+            $finalMrlPack = $mrlTotalPackSum > 0 ? $mrlTotalPackSum : $finalDnPack;
+            $finalMrlGross = $mrlGrossWeightSum > 0 ? $mrlGrossWeightSum : $finalDnGross;
+            $finalMrlTare = $mrlTareWeightSum > 0 ? $mrlTareWeightSum : $finalDnTare;
+            $finalMrlNetto = $mrlNettoWeightSum > 0 ? $mrlNettoWeightSum : $finalDnNetto;
+            $finalDiscrepancy = round($finalMrlGross - $finalDnGross, 2);
+
             // Update Batch totals
             $batch->update([
                 'dn_total_pack' => $finalDnPack,
                 'dn_gross_weight' => $finalDnGross,
                 'dn_tare_weight' => $finalDnTare,
                 'dn_netto_weight' => $finalDnNetto,
-                'mrl_total_pack' => $finalDnPack,
-                'mrl_gross_weight' => $finalDnGross,
-                'mrl_tare_weight' => $finalDnTare,
-                'mrl_netto_weight' => $finalDnNetto,
-                'discrepancy_dn_vs_mrl_kg' => 0.00,
+                'mrl_total_pack' => $finalMrlPack,
+                'mrl_gross_weight' => $finalMrlGross,
+                'mrl_tare_weight' => $finalMrlTare,
+                'mrl_netto_weight' => $finalMrlNetto,
+                'discrepancy_dn_vs_mrl_kg' => $finalDiscrepancy,
                 'separation_product_kg' => round($secProd, 2),
                 'separation_bits_stem_kg' => round($secBits, 2),
                 'separation_dust_kg' => round($secDust, 2),
@@ -547,64 +589,133 @@ class ProcessingReportImporter
     }
 
     /**
-     * Parse exact top header table origins for a batch sheet
+     * Parse both top header tables (DELIVERY NOTE and MATERIAL RECEIPT LIST) for a batch sheet
      */
-    protected function parseHeaderOrigins($sheet): array
+    protected function parseHeaderTables($sheet): array
     {
-        $inHeaderTable = false;
-        $origins = [];
+        $highestRow = $sheet->getHighestRow();
 
-        for ($r = 1; $r <= $sheet->getHighestRow(); $r++) {
+        $dnStart = null;
+        $mrlStart = null;
+        $sepStart = null;
+
+        for ($r = 1; $r <= $highestRow; $r++) {
             $c1 = trim((string) $sheet->getCell([1, $r])->getCalculatedValue());
-
-            if (preg_match('/(DELIVERY NOTE|MATERIAL RECEIPT LIST)/i', $c1)) {
-                $inHeaderTable = true;
-                continue;
+            if (! $dnStart && (preg_match('/DELIVERY NOTE\s*\(DN\)/i', $c1) || preg_match('/DELIVERY NOTE\b/i', $c1))) {
+                $dnStart = $r;
             }
+            if (! $mrlStart && (preg_match('/MATERIAL RECEIPT LIST\s*\(MRL\)/i', $c1) || preg_match('/MATERIAL RECEIPT LIST\b/i', $c1))) {
+                $mrlStart = $r;
+            }
+            if (! $sepStart && preg_match('/SEPARATION RESULTS REPORT/i', $c1)) {
+                $sepStart = $r;
+            }
+        }
 
-            if ($inHeaderTable) {
-                if (preg_match('/(Remark|SEPARATION RESULTS REPORT)/i', $c1)) {
-                    $inHeaderTable = false;
-                    break;
-                }
+        $dnRows = [];
+        $mrlRows = [];
 
-                $prodType = trim((string) $sheet->getCell([1, $r])->getCalculatedValue());
-                $rawOrigin = trim((string) $sheet->getCell([2, $r])->getCalculatedValue());
-
-                if (empty($prodType) || str_contains(strtolower($prodType), 'product type') || str_contains(strtolower($rawOrigin), 'origin') || str_contains(strtolower($prodType), 'customer')) {
+        // Parse DN Table
+        if ($dnStart) {
+            $dnEnd = $mrlStart ?: ($sepStart ?: $highestRow);
+            for ($r = $dnStart; $r < $dnEnd; $r++) {
+                $c1 = trim((string) $sheet->getCell([1, $r])->getCalculatedValue());
+                $c2 = trim((string) $sheet->getCell([2, $r])->getCalculatedValue());
+                if (empty($c1) || str_contains(strtolower($c1), 'product type') || str_contains(strtolower($c2), 'origin') || str_contains(strtolower($c1), 'customer') || str_contains(strtolower($c1), 'remark') || str_contains(strtolower($c1), 'delivery note')) {
                     continue;
                 }
-
                 $packs = (float) $sheet->getCell([3, $r])->getCalculatedValue();
-                $gross = (float) $sheet->getCell([5, $r])->getCalculatedValue();
-
                 $packType = trim((string) $sheet->getCell([4, $r])->getCalculatedValue());
+                $gross = (float) $sheet->getCell([5, $r])->getCalculatedValue();
+                $tare = (float) $sheet->getCell([6, $r])->getCalculatedValue();
+                $netto = (float) $sheet->getCell([7, $r])->getCalculatedValue();
+                $dnNum = trim((string) $sheet->getCell([9, $r])->getCalculatedValue());
+
                 if ($packs == 0 && is_numeric($packType) && (float) $packType > 0) {
                     $packs = (float) $packType;
                     $packType = 'Bale';
                 }
 
                 if ($gross > 0 || $packs > 0) {
-                    [$cleanRegion, $materialCode] = $this->parseOriginAndCode($rawOrigin);
+                    [$cleanRegion, $materialCode] = $this->parseOriginAndCode($c2);
                     $originObj = Origin::firstOrCreate(['region_name' => $cleanRegion]);
 
-                    $origins[] = [
-                        'raw_origin' => $rawOrigin,
+                    $dnRows[] = [
+                        'product_type' => 'RAJANGAN',
+                        'raw_origin' => $c2,
                         'clean_region' => $cleanRegion,
                         'material_code' => $materialCode,
                         'origin_obj' => $originObj,
                         'packs' => (int) $packs,
-                        'pack_type' => (!empty($packType) && !is_numeric($packType)) ? $packType : 'Bale',
+                        'pack_type' => (! empty($packType) && ! is_numeric($packType)) ? $packType : 'Bale',
                         'gross_kg' => round($gross, 2),
-                        'tare_kg' => round((float) $sheet->getCell([6, $r])->getCalculatedValue(), 2),
-                        'netto_kg' => round((float) $sheet->getCell([7, $r])->getCalculatedValue(), 2),
-                        'dn_number' => trim((string) $sheet->getCell([9, $r])->getCalculatedValue()),
+                        'tare_kg' => round($tare, 2),
+                        'netto_kg' => round($netto, 2),
+                        'dn_number' => $dnNum,
                     ];
                 }
             }
         }
 
-        return $origins;
+        // Parse MRL Table
+        if ($mrlStart) {
+            $mrlEnd = $sepStart ?: $highestRow;
+            for ($r = $mrlStart; $r < $mrlEnd; $r++) {
+                $c1 = trim((string) $sheet->getCell([1, $r])->getCalculatedValue());
+                $c2 = trim((string) $sheet->getCell([2, $r])->getCalculatedValue());
+                if (empty($c1) || str_contains(strtolower($c1), 'product type') || str_contains(strtolower($c2), 'origin') || str_contains(strtolower($c1), 'customer') || str_contains(strtolower($c1), 'remark') || str_contains(strtolower($c1), 'material receipt')) {
+                    continue;
+                }
+                $packs = (float) $sheet->getCell([3, $r])->getCalculatedValue();
+                $packType = trim((string) $sheet->getCell([4, $r])->getCalculatedValue());
+                $gross = (float) $sheet->getCell([5, $r])->getCalculatedValue();
+                $tare = (float) $sheet->getCell([6, $r])->getCalculatedValue();
+                $netto = (float) $sheet->getCell([7, $r])->getCalculatedValue();
+                $discrepancy = (float) $sheet->getCell([9, $r])->getCalculatedValue();
+
+                if ($packs == 0 && is_numeric($packType) && (float) $packType > 0) {
+                    $packs = (float) $packType;
+                    $packType = 'Bale';
+                }
+
+                if ($gross > 0 || $packs > 0) {
+                    [$cleanRegion, $materialCode] = $this->parseOriginAndCode($c2);
+                    $originObj = Origin::firstOrCreate(['region_name' => $cleanRegion]);
+
+                    $mrlRows[] = [
+                        'product_type' => 'RAJANGAN',
+                        'raw_origin' => $c2,
+                        'clean_region' => $cleanRegion,
+                        'material_code' => $materialCode,
+                        'origin_obj' => $originObj,
+                        'packs' => (int) $packs,
+                        'pack_type' => (! empty($packType) && ! is_numeric($packType)) ? $packType : 'Bale',
+                        'gross_kg' => round($gross, 2),
+                        'tare_kg' => round($tare, 2),
+                        'netto_kg' => round($netto, 2),
+                        'discrepancy_kg' => round($discrepancy, 2),
+                    ];
+                }
+            }
+        }
+
+        if (empty($mrlRows)) {
+            $mrlRows = array_map(function ($row) {
+                $row['discrepancy_kg'] = 0.00;
+                unset($row['dn_number']);
+                return $row;
+            }, $dnRows);
+        }
+
+        if (empty($dnRows)) {
+            $dnRows = array_map(function ($row) {
+                $row['dn_number'] = '-';
+                unset($row['discrepancy_kg']);
+                return $row;
+            }, $mrlRows);
+        }
+
+        return [$dnRows, $mrlRows];
     }
 
     /**
@@ -682,7 +793,7 @@ class ProcessingReportImporter
                     }
                 }
 
-                $hOrigins = $matchingSheet ? $this->parseHeaderOrigins($matchingSheet) : [];
+                [$hOrigins, $mrlOrigins] = $matchingSheet ? $this->parseHeaderTables($matchingSheet) : [[], []];
 
                 if (!empty($hOrigins)) {
                     foreach ($hOrigins as $hOrig) {

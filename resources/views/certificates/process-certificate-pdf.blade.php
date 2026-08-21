@@ -180,7 +180,23 @@
         </thead>
         <tbody>
             @foreach($batches as $b)
-                @if(!empty($b->dn_header_details) && is_array($b->dn_header_details) && count($b->dn_header_details) > 0)
+                @if(!empty($b->mrl_header_details) && is_array($b->mrl_header_details) && count($b->mrl_header_details) > 0)
+                    @foreach($b->mrl_header_details as $mRow)
+                        <tr>
+                            <td class="text-left">{{ $mRow['product_type'] ?? ($b->productType->name ?? 'RAJANGAN') }}</td>
+                            <td>{{ $mRow['raw_origin'] ?? trim(($b->origin->region_name ?? '') . ' ' . ($b->material_code ?? '')) }}</td>
+                            <td>{{ $mRow['packs'] ?? $b->mrl_total_pack }}</td>
+                            <td>{{ $mRow['pack_type'] ?? $b->pack_type }}</td>
+                            <td class="text-right">{{ number_format($mRow['gross_kg'] ?? $b->mrl_gross_weight, 2, ',', '.') }}</td>
+                            <td class="text-right">{{ number_format($mRow['tare_kg'] ?? $b->mrl_tare_weight, 2, ',', '.') }}</td>
+                            <td class="text-right" style="font-weight:bold;">{{ number_format($mRow['netto_kg'] ?? $b->mrl_netto_weight, 2, ',', '.') }}</td>
+                            <td>{{ $b->date_of_receipt ? $b->date_of_receipt->format('d/m/Y') : '-' }}</td>
+                            <td class="text-right" style="font-weight:bold; color: {{ ($mRow['discrepancy_kg'] ?? 0) > 0 ? '#b91c1c' : 'inherit' }};">
+                                {{ number_format($mRow['discrepancy_kg'] ?? $b->discrepancy_dn_vs_mrl_kg, 2, ',', '.') }}
+                            </td>
+                        </tr>
+                    @endforeach
+                @elseif(!empty($b->dn_header_details) && is_array($b->dn_header_details) && count($b->dn_header_details) > 0)
                     @foreach($b->dn_header_details as $hRow)
                         <tr>
                             <td class="text-left">{{ $hRow['product_type'] ?? ($b->productType->name ?? 'RAJANGAN') }}</td>

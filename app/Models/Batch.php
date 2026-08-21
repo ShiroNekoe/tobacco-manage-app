@@ -29,6 +29,7 @@ class Batch extends Model
         'origin_id',
         'material_code',
         'dn_header_details',
+        'mrl_header_details',
         'pack_type',
         'product_kg_per_sack',
         'product_tare_per_sack',
@@ -89,6 +90,7 @@ class Batch extends Model
 
     protected $casts = [
         'dn_header_details' => 'array',
+        'mrl_header_details' => 'array',
         'date_of_receipt' => 'date',
         'locked_at' => 'datetime',
         'unlocked_at' => 'datetime',

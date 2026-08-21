@@ -200,7 +200,7 @@ class ProcessingReportImporter
                     $nettoVal = $sheet->getCell([$nettoCol, $r])->getCalculatedValue();
                     $rmkVal = $remarkCol ? trim((string) $sheet->getCell([$remarkCol, $r])->getCalculatedValue()) : '-';
 
-                    if (is_numeric($noVal) && (int)$noVal > 0 && is_numeric($grossVal) && is_numeric($tareVal) && is_numeric($nettoVal)) {
+                    if (is_numeric($noVal) && (int)$noVal > 0 && (int)$noVal <= 200 && is_numeric($grossVal) && is_numeric($tareVal) && is_numeric($nettoVal)) {
                         if (!str_contains(strtolower($c1), 'grand total') && !str_contains(strtolower($c1), 'percentage') && !str_contains(strtolower($c1), 'separation')) {
                             $gVal = round((float) $grossVal, 2);
                             $tVal = round((float) $tareVal, 2);

@@ -632,25 +632,44 @@ class ProcessingReportImporter
         // Parse DN Table
         if ($dnStart) {
             $dnEnd = $mrlStart ?: ($sepStart ?: $highestRow);
+
+            $packCol = $packTypeCol = $grossCol = $tareCol = $nettoCol = $dnNumCol = null;
+            for ($r = $dnStart; $r < $dnEnd; $r++) {
+                $c1 = trim((string) $sheet->getCell([1, $r])->getCalculatedValue());
+                $c2 = trim((string) $sheet->getCell([2, $r])->getCalculatedValue());
+                if (str_contains(strtolower($c1), 'product type') || str_contains(strtolower($c2), 'origin')) {
+                    for ($c = 1; $c <= 10; $c++) {
+                        $val = strtolower(trim((string) $sheet->getCell([$c, $r])->getCalculatedValue()));
+                        if (str_contains($val, 'total pack') || str_contains($val, 'pack (unit)')) $packCol = $c;
+                        elseif (str_contains($val, 'pack type')) $packTypeCol = $c;
+                        elseif (str_contains($val, 'gross')) $grossCol = $c;
+                        elseif (str_contains($val, 'tare')) $tareCol = $c;
+                        elseif (str_contains($val, 'netto')) $nettoCol = $c;
+                        elseif (str_contains($val, 'delivery note number')) $dnNumCol = $c;
+                    }
+                    break;
+                }
+            }
+
+            // Fallback column positions if header text layout varies
+            if (!$grossCol) $grossCol = $packCol ? $packCol + 2 : 5;
+            if (!$tareCol) $tareCol = $grossCol + 1;
+            if (!$nettoCol) $nettoCol = $tareCol + 1;
+
             for ($r = $dnStart; $r < $dnEnd; $r++) {
                 $c1 = trim((string) $sheet->getCell([1, $r])->getCalculatedValue());
                 $c2 = trim((string) $sheet->getCell([2, $r])->getCalculatedValue());
                 if (empty($c1) || str_contains(strtolower($c1), 'product type') || str_contains(strtolower($c2), 'origin') || str_contains(strtolower($c1), 'customer') || str_contains(strtolower($c1), 'remark') || str_contains(strtolower($c1), 'delivery note')) {
                     continue;
                 }
-                $packs = (float) $sheet->getCell([3, $r])->getCalculatedValue();
-                $packType = trim((string) $sheet->getCell([4, $r])->getCalculatedValue());
-                $gross = (float) $sheet->getCell([5, $r])->getCalculatedValue();
-                $tare = (float) $sheet->getCell([6, $r])->getCalculatedValue();
-                $netto = (float) $sheet->getCell([7, $r])->getCalculatedValue();
-                $dnNum = trim((string) $sheet->getCell([9, $r])->getCalculatedValue());
+                $packs = $packCol ? (float) $sheet->getCell([$packCol, $r])->getCalculatedValue() : 0;
+                $packType = $packTypeCol ? trim((string) $sheet->getCell([$packTypeCol, $r])->getCalculatedValue()) : 'Bale';
+                $gross = (float) $sheet->getCell([$grossCol, $r])->getCalculatedValue();
+                $tare = (float) $sheet->getCell([$tareCol, $r])->getCalculatedValue();
+                $netto = (float) $sheet->getCell([$nettoCol, $r])->getCalculatedValue();
+                $dnNum = $dnNumCol ? trim((string) $sheet->getCell([$dnNumCol, $r])->getCalculatedValue()) : '-';
 
-                if ($packs == 0 && is_numeric($packType) && (float) $packType > 0) {
-                    $packs = (float) $packType;
-                    $packType = 'Bale';
-                }
-
-                if ($gross > 0 || $packs > 0) {
+                if ($gross > 0 || $tare > 0 || $netto > 0 || $packs > 0) {
                     [$cleanRegion, $materialCode] = $this->parseOriginAndCode($c2);
                     $originObj = Origin::firstOrCreate(['region_name' => $cleanRegion]);
 
@@ -674,25 +693,43 @@ class ProcessingReportImporter
         // Parse MRL Table
         if ($mrlStart) {
             $mrlEnd = $sepStart ?: $highestRow;
+
+            $packCol = $packTypeCol = $grossCol = $tareCol = $nettoCol = $discCol = null;
+            for ($r = $mrlStart; $r < $mrlEnd; $r++) {
+                $c1 = trim((string) $sheet->getCell([1, $r])->getCalculatedValue());
+                $c2 = trim((string) $sheet->getCell([2, $r])->getCalculatedValue());
+                if (str_contains(strtolower($c1), 'product type') || str_contains(strtolower($c2), 'origin')) {
+                    for ($c = 1; $c <= 10; $c++) {
+                        $val = strtolower(trim((string) $sheet->getCell([$c, $r])->getCalculatedValue()));
+                        if (str_contains($val, 'total pack') || str_contains($val, 'pack (unit)')) $packCol = $c;
+                        elseif (str_contains($val, 'pack type')) $packTypeCol = $c;
+                        elseif (str_contains($val, 'gross')) $grossCol = $c;
+                        elseif (str_contains($val, 'tare')) $tareCol = $c;
+                        elseif (str_contains($val, 'netto')) $nettoCol = $c;
+                        elseif (str_contains($val, 'discrepancy') || str_contains($val, 'weight discrepancy')) $discCol = $c;
+                    }
+                    break;
+                }
+            }
+
+            if (!$grossCol) $grossCol = $packCol ? $packCol + 2 : 5;
+            if (!$tareCol) $tareCol = $grossCol + 1;
+            if (!$nettoCol) $nettoCol = $tareCol + 1;
+
             for ($r = $mrlStart; $r < $mrlEnd; $r++) {
                 $c1 = trim((string) $sheet->getCell([1, $r])->getCalculatedValue());
                 $c2 = trim((string) $sheet->getCell([2, $r])->getCalculatedValue());
                 if (empty($c1) || str_contains(strtolower($c1), 'product type') || str_contains(strtolower($c2), 'origin') || str_contains(strtolower($c1), 'customer') || str_contains(strtolower($c1), 'remark') || str_contains(strtolower($c1), 'material receipt')) {
                     continue;
                 }
-                $packs = (float) $sheet->getCell([3, $r])->getCalculatedValue();
-                $packType = trim((string) $sheet->getCell([4, $r])->getCalculatedValue());
-                $gross = (float) $sheet->getCell([5, $r])->getCalculatedValue();
-                $tare = (float) $sheet->getCell([6, $r])->getCalculatedValue();
-                $netto = (float) $sheet->getCell([7, $r])->getCalculatedValue();
-                $discrepancy = (float) $sheet->getCell([9, $r])->getCalculatedValue();
+                $packs = $packCol ? (float) $sheet->getCell([$packCol, $r])->getCalculatedValue() : 0;
+                $packType = $packTypeCol ? trim((string) $sheet->getCell([$packTypeCol, $r])->getCalculatedValue()) : 'Bale';
+                $gross = (float) $sheet->getCell([$grossCol, $r])->getCalculatedValue();
+                $tare = (float) $sheet->getCell([$tareCol, $r])->getCalculatedValue();
+                $netto = (float) $sheet->getCell([$nettoCol, $r])->getCalculatedValue();
+                $discrepancy = $discCol ? (float) $sheet->getCell([$discCol, $r])->getCalculatedValue() : 0;
 
-                if ($packs == 0 && is_numeric($packType) && (float) $packType > 0) {
-                    $packs = (float) $packType;
-                    $packType = 'Bale';
-                }
-
-                if ($gross > 0 || $packs > 0) {
+                if ($gross > 0 || $tare > 0 || $netto > 0 || $packs > 0) {
                     [$cleanRegion, $materialCode] = $this->parseOriginAndCode($c2);
                     $originObj = Origin::firstOrCreate(['region_name' => $cleanRegion]);
 

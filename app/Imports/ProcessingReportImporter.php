@@ -268,6 +268,51 @@ class ProcessingReportImporter
                 $parsedSections[] = $currentSection;
             }
 
+            // ===== FILTER LEFTOVER TEMPLATE HEADER ROWS =====
+            if (!empty($parsedSections)) {
+                $filteredDnRows = [];
+                foreach ($dnHeaderRows as $hRow) {
+                    $hOrigClean = strtolower(trim($hRow['clean_region'] ?? ''));
+                    $hRaw = strtolower(trim($hRow['raw_origin'] ?? ''));
+                    $matched = false;
+                    foreach ($parsedSections as $pSec) {
+                        $pClean = strtolower(trim($pSec['origin_name'] ?? ''));
+                        $pRaw = strtolower(trim($pSec['raw_origin'] ?? ''));
+                        if (str_contains($pRaw, $hRaw) || str_contains($hRaw, $pRaw) ||
+                            str_contains($pClean, $hOrigClean) || str_contains($hOrigClean, $pClean) ||
+                            explode(' ', $hOrigClean)[0] === explode(' ', $pClean)[0]) {
+                            $matched = true;
+                            break;
+                        }
+                    }
+                    if ($matched) {
+                        $filteredDnRows[] = $hRow;
+                    }
+                }
+                $dnHeaderRows = $filteredDnRows;
+
+                $filteredMrlRows = [];
+                foreach ($mrlHeaderRows as $mRow) {
+                    $mOrigClean = strtolower(trim($mRow['clean_region'] ?? ''));
+                    $mRaw = strtolower(trim($mRow['raw_origin'] ?? ''));
+                    $matched = false;
+                    foreach ($parsedSections as $pSec) {
+                        $pClean = strtolower(trim($pSec['origin_name'] ?? ''));
+                        $pRaw = strtolower(trim($pSec['raw_origin'] ?? ''));
+                        if (str_contains($pRaw, $mRaw) || str_contains($mRaw, $pRaw) ||
+                            str_contains($pClean, $mOrigClean) || str_contains($mOrigClean, $pClean) ||
+                            explode(' ', $mOrigClean)[0] === explode(' ', $pClean)[0]) {
+                            $matched = true;
+                            break;
+                        }
+                    }
+                    if ($matched) {
+                        $filteredMrlRows[] = $mRow;
+                    }
+                }
+                $mrlHeaderRows = $filteredMrlRows;
+            }
+
             // ===== CREATE BATCH RECORD =====
             $dnHeaderDetailsArray = [];
             $dnTotalPackSum = 0;

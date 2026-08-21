@@ -436,7 +436,7 @@ class ProcessingReportImporter
                     BatchOrigin::create([
                         'batch_id' => $batch->id,
                         'origin_id' => $hOrig['origin_obj']->id,
-                        'allocated_kg' => round($hOrig['gross_kg'], 2),
+                        'allocated_kg' => round($hOrig['netto_kg'], 2),
                         'remaining_kg' => 0,
                         'status' => 'completed',
                     ]);
@@ -471,7 +471,7 @@ class ProcessingReportImporter
             $finalMrlGross = $mrlGrossWeightSum > 0 ? $mrlGrossWeightSum : $finalDnGross;
             $finalMrlTare = $mrlTareWeightSum > 0 ? $mrlTareWeightSum : $finalDnTare;
             $finalMrlNetto = $mrlNettoWeightSum > 0 ? $mrlNettoWeightSum : $finalDnNetto;
-            $finalDiscrepancy = round($finalMrlGross - $finalDnGross, 2);
+            $finalDiscrepancy = $mrlDiscrepancySum > 0 ? round($mrlDiscrepancySum, 2) : round($finalMrlGross - $finalDnGross, 2);
 
             // Update Batch totals
             $batch->update([

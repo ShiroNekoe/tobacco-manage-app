@@ -258,125 +258,239 @@
     <!-- SECTION 3: SEPARATION RESULTS REPORT -->
     <div class="section-header">SEPARATION RESULTS REPORT :</div>
     
-    @foreach($batches as $index => $b)
-        @php
-            $matDesc = trim(($b->origin->region_name ?? '') . ' ' . ($b->material_code ?? ''));
-            $mrlNetto = (float) $b->mrl_netto_weight;
-            $prodKg = (float) $b->separation_product_kg;
-            $bitsStemKg = (float) ($b->separation_bits_stem_netto_kg ?: $b->separation_bits_stem_kg);
-            $dustKg = (float) $b->separation_dust_kg;
-            $wasteKg = (float) $b->separation_waste_kg;
+    @php $materialCounter = 1; @endphp
+    @foreach($batches as $b)
+        @if(!empty($b->sections_data) && is_array($b->sections_data) && count($b->sections_data) > 0)
+            @foreach($b->sections_data as $sec)
+                @php
+                    $rawOrig = $sec['raw_origin'] ?? 'Material';
+                    $sacks = $sec['sacks'] ?? [];
+                    $secCount = count($sacks);
+                    $secGross = array_sum(array_column($sacks, 'gross_kg'));
+                    $secTare = array_sum(array_column($sacks, 'tare_kg'));
+                    $secNetto = array_sum(array_column($sacks, 'netto_kg'));
 
-            $yProd = $mrlNetto > 0 ? round(($prodKg / $mrlNetto) * 100, 2) : (float) $b->yield_product_pct;
-            $yBits = $mrlNetto > 0 ? round(($bitsStemKg / $mrlNetto) * 100, 2) : (float) $b->yield_bits_stem_pct;
-            $yDust = $mrlNetto > 0 ? round(($dustKg / $mrlNetto) * 100, 2) : (float) $b->yield_dust_pct;
-            $yWaste = $mrlNetto > 0 ? round(($wasteKg / $mrlNetto) * 100, 2) : (float) $b->yield_waste_pct;
-        @endphp
+                    $sep = $sec['separation'] ?? null;
+                    $prodKg = $sep['product_qty'] ?? 0;
+                    $bitsStemKg = $sep['bits_stem_qty'] ?? 0;
+                    $dustKg = $sep['dust_qty'] ?? 0;
+                    $wasteKg = $sep['uncountable_waste_qty'] ?? 0;
+                    $totSeparation = $sep['total_qty'] ?? ($prodKg + $bitsStemKg + $dustKg + $wasteKg);
+                    if ($totSeparation == 0) { $totSeparation = $secNetto; }
 
-        <div class="material-title">{{ $index + 1 }}. Material Desc : {{ $matDesc ?: ($b->productType->name ?? 'Material') }}</div>
+                    $yProd = $totSeparation > 0 ? round(($prodKg / $totSeparation) * 100, 2) : 0;
+                    $yBits = $totSeparation > 0 ? round(($bitsStemKg / $totSeparation) * 100, 2) : 0;
+                    $yDust = $totSeparation > 0 ? round(($dustKg / $totSeparation) * 100, 2) : 0;
+                    $yWaste = $totSeparation > 0 ? round(100 - ($yProd + $yBits + $yDust), 2) : 0;
+                @endphp
 
-        <!-- Sack Weighing Grid Table -->
-        <table class="pdf-table">
-            <thead>
-                <tr>
-                    <th>Product Type</th>
-                    <th>Origin</th>
-                    <th>Pack Type</th>
-                    <th style="width: 30px;">No</th>
-                    <th>Gross (Kg)</th>
-                    <th>Tare (Kg)</th>
-                    <th>Netto (Kg)</th>
-                    <th>Remark</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($b->weighingItems->sortBy('sack_number') as $item)
+                <div class="material-title">{{ $materialCounter++ }}. Material Desc : {{ $rawOrig }}</div>
+
+                <!-- Sack Weighing Grid Table -->
+                <table class="pdf-table">
+                    <thead>
+                        <tr>
+                            <th>Product Type</th>
+                            <th>Origin</th>
+                            <th>Pack Type</th>
+                            <th style="width: 30px;">No</th>
+                            <th>Gross (Kg)</th>
+                            <th>Tare (Kg)</th>
+                            <th>Netto (Kg)</th>
+                            <th>Remark</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($sacks as $item)
+                            <tr>
+                                <td class="text-left">{{ $b->productType->name ?? 'RAJANGAN' }}</td>
+                                <td>{{ $sec['clean_region'] ?? $b->origin->region_name }}</td>
+                                <td>{{ $sec['pack_type'] ?? $b->pack_type }}</td>
+                                <td>{{ $item['sack_number'] }}</td>
+                                <td class="text-right">{{ number_format($item['gross_kg'], 2, ',', '.') }}</td>
+                                <td class="text-right">{{ number_format($item['tare_kg'], 2, ',', '.') }}</td>
+                                <td class="text-right" style="font-weight:bold;">{{ number_format($item['netto_kg'], 2, ',', '.') }}</td>
+                                <td>{{ $item['remark'] ?? '-' }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="8">No sack weighing item recorded.</td>
+                            </tr>
+                        @endforelse
+
+                        <!-- GRAND TOTAL ROW FOR THIS MATERIAL -->
+                        <tr class="grand-total-row">
+                            <td colspan="3" class="text-right">GRAND TOTAL</td>
+                            <td>{{ $secCount }}</td>
+                            <td class="text-right">{{ number_format($secGross, 2, ',', '.') }}</td>
+                            <td class="text-right">{{ number_format($secTare, 2, ',', '.') }}</td>
+                            <td class="text-right">{{ number_format($secNetto, 2, ',', '.') }}</td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- SEPARATION RESULT TABLE FOR THIS MATERIAL -->
+                <div style="font-size: 8.5pt; font-weight: bold; margin-top: 6px; margin-bottom: 2px; text-decoration: underline;">Separation Result :</div>
+                <table class="pdf-table">
+                    <thead>
+                        <tr>
+                            <th>Product Type</th>
+                            <th>Origin</th>
+                            <th>Pack Type</th>
+                            <th>Product Qty (Kg)</th>
+                            <th>Bits Stem Qty (Kg)</th>
+                            <th>Dust Qty (Kg)</th>
+                            <th>Uncountable Waste Qty (Kg)</th>
+                            <th>TOTAL Qty (Kg)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="text-left">{{ $b->productType->name ?? 'RAJANGAN' }}</td>
+                            <td>{{ $sec['clean_region'] ?? $b->origin->region_name }}</td>
+                            <td>{{ $sec['pack_type'] ?? $b->pack_type }}</td>
+                            <td class="text-right" style="font-weight:bold;">{{ number_format($prodKg, 2, ',', '.') }}</td>
+                            <td class="text-right">{{ number_format($bitsStemKg, 2, ',', '.') }}</td>
+                            <td class="text-right">{{ number_format($dustKg, 2, ',', '.') }}</td>
+                            <td class="text-right">{{ number_format($wasteKg, 2, ',', '.') }}</td>
+                            <td class="text-right" style="font-weight:bold;">{{ number_format($totSeparation, 2, ',', '.') }}</td>
+                        </tr>
+                        <tr style="font-weight:bold; background-color:#ffffff; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000;">
+                            <td colspan="3" class="text-right">PERCENTAGE (YIELD)</td>
+                            <td class="text-right">{{ number_format($yProd, 2, ',', '.') }}%</td>
+                            <td class="text-right">{{ number_format($yBits, 2, ',', '.') }}%</td>
+                            <td class="text-right">{{ number_format($yDust, 2, ',', '.') }}%</td>
+                            <td class="text-right">{{ number_format($yWaste, 2, ',', '.') }}%</td>
+                            <td class="text-right">100,00%</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="remarks-box">
+                    <strong>Remark :</strong>
+                    <ol>
+                        <li>Gross qty. based on actual weighing during the process.</li>
+                        <li>Tare qty. based on actual weighing during the process.</li>
+                        <li>Uncountable waste qty. based on teoritical calculation.</li>
+                        <li>Percentage Yield based on total Nett. qty actual weighing.</li>
+                    </ol>
+                </div>
+            @endforeach
+        @else
+            @php
+                $matDesc = trim(($b->origin->region_name ?? '') . ' ' . ($b->material_code ?? ''));
+                $mrlNetto = (float) $b->mrl_netto_weight;
+                $prodKg = (float) $b->separation_product_kg;
+                $bitsStemKg = (float) ($b->separation_bits_stem_netto_kg ?: $b->separation_bits_stem_kg);
+                $dustKg = (float) $b->separation_dust_kg;
+                $wasteKg = (float) $b->separation_waste_kg;
+
+                $yProd = $mrlNetto > 0 ? round(($prodKg / $mrlNetto) * 100, 2) : (float) $b->yield_product_pct;
+                $yBits = $mrlNetto > 0 ? round(($bitsStemKg / $mrlNetto) * 100, 2) : (float) $b->yield_bits_stem_pct;
+                $yDust = $mrlNetto > 0 ? round(($dustKg / $mrlNetto) * 100, 2) : (float) $b->yield_dust_pct;
+                $yWaste = $mrlNetto > 0 ? round(($wasteKg / $mrlNetto) * 100, 2) : (float) $b->yield_waste_pct;
+            @endphp
+
+            <div class="material-title">{{ $materialCounter++ }}. Material Desc : {{ $matDesc ?: ($b->productType->name ?? 'Material') }}</div>
+
+            <!-- Sack Weighing Grid Table -->
+            <table class="pdf-table">
+                <thead>
+                    <tr>
+                        <th>Product Type</th>
+                        <th>Origin</th>
+                        <th>Pack Type</th>
+                        <th style="width: 30px;">No</th>
+                        <th>Gross (Kg)</th>
+                        <th>Tare (Kg)</th>
+                        <th>Netto (Kg)</th>
+                        <th>Remark</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($b->weighingItems->sortBy('sack_number') as $item)
+                        <tr>
+                            <td class="text-left">{{ $b->productType->name ?? '-' }}</td>
+                            <td>{{ $b->origin->region_name ?? '-' }}</td>
+                            <td>{{ $b->pack_type }}</td>
+                            <td>{{ $item->sack_number }}</td>
+                            <td class="text-right">{{ number_format($item->gross_kg, 2, ',', '.') }}</td>
+                            <td class="text-right">{{ number_format($item->tare_kg, 2, ',', '.') }}</td>
+                            <td class="text-right" style="font-weight:bold;">{{ number_format($item->netto_kg, 2, ',', '.') }}</td>
+                            <td>{{ $item->remark ?? '-' }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="8">No sack weighing item recorded.</td>
+                        </tr>
+                    @endforelse
+
+                    <!-- GRAND TOTAL ROW FOR THIS MATERIAL -->
+                    <tr class="grand-total-row">
+                        <td colspan="3" class="text-right">GRAND TOTAL</td>
+                        <td>{{ $b->weighingItems->count() }}</td>
+                        <td class="text-right">{{ number_format($b->mrl_gross_weight, 2, ',', '.') }}</td>
+                        <td class="text-right">{{ number_format($b->mrl_tare_weight, 2, ',', '.') }}</td>
+                        <td class="text-right">{{ number_format($b->mrl_netto_weight, 2, ',', '.') }}</td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- SEPARATION RESULT TABLE FOR THIS MATERIAL -->
+            <div style="font-size: 8.5pt; font-weight: bold; margin-top: 6px; margin-bottom: 2px; text-decoration: underline;">Separation Result :</div>
+            <table class="pdf-table">
+                <thead>
+                    <tr>
+                        <th>Product Type</th>
+                        <th>Origin</th>
+                        <th>Pack Type</th>
+                        <th>Product Qty (Kg)</th>
+                        <th>Bits Stem Qty (Kg)</th>
+                        <th>Dust Qty (Kg)</th>
+                        <th>Uncountable Waste Qty (Kg)</th>
+                        <th>TOTAL Qty (Kg)</th>
+                    </tr>
+                </thead>
+                <tbody>
                     <tr>
                         <td class="text-left">{{ $b->productType->name ?? '-' }}</td>
                         <td>{{ $b->origin->region_name ?? '-' }}</td>
                         <td>{{ $b->pack_type }}</td>
-                        <td>{{ $item->sack_number }}</td>
-                        <td class="text-right">{{ number_format($item->gross_kg, 2, ',', '.') }}</td>
-                        <td class="text-right">{{ number_format($item->tare_kg, 2, ',', '.') }}</td>
-                        <td class="text-right" style="font-weight:bold;">{{ number_format($item->netto_kg, 2, ',', '.') }}</td>
-                        <td>{{ $item->remark ?? '-' }}</td>
+                        <td class="text-right" style="font-weight:bold;">{{ number_format($prodKg, 2, ',', '.') }}</td>
+                        <td class="text-right">{{ number_format($bitsStemKg, 2, ',', '.') }}</td>
+                        <td class="text-right">{{ number_format($dustKg, 2, ',', '.') }}</td>
+                        <td class="text-right">{{ number_format($wasteKg, 2, ',', '.') }}</td>
+                        <td class="text-right" style="font-weight:bold;">{{ number_format($mrlNetto, 2, ',', '.') }}</td>
                     </tr>
-                @empty
-                    <tr>
-                        <td colspan="8">No sack weighing item recorded.</td>
+                    <tr style="font-weight:bold; background-color:#ffffff; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000;">
+                        <td colspan="3" class="text-right">PERCENTAGE (YIELD)</td>
+                        <td class="text-right">{{ number_format($yProd, 2, ',', '.') }}%</td>
+                        <td class="text-right">{{ number_format($yBits, 2, ',', '.') }}%</td>
+                        <td class="text-right">{{ number_format($yDust, 2, ',', '.') }}%</td>
+                        <td class="text-right">{{ number_format($yWaste, 2, ',', '.') }}%</td>
+                        <td class="text-right">100,00%</td>
                     </tr>
-                @endforelse
+                </tbody>
+            </table>
 
-                <!-- GRAND TOTAL ROW FOR THIS MATERIAL -->
-                <tr class="grand-total-row">
-                    <td colspan="3" class="text-right">GRAND TOTAL</td>
-                    <td>{{ $b->weighingItems->count() }}</td>
-                    <td class="text-right">{{ number_format($b->mrl_gross_weight, 2, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($b->mrl_tare_weight, 2, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($b->mrl_netto_weight, 2, ',', '.') }}</td>
-                    <td></td>
-                </tr>
-            </tbody>
-        </table>
-
-        <!-- SEPARATION RESULT TABLE FOR THIS MATERIAL -->
-        <div style="font-size: 8.5pt; font-weight: bold; margin-top: 6px; margin-bottom: 2px; text-decoration: underline;">Separation Result :</div>
-        <table class="pdf-table">
-            <thead>
-                <tr>
-                    <th>Product Type</th>
-                    <th>Origin</th>
-                    <th>Pack Type</th>
-                    <th>Product Qty (Kg)</th>
-                    <th>Bits Stem Qty (Kg)</th>
-                    <th>Dust Qty (Kg)</th>
-                    <th>Uncountable Waste Qty (Kg)</th>
-                    <th>TOTAL Qty (Kg)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td class="text-left">{{ $b->productType->name ?? '-' }}</td>
-                    <td>{{ $b->origin->region_name ?? '-' }}</td>
-                    <td>{{ $b->pack_type }}</td>
-                    <td class="text-right" style="font-weight:bold;">{{ number_format($prodKg, 2, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($bitsStemKg, 2, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($dustKg, 2, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($wasteKg, 2, ',', '.') }}</td>
-                    <td class="text-right" style="font-weight:bold;">{{ number_format($mrlNetto, 2, ',', '.') }}</td>
-                </tr>
-                <tr style="font-weight:bold; background-color:#ffffff; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000;">
-                    <td colspan="3" class="text-right">PERCENTAGE (YIELD)</td>
-                    <td class="text-right">{{ number_format($yProd, 2, ',', '.') }}%</td>
-                    <td class="text-right">{{ number_format($yBits, 2, ',', '.') }}%</td>
-                    <td class="text-right">{{ number_format($yDust, 2, ',', '.') }}%</td>
-                    <td class="text-right">{{ number_format($yWaste, 2, ',', '.') }}%</td>
-                    <td class="text-right">100,00%</td>
-                </tr>
-            </tbody>
-        </table>
-
-        <div class="remarks-box">
-            <strong>Remark :</strong>
-            <ol>
-                <li>Gross qty. based on actual weighing during the process.</li>
-                <li>Tare qty. based on actual weighing during the process.</li>
-                <li>Uncountable waste qty. based on teoritical calculation.</li>
-                <li>Percentage Yield based on total Nett. qty actual weighing.</li>
-                @if(($b->separation_bits_stem_gross_kg ?? 0) > 0)
-                    <li>Bits Stem Weighing Detail: Gross {{ number_format($b->separation_bits_stem_gross_kg, 2, ',', '.') }} kg, Tare {{ number_format($b->separation_bits_stem_tare_kg, 2, ',', '.') }} kg, Netto {{ number_format($b->separation_bits_stem_netto_kg, 2, ',', '.') }} kg.</li>
+            <div class="remarks-box">
+                <strong>Remark :</strong>
+                <ol>
+                    <li>Gross qty. based on actual weighing during the process.</li>
+                    <li>Tare qty. based on actual weighing during the process.</li>
+                    <li>Uncountable waste qty. based on teoritical calculation.</li>
+                    <li>Percentage Yield based on total Nett. qty actual weighing.</li>
+                    @if(($b->separation_product_remnant_kg ?? 0) > 0)
+                        <li>Product Remnant Weighing Detail: Gross {{ number_format($b->separation_product_remnant_gross_kg, 2, ',', '.') }} kg, Tare {{ number_format($b->separation_product_remnant_tare_kg, 2, ',', '.') }} kg, Netto {{ number_format($b->separation_product_remnant_kg, 2, ',', '.') }} kg.</li>
+                    @endif
+                </ol>
+                @if(!empty($b->custom_separation_remark))
+                    <div class="custom-remark-text">Catatan Khusus Pemisahan: {{ $b->custom_separation_remark }}</div>
                 @endif
-                @if(($b->separation_dust_gross_kg ?? 0) > 0)
-                    <li>Dust Weighing Detail: Gross {{ number_format($b->separation_dust_gross_kg, 2, ',', '.') }} kg, Tare {{ number_format($b->separation_dust_tare_kg, 2, ',', '.') }} kg, Netto {{ number_format($b->separation_dust_netto_kg ?: $b->separation_dust_kg, 2, ',', '.') }} kg.</li>
-                @endif
-                @if(($b->separation_product_remnant_kg ?? 0) > 0)
-                    <li>Product Remnant Weighing Detail: Gross {{ number_format($b->separation_product_remnant_gross_kg, 2, ',', '.') }} kg, Tare {{ number_format($b->separation_product_remnant_tare_kg, 2, ',', '.') }} kg, Netto {{ number_format($b->separation_product_remnant_kg, 2, ',', '.') }} kg.</li>
-                @endif
-            </ol>
-            @if(!empty($b->custom_separation_remark))
-                <div class="custom-remark-text">Catatan Khusus Pemisahan: {{ $b->custom_separation_remark }}</div>
-            @endif
-        </div>
+            </div>
+        @endif
     @endforeach
 
     <!-- Signature Sign-off (Admin & Supervisor) -->

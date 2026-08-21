@@ -161,6 +161,7 @@ class ProcessingReportImporter
                     $originObj = Origin::firstOrCreate(['region_name' => $cleanOrigin]);
 
                     $currentSection = [
+                        'raw_origin' => $rawOrigin,
                         'origin' => $originObj,
                         'origin_name' => $cleanOrigin,
                         'material_code' => $materialCode,
@@ -318,6 +319,18 @@ class ProcessingReportImporter
                 $mrlNettoWeightSum = $dnNettoWeightSum;
             }
 
+            $sectionsDataArray = [];
+            foreach ($parsedSections as $sec) {
+                $sectionsDataArray[] = [
+                    'raw_origin' => $sec['raw_origin'] ?? ($sec['origin_name'] ?? 'Material'),
+                    'clean_region' => $sec['origin_name'] ?? ($sec['clean_region'] ?? 'TEMANGGUNG'),
+                    'material_code' => $sec['material_code'] ?? 'DEFAULT',
+                    'pack_type' => $sec['pack_type'] ?? 'Bale',
+                    'sacks' => $sec['sacks'] ?? [],
+                    'separation' => $sec['separation'] ?? null,
+                ];
+            }
+
             $batch = Batch::create([
                 'batch_code' => $batchCode,
                 'customer_id' => $customer->id,
@@ -327,6 +340,7 @@ class ProcessingReportImporter
                 'material_code' => $firstMaterialCode,
                 'dn_header_details' => $dnHeaderDetailsArray,
                 'mrl_header_details' => $mrlHeaderDetailsArray,
+                'sections_data' => $sectionsDataArray,
                 'pack_type' => $firstPackType,
                 'date_of_receipt' => $receiptDate,
                 'dn_total_pack' => 0,

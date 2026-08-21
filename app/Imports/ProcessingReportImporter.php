@@ -6,6 +6,8 @@ use App\Models\Batch;
 use App\Models\BatchOrigin;
 use App\Models\Customer;
 use App\Models\DeliveryNote;
+use App\Models\DnShipment;
+use App\Models\DnShipmentItem;
 use App\Models\HistoricalYieldReport;
 use App\Models\Origin;
 use App\Models\ProductType;
@@ -489,12 +491,141 @@ class ProcessingReportImporter
     }
 
     /**
+     * Seed sample Outbound DN Shipments for testing/demo
+     */
+    protected function seedSampleDnShipments(): void
+    {
+        if (DnShipment::count() > 0) {
+            return;
+        }
+
+        $customer = Customer::where('name', 'like', '%Falih%')->first() ?? Customer::first();
+        $productType = ProductType::where('code', 'RAJANGAN')->first() ?? ProductType::first();
+
+        $batch24 = Batch::where('batch_code', 'BCH-2026-0024')->first();
+        $batch25 = Batch::where('batch_code', 'BCH-2026-0025')->first();
+        $batch21 = Batch::where('batch_code', 'BCH-2026-0021')->first();
+
+        // 1. Shipment Outbound 1 - Approved by Customer
+        $shipment1 = DnShipment::create([
+            'dn_number' => 'DN-OUT-2026-0001',
+            'shipment_date' => Carbon::now()->subDays(5),
+            'customer_id' => $customer?->id,
+            'product_type_id' => $productType?->id,
+            'vehicle_number' => 'B 9482 FNG',
+            'driver_name' => 'Bambang Haryanto',
+            'destination' => 'Gudang Utama Malang, Jawa Timur',
+            'notes' => 'Pengiriman Hasil Olahan Rajangan Batch 24 & 25',
+            'total_sacks' => 61,
+            'total_gross_kg' => 2849.10,
+            'total_tare_kg' => 12.20,
+            'total_netto_kg' => 2836.90,
+            'status' => 'Approved',
+            'customer_approved_at' => Carbon::now()->subDays(4),
+            'customer_approval_note' => 'Barang diterima lengkap dan sesuai spesifikasi.',
+        ]);
+
+        if ($shipment1 && $batch24 && $batch25) {
+            DnShipmentItem::create([
+                'dn_shipment_id' => $shipment1->id,
+                'batch_id' => $batch24->id,
+                'batch_code' => $batch24->batch_code,
+                'item_no' => 1,
+                'origin' => 'Temanggung',
+                'origin_code' => 'FN504',
+                'material_type' => 'Product',
+                'standard_sack_count' => 8,
+                'standard_gross_per_sack' => 129.18,
+                'standard_tare_per_sack' => 0.20,
+                'standard_netto_per_sack' => 128.98,
+                'has_remnant' => false,
+                'remnant_gross_kg' => 0.00,
+                'remnant_tare_kg' => 0.00,
+                'remnant_netto_kg' => 0.00,
+                'total_sacks' => 8,
+                'total_gross_kg' => 1033.50,
+                'total_tare_kg' => 1.60,
+                'total_netto_kg' => 1031.90,
+            ]);
+
+            DnShipmentItem::create([
+                'dn_shipment_id' => $shipment1->id,
+                'batch_id' => $batch25->id,
+                'batch_code' => $batch25->batch_code,
+                'item_no' => 2,
+                'origin' => 'Paiton',
+                'origin_code' => 'P10T5',
+                'material_type' => 'Product',
+                'standard_sack_count' => 53,
+                'standard_gross_per_sack' => 34.25,
+                'standard_tare_per_sack' => 0.20,
+                'standard_netto_per_sack' => 34.05,
+                'has_remnant' => false,
+                'remnant_gross_kg' => 0.00,
+                'remnant_tare_kg' => 0.00,
+                'remnant_netto_kg' => 0.00,
+                'total_sacks' => 53,
+                'total_gross_kg' => 1815.60,
+                'total_tare_kg' => 10.60,
+                'total_netto_kg' => 1805.00,
+            ]);
+
+            $shipment1->recalculateTotals();
+        }
+
+        // 2. Shipment Outbound 2 - Shipped (Pending Approval)
+        $shipment2 = DnShipment::create([
+            'dn_number' => 'DN-OUT-2026-0002',
+            'shipment_date' => Carbon::now()->subDays(2),
+            'customer_id' => $customer?->id,
+            'product_type_id' => $productType?->id,
+            'vehicle_number' => 'N 8102 UC',
+            'driver_name' => 'Sugiarto',
+            'destination' => 'Pabrik Cigarette Pasuruan',
+            'notes' => 'Pengiriman dalam perjalanan armada ekspedisi Pasuruan',
+            'total_sacks' => 40,
+            'total_gross_kg' => 2010.70,
+            'total_tare_kg' => 8.00,
+            'total_netto_kg' => 2002.70,
+            'status' => 'Shipped',
+        ]);
+
+        if ($shipment2 && $batch21) {
+            DnShipmentItem::create([
+                'dn_shipment_id' => $shipment2->id,
+                'batch_id' => $batch21->id,
+                'batch_code' => $batch21->batch_code,
+                'item_no' => 1,
+                'origin' => 'Lombok',
+                'origin_code' => "'25",
+                'material_type' => 'Product',
+                'standard_sack_count' => 40,
+                'standard_gross_per_sack' => 50.26,
+                'standard_tare_per_sack' => 0.20,
+                'standard_netto_per_sack' => 50.06,
+                'has_remnant' => false,
+                'remnant_gross_kg' => 0.00,
+                'remnant_tare_kg' => 0.00,
+                'remnant_netto_kg' => 0.00,
+                'total_sacks' => 40,
+                'total_gross_kg' => 2010.70,
+                'total_tare_kg' => 8.00,
+                'total_netto_kg' => 2002.70,
+            ]);
+
+            $shipment2->recalculateTotals();
+        }
+    }
+
+    /**
      * Reset hanya transaction/processing tables
      */
     protected function resetProcessingTables(): void
     {
         Schema::disableForeignKeyConstraints();
 
+        if (Schema::hasTable('dn_shipment_items')) DnShipmentItem::query()->delete();
+        if (Schema::hasTable('dn_shipments')) DnShipment::query()->delete();
         if (Schema::hasTable('weighing_items')) WeighingItem::query()->delete();
         if (Schema::hasTable('batch_origins')) BatchOrigin::query()->delete();
         if (Schema::hasTable('historical_yield_reports')) HistoricalYieldReport::query()->delete();

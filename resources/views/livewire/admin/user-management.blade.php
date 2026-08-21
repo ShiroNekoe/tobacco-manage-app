@@ -97,6 +97,7 @@
                         <option value="admin">Admin</option>
                         <option value="supervisor">Supervisor</option>
                         <option value="customer">Customer</option>
+                        <option value="it_support">IT Support</option>
                     </select>
                 </div>
                 <div class="grid grid-cols-2 gap-3">

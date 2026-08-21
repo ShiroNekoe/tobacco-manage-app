@@ -17,20 +17,61 @@
         </button>
     </div>
 
-    <!-- Search & Filters -->
+    <!-- Search & Filters + Showing Selector + IT Support Bulk Delete -->
     <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div class="w-full md:w-1/2">
+        <div class="w-full md:w-1/3">
             <input type="text" wire:model.live.debounce.300ms="search" class="w-full px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm focus:border-amber-500 outline-none" placeholder="Cari Kode Batch (BCH-...), Pelanggan, atau Jenis Produk...">
         </div>
-        <div class="w-full md:w-auto flex items-center space-x-3">
-            <label class="text-xs text-zinc-400 font-bold uppercase">Status Batch:</label>
-            <select wire:model.live="statusFilter" class="px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-amber-500 outline-none">
-                <option value="">Semua Status</option>
-                <option value="OPEN">⚪ OPEN</option>
-                <option value="ACTIVE">🟢 ACTIVE</option>
-                <option value="WAITING">⏳ WAITING</option>
-                <option value="CLOSED">🔒 CLOSED</option>
-            </select>
+        <div class="w-full md:w-auto flex flex-wrap items-center gap-3">
+            <div class="flex items-center space-x-2">
+                <label class="text-xs text-zinc-400 font-bold uppercase whitespace-nowrap">Status Batch:</label>
+                <select wire:model.live="statusFilter" class="px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:border-amber-500 outline-none">
+                    <option value="">Semua Status</option>
+                    <option value="OPEN">⚪ OPEN</option>
+                    <option value="ACTIVE">🟢 ACTIVE</option>
+                    <option value="WAITING">⏳ WAITING</option>
+                    <option value="CLOSED">🔒 CLOSED</option>
+                </select>
+            </div>
+
+            <!-- Showing Per Page Selector (10, 25, 50, 100) -->
+            <div class="flex items-center space-x-2">
+                <label class="text-xs text-zinc-400 font-bold uppercase whitespace-nowrap">Tampilkan:</label>
+                <select wire:model.live="perPage" class="px-4 py-3 min-h-[48px] rounded-xl bg-zinc-950 border border-zinc-800 text-amber-400 font-bold text-xs focus:border-amber-500 outline-none">
+                    <option value="10">10 Data</option>
+                    <option value="25">25 Data</option>
+                    <option value="50">50 Data</option>
+                    <option value="100">100 Data</option>
+                </select>
+            </div>
+
+            <!-- IT Support Bulk Delete Button -->
+            @if(auth()->user() && auth()->user()->isItSupport() && count($selectedBatches) > 0)
+                <button type="button"
+                    @click="
+                        Swal.fire({
+                            title: 'Hapus Batch Terpilih?',
+                            html: 'Apakah Anda yakin ingin menghapus <b>{{ count($selectedBatches) }} batch</b> yang dipilih?<br><span class=\'text-xs text-rose-400 mt-2 block\'>Tindakan ini tidak dapat dibatalkan.</span>',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#e11d48',
+                            cancelButtonColor: '#27272a',
+                            confirmButtonText: 'Ya, Hapus Semua!',
+                            cancelButtonText: 'Batal',
+                            background: '#18181b',
+                            color: '#f4f4f5',
+                            heightAuto: false
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                $wire.deleteSelectedBatches();
+                            }
+                        })
+                    "
+                    class="px-4 py-3 min-h-[48px] rounded-xl bg-gradient-to-r from-rose-700 to-red-800 text-white font-bold text-xs hover:from-rose-600 shadow-lg shadow-rose-950/60 border border-rose-600/50 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    <span>Hapus Terpilih ({{ count($selectedBatches) }})</span>
+                </button>
+            @endif
         </div>
     </div>
 
@@ -40,6 +81,11 @@
             <table class="w-full text-left text-xs text-zinc-300">
                 <thead class="bg-zinc-950 text-zinc-400 font-bold uppercase tracking-wider sticky top-0 z-10 border-b border-zinc-800">
                     <tr>
+                        @if(auth()->user() && auth()->user()->isItSupport())
+                            <th class="px-3 py-4 text-center w-10">
+                                <input type="checkbox" wire:model.live="selectAll" class="rounded bg-zinc-950 border-zinc-700 text-amber-500 focus:ring-amber-500 w-4 h-4 cursor-pointer" title="Pilih Semua Batch di Halaman Ini">
+                            </th>
+                        @endif
                         <th class="px-4 py-4">Kode Batch</th>
                         <th class="px-4 py-4">Pelanggan & Surat Jalan (DN)</th>
                         <th class="px-4 py-4">Jenis Produk & Asal</th>
@@ -53,6 +99,11 @@
                 <tbody class="divide-y divide-zinc-800">
                     @forelse($batches as $b)
                         <tr class="hover:bg-zinc-800/50 transition-colors">
+                            @if(auth()->user() && auth()->user()->isItSupport())
+                                <td class="px-3 py-4 text-center">
+                                    <input type="checkbox" wire:model.live="selectedBatches" value="{{ $b->id }}" class="rounded bg-zinc-950 border-zinc-700 text-amber-500 focus:ring-amber-500 w-4 h-4 cursor-pointer">
+                                </td>
+                            @endif
                             <td class="px-4 py-4 font-mono font-bold text-amber-400 whitespace-nowrap">
                                 {{ $b->batch_code }}
                                 <div class="text-[10px] text-zinc-500 font-normal">
@@ -177,7 +228,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-4 py-8 text-center text-zinc-500 text-sm">
+                            <td colspan="{{ auth()->user() && auth()->user()->isItSupport() ? 9 : 8 }}" class="px-4 py-8 text-center text-zinc-500 text-sm">
                                 Belum ada data batch timbangan.
                             </td>
                         </tr>

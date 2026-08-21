@@ -52,7 +52,7 @@ class UserManagement extends Component
         $this->validate([
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|unique:users,email,' . $this->user_id,
-            'role' => 'required|string|in:karyawan,admin,supervisor,customer',
+            'role' => 'required|string|in:karyawan,admin,supervisor,customer,it_support',
             'shift' => 'required|string',
             'group' => 'required|string',
         ]);

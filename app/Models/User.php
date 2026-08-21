@@ -16,6 +16,7 @@ class User extends Authenticatable
     public const ROLE_ADMIN = 'admin';
     public const ROLE_SUPERVISOR = 'supervisor';
     public const ROLE_CUSTOMER = 'customer';
+    public const ROLE_IT_SUPPORT = 'it_support';
 
     protected $fillable = [
         'name',
@@ -49,9 +50,14 @@ class User extends Authenticatable
         return $this->belongsTo(Customer::class);
     }
 
+    public function isItSupport(): bool
+    {
+        return in_array(strtolower($this->role ?? ''), [self::ROLE_IT_SUPPORT, 'it_support', 'it support', 'itsupport']);
+    }
+
     public function isKaryawan(): bool
     {
-        return in_array(strtolower($this->role ?? ''), [self::ROLE_KARYAWAN, 'worker', 'operator', 'karyawan']);
+        return $this->isItSupport() || in_array(strtolower($this->role ?? ''), [self::ROLE_KARYAWAN, 'worker', 'operator', 'karyawan']);
     }
 
     public function isWorker(): bool
@@ -61,12 +67,12 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return in_array(strtolower($this->role ?? ''), [self::ROLE_ADMIN, 'administrator', 'admin']);
+        return $this->isItSupport() || in_array(strtolower($this->role ?? ''), [self::ROLE_ADMIN, 'administrator', 'admin']);
     }
 
     public function isSupervisor(): bool
     {
-        return in_array(strtolower($this->role ?? ''), [self::ROLE_SUPERVISOR, 'supervisor']);
+        return $this->isItSupport() || in_array(strtolower($this->role ?? ''), [self::ROLE_SUPERVISOR, 'supervisor']);
     }
 
     public function isCustomer(): bool

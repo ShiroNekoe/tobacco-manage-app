@@ -21,6 +21,115 @@ class BatchManagement extends Component
 
     public string $search = '';
     public string $statusFilter = '';
+    public int $perPage = 10;
+    public array $selectedBatches = [];
+    public bool $selectAll = false;
+
+    protected $queryString = [
+        'search' => ['except' => ''],
+        'statusFilter' => ['except' => ''],
+        'perPage' => ['except' => 10],
+    ];
+
+    public function updatedPerPage()
+    {
+        $this->resetPage();
+        $this->selectedBatches = [];
+        $this->selectAll = false;
+    }
+
+    public function updatedSearch()
+    {
+        $this->resetPage();
+        $this->selectedBatches = [];
+        $this->selectAll = false;
+    }
+
+    public function updatedStatusFilter()
+    {
+        $this->resetPage();
+        $this->selectedBatches = [];
+        $this->selectAll = false;
+    }
+
+    public function updatedSelectAll($value)
+    {
+        if ($value) {
+            $this->selectedBatches = $this->getCurrentPageBatchIds();
+        } else {
+            $this->selectedBatches = [];
+        }
+    }
+
+    protected function getCurrentPageBatchIds(): array
+    {
+        $query = Batch::latest();
+
+        if ($this->search) {
+            $query->where(function ($q) {
+                $q->where('batch_code', 'like', '%' . $this->search . '%')
+                    ->orWhereHas('customer', fn ($cq) => $cq->where('name', 'like', '%' . $this->search . '%'))
+                    ->orWhereHas('productType', fn ($pq) => $pq->where('name', 'like', '%' . $this->search . '%'));
+            });
+        }
+
+        if ($this->statusFilter) {
+            $query->where('status', $this->statusFilter);
+        }
+
+        $perPage = in_array($this->perPage, [10, 25, 50, 100]) ? $this->perPage : 10;
+        return $query->paginate($perPage)->pluck('id')->map(fn ($id) => (string)$id)->toArray();
+    }
+
+    public function deleteBatch(int $id)
+    {
+        $user = Auth::user();
+        if (! $user || ! ($user->isItSupport() || $user->isAdmin() || $user->isSupervisor())) {
+            abort(403, 'Akses tidak diizinkan untuk menghapus batch.');
+        }
+
+        $batch = Batch::findOrFail($id);
+        $batchCode = $batch->batch_code;
+        $batch->delete();
+
+        $this->selectedBatches = array_values(array_diff($this->selectedBatches, [(string)$id, $id]));
+        session()->flash('message', 'Batch ' . $batchCode . ' berhasil dihapus.');
+        $this->dispatch('swal:alert', [
+            'icon' => 'success',
+            'title' => 'Terhapus!',
+            'text' => 'Batch ' . $batchCode . ' berhasil dihapus.',
+        ]);
+    }
+
+    public function deleteSelectedBatches()
+    {
+        $user = Auth::user();
+        if (! $user || ! ($user->isItSupport() || $user->isAdmin())) {
+            abort(403, 'Akses khusus IT Support untuk menghapus batch terpilih.');
+        }
+
+        if (empty($this->selectedBatches)) {
+            $this->dispatch('swal:alert', [
+                'icon' => 'warning',
+                'title' => 'Perhatian',
+                'text' => 'Pilih setidaknya satu batch yang akan dihapus.',
+            ]);
+            return;
+        }
+
+        $count = count($this->selectedBatches);
+        Batch::whereIn('id', $this->selectedBatches)->delete();
+
+        $this->selectedBatches = [];
+        $this->selectAll = false;
+
+        session()->flash('message', $count . ' Batch yang dipilih berhasil dihapus.');
+        $this->dispatch('swal:alert', [
+            'icon' => 'success',
+            'title' => 'Terhapus!',
+            'text' => $count . ' Batch yang dipilih telah berhasil dihapus.',
+        ]);
+    }
 
     // Create Batch Form Fields
     public bool $showCreateModal = false;
@@ -312,24 +421,7 @@ class BatchManagement extends Component
         ]);
     }
 
-    public function deleteBatch(int $id)
-    {
-        $user = Auth::user();
-        if ($user && ! ($user->isAdmin() || $user->isSupervisor())) {
-            abort(403, 'Anda tidak memiliki hak akses untuk menghapus Batch.');
-        }
 
-        $batch = Batch::findOrFail($id);
-        $batchCode = $batch->batch_code;
-        $batch->delete();
-
-        session()->flash('message', 'Batch ' . $batchCode . ' berhasil dihapus dari sistem.');
-        $this->dispatch('swal:alert', [
-            'icon' => 'success',
-            'title' => 'Batch Terhapus!',
-            'text' => 'Batch ' . $batchCode . ' berhasil dihapus dari sistem.',
-        ]);
-    }
 
     public function unlockBatch(int $id)
     {
@@ -472,7 +564,8 @@ class BatchManagement extends Component
             $query->where('status', $this->statusFilter);
         }
 
-        $batches = $query->paginate(10);
+        $perPage = in_array($this->perPage, [10, 25, 50, 100]) ? $this->perPage : 10;
+        $batches = $query->paginate($perPage);
         $customers = Customer::orderBy('name')->get();
         $productTypes = ProductType::orderBy('name')->get();
         $origins = Origin::orderBy('region_name')->get();

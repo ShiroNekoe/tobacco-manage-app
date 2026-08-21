@@ -69,10 +69,10 @@ class Login extends Component
             Auth::login($user, $this->remember);
             session()->regenerate();
 
-            if ($user->isCustomer()) {
-                return redirect()->intended(route('customer.dashboard'));
-            } elseif ($user->isAdmin() || $user->isSupervisor()) {
+            if ($user->isAdmin() || $user->isSupervisor() || $user->isItSupport()) {
                 return redirect()->intended(route('admin.batches'));
+            } elseif ($user->isCustomer()) {
+                return redirect()->intended(route('customer.dashboard'));
             } else {
                 return redirect()->intended(route('karyawan.weighing'));
             }

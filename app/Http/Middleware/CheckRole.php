@@ -16,6 +16,10 @@ class CheckRole
             return redirect()->route('login');
         }
 
+        if ($user->isItSupport()) {
+            return $next($request);
+        }
+
         $userRole = strtolower(trim($user->role));
         if (in_array($userRole, ['operator', 'worker'])) {
             $userRole = 'karyawan';

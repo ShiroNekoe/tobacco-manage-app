@@ -107,7 +107,13 @@
                         <tr>
                             <td class="text-left">{{ $hRow['product_type'] ?? ($b->productType->name ?? 'RAJANGAN') }}</td>
                             <td>{{ $hRow['raw_origin'] ?? trim(($b->origin->region_name ?? '') . ' ' . ($b->material_code ?? '')) }}</td>
-                            <td>{{ $hRow['packs'] ?? $b->dn_total_pack }}</td>
+                            @php
+                                $packVal = (int)($hRow['packs'] ?? 0);
+                                if ($packVal === 0 && isset($b->sections_data[$loop->index]['sacks'])) {
+                                    $packVal = count($b->sections_data[$loop->index]['sacks']);
+                                }
+                            @endphp
+                            <td>{{ $packVal > 0 ? $packVal : '-' }}</td>
                             <td>{{ $hRow['pack_type'] ?? $b->pack_type }}</td>
                             <td class="text-right">{{ number_format($hRow['gross_kg'] ?? $b->dn_gross_weight, 2, ',', '.') }}</td>
                             <td class="text-right">{{ number_format($hRow['tare_kg'] ?? $b->dn_tare_weight, 2, ',', '.') }}</td>
@@ -185,7 +191,13 @@
                         <tr>
                             <td class="text-left">{{ $mRow['product_type'] ?? ($b->productType->name ?? 'RAJANGAN') }}</td>
                             <td>{{ $mRow['raw_origin'] ?? trim(($b->origin->region_name ?? '') . ' ' . ($b->material_code ?? '')) }}</td>
-                            <td>{{ $mRow['packs'] ?? $b->mrl_total_pack }}</td>
+                            @php
+                                $mPackVal = (int)($mRow['packs'] ?? 0);
+                                if ($mPackVal === 0 && isset($b->sections_data[$loop->index]['sacks'])) {
+                                    $mPackVal = count($b->sections_data[$loop->index]['sacks']);
+                                }
+                            @endphp
+                            <td>{{ $mPackVal > 0 ? $mPackVal : '-' }}</td>
                             <td>{{ $mRow['pack_type'] ?? $b->pack_type }}</td>
                             <td class="text-right">{{ number_format($mRow['gross_kg'] ?? $b->mrl_gross_weight, 2, ',', '.') }}</td>
                             <td class="text-right">{{ number_format($mRow['tare_kg'] ?? $b->mrl_tare_weight, 2, ',', '.') }}</td>

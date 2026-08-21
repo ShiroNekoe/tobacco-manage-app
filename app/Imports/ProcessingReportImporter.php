@@ -280,20 +280,34 @@ class ProcessingReportImporter
                 $firstPackType = $dnHeaderRows[0]['pack_type'];
                 $firstMaterialCode = $dnHeaderRows[0]['material_code'];
 
-                foreach ($dnHeaderRows as $hOrig) {
+                foreach ($dnHeaderRows as $hIdx => $hOrig) {
+                    $pCount = (int) $hOrig['packs'];
+                    if ($pCount === 0) {
+                        if (isset($parsedSections[$hIdx]['sacks']) && !empty($parsedSections[$hIdx]['sacks'])) {
+                            $pCount = count($parsedSections[$hIdx]['sacks']);
+                        } else {
+                            foreach ($parsedSections as $sec) {
+                                if (str_contains(strtolower($sec['origin_name'] ?? ''), strtolower($hOrig['clean_region'])) || str_contains(strtolower($hOrig['clean_region']), strtolower($sec['origin_name'] ?? ''))) {
+                                    $pCount = count($sec['sacks'] ?? []);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
                     $dnHeaderDetailsArray[] = [
                         'product_type' => 'RAJANGAN',
                         'raw_origin' => $hOrig['raw_origin'],
                         'clean_region' => $hOrig['clean_region'],
                         'material_code' => $hOrig['material_code'],
-                        'packs' => (int) $hOrig['packs'],
+                        'packs' => $pCount,
                         'pack_type' => $hOrig['pack_type'],
                         'gross_kg' => round($hOrig['gross_kg'], 2),
                         'tare_kg' => round($hOrig['tare_kg'], 2),
                         'netto_kg' => round($hOrig['netto_kg'], 2),
                         'dn_number' => $hOrig['dn_number'],
                     ];
-                    $dnTotalPackSum += (int) $hOrig['packs'];
+                    $dnTotalPackSum += $pCount;
                     $dnGrossWeightSum += round($hOrig['gross_kg'], 2);
                     $dnTareWeightSum += round($hOrig['tare_kg'], 2);
                     $dnNettoWeightSum += round($hOrig['netto_kg'], 2);
@@ -312,20 +326,34 @@ class ProcessingReportImporter
             $mrlDiscrepancySum = 0;
 
             if (!empty($mrlHeaderRows)) {
-                foreach ($mrlHeaderRows as $mOrig) {
+                foreach ($mrlHeaderRows as $mIdx => $mOrig) {
+                    $pCount = (int) $mOrig['packs'];
+                    if ($pCount === 0) {
+                        if (isset($parsedSections[$mIdx]['sacks']) && !empty($parsedSections[$mIdx]['sacks'])) {
+                            $pCount = count($parsedSections[$mIdx]['sacks']);
+                        } else {
+                            foreach ($parsedSections as $sec) {
+                                if (str_contains(strtolower($sec['origin_name'] ?? ''), strtolower($mOrig['clean_region'])) || str_contains(strtolower($mOrig['clean_region']), strtolower($sec['origin_name'] ?? ''))) {
+                                    $pCount = count($sec['sacks'] ?? []);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
                     $mrlHeaderDetailsArray[] = [
                         'product_type' => 'RAJANGAN',
                         'raw_origin' => $mOrig['raw_origin'],
                         'clean_region' => $mOrig['clean_region'],
                         'material_code' => $mOrig['material_code'],
-                        'packs' => (int) $mOrig['packs'],
+                        'packs' => $pCount,
                         'pack_type' => $mOrig['pack_type'],
                         'gross_kg' => round($mOrig['gross_kg'], 2),
                         'tare_kg' => round($mOrig['tare_kg'], 2),
                         'netto_kg' => round($mOrig['netto_kg'], 2),
                         'discrepancy_kg' => round($mOrig['discrepancy_kg'], 2),
                     ];
-                    $mrlTotalPackSum += (int) $mOrig['packs'];
+                    $mrlTotalPackSum += $pCount;
                     $mrlGrossWeightSum += round($mOrig['gross_kg'], 2);
                     $mrlTareWeightSum += round($mOrig['tare_kg'], 2);
                     $mrlNettoWeightSum += round($mOrig['netto_kg'], 2);

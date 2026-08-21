@@ -223,21 +223,21 @@ class ProcessingReportImporter
                     }
                 }
 
-                // PARSE SEPARATION SUMMARY ROW
-                if ($currentSection && $prodQtyCol && $bitsCol && $dustCol && $wasteCol) {
-                    $pVal = (float) $sheet->getCell([$prodQtyCol, $r])->getCalculatedValue();
-                    $bVal = (float) $sheet->getCell([$bitsCol, $r])->getCalculatedValue();
-                    $dVal = (float) $sheet->getCell([$dustCol, $r])->getCalculatedValue();
-                    $wVal = (float) $sheet->getCell([$wasteCol, $r])->getCalculatedValue();
-                    $totVal = $totalQtyCol ? (float) $sheet->getCell([$totalQtyCol, $r])->getCalculatedValue() : ($pVal + $bVal + $dVal + $wVal);
+                // PARSE SEPARATION SUMMARY ROW (EXACT KILOGRAM TOTAL ROW)
+                if ($currentSection && (str_contains(strtolower($c1), 'rajangan') || str_contains(strtolower($c2), 'rajangan'))) {
+                    $col5 = (float) $sheet->getCell([5, $r])->getCalculatedValue();
+                    $col6 = (float) $sheet->getCell([6, $r])->getCalculatedValue();
+                    $col7 = (float) $sheet->getCell([7, $r])->getCalculatedValue();
+                    $col8 = (float) $sheet->getCell([8, $r])->getCalculatedValue();
+                    $col9 = (float) $sheet->getCell([9, $r])->getCalculatedValue();
 
-                    if ($pVal > 0 || $bVal > 0 || $dVal > 0) {
+                    if ($col5 > 10 || $col6 > 5 || $col9 > 10) {
                         $currentSection['separation'] = [
-                            'product_qty' => $pVal,
-                            'bits_stem_qty' => $bVal,
-                            'dust_qty' => $dVal,
-                            'uncountable_waste_qty' => $wVal,
-                            'total_qty' => $totVal,
+                            'product_qty' => round($col5, 2),
+                            'bits_stem_qty' => round($col6, 2),
+                            'dust_qty' => round($col7, 2),
+                            'uncountable_waste_qty' => round($col8, 2),
+                            'total_qty' => round($col9, 2),
                         ];
                     }
                 }

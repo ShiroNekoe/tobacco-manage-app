@@ -26,13 +26,14 @@ class ProcessingReportImporter
         } else {
             $baseName = $filePath ? basename($filePath) : '';
             $candidates = array_filter([
-                $filePath ? base_path('app/imports/' . $baseName) : null,
-                $filePath ? base_path('app/imports/' . str_replace('_', ' ', $baseName)) : null,
-                $filePath ? base_path('app/imports/' . str_replace(' ', '_', $baseName)) : null,
+                $filePath ? base_path('app/Imports/' . $baseName) : null,
+                $filePath ? base_path('app/Imports/' . str_replace('_', ' ', $baseName)) : null,
+                $filePath ? base_path('app/Imports/' . str_replace(' ', '_', $baseName)) : null,
+                base_path('app/Imports/Processing Report_DAVEN.xlsx'),
+                base_path('app/Imports/Processing_Report_DAVEN.xlsx'),
                 base_path('app/imports/Processing Report_DAVEN.xlsx'),
-                base_path('app/imports/Processing_Report_DAVEN.xlsx'),
                 base_path('database/seeders/data/Processing Report_Rev01.xlsx'),
-                base_path('app/imports/Processing Report_Rev01.xlsx'),
+                base_path('app/Imports/Processing Report_Rev01.xlsx'),
                 storage_path('app/imports/Processing Report_Rev01.xlsx'),
             ]);
 
@@ -44,7 +45,7 @@ class ProcessingReportImporter
             }
 
             if (empty($this->filePath)) {
-                $this->filePath = $filePath ?? base_path('app/imports/Processing Report_DAVEN.xlsx');
+                $this->filePath = $filePath ?? base_path('app/Imports/Processing Report_DAVEN.xlsx');
             }
         }
     }

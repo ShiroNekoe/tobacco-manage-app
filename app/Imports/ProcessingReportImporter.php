@@ -170,6 +170,7 @@ class ProcessingReportImporter
                         'separation' => null,
                     ];
 
+                    $expectedSackNumber = 1;
                     $noCol = $grossCol = $tareCol = $nettoCol = $remarkCol = null;
                     $prodQtyCol = $bitsCol = $dustCol = $wasteCol = $totalQtyCol = null;
                 }
@@ -192,7 +193,7 @@ class ProcessingReportImporter
                     }
                 }
 
-                // PARSE SACK WEIGHING ROW
+                // PARSE SACK WEIGHING ROW (STRICT SEQUENTIAL SACK NUMBER MATCHING)
                 if ($currentSection && $noCol && $grossCol && $tareCol && $nettoCol) {
                     $noVal = trim((string) $sheet->getCell([$noCol, $r])->getCalculatedValue());
                     $grossVal = $sheet->getCell([$grossCol, $r])->getCalculatedValue();
@@ -200,19 +201,22 @@ class ProcessingReportImporter
                     $nettoVal = $sheet->getCell([$nettoCol, $r])->getCalculatedValue();
                     $rmkVal = $remarkCol ? trim((string) $sheet->getCell([$remarkCol, $r])->getCalculatedValue()) : '-';
 
-                    if (is_numeric($noVal) && (int)$noVal > 0 && (int)$noVal <= 200 && is_numeric($grossVal) && is_numeric($tareVal) && is_numeric($nettoVal)) {
+                    $sackNumInt = (int) $noVal;
+                    if (is_numeric($noVal) && $sackNumInt === $expectedSackNumber && is_numeric($grossVal) && is_numeric($tareVal) && is_numeric($nettoVal)) {
                         if (!str_contains(strtolower($c1), 'grand total') && !str_contains(strtolower($c1), 'percentage') && !str_contains(strtolower($c1), 'separation')) {
                             $gVal = round((float) $grossVal, 2);
                             $tVal = round((float) $tareVal, 2);
                             $nVal = max(0, round($gVal - $tVal, 2));
 
                             $currentSection['sacks'][] = [
-                                'sack_number' => (int) $noVal,
+                                'sack_number' => $sackNumInt,
                                 'gross_kg' => $gVal,
                                 'tare_kg' => $tVal,
                                 'netto_kg' => $nVal,
                                 'remark' => (!empty($rmkVal) && $rmkVal !== '-') ? $rmkVal : 'Normal',
                             ];
+
+                            $expectedSackNumber++;
                         }
                     }
                 }

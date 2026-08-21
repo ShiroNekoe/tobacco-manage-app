@@ -182,12 +182,6 @@ class ProcessingReportImporter
                     if (str_contains($val, 'tare')) $tareCol = $c;
                     if (str_contains($val, 'netto')) $nettoCol = $c;
                     if (str_contains($val, 'remark')) $remarkCol = $c;
-
-                    if (str_contains($val, 'product qty')) $prodQtyCol = $c;
-                    if (str_contains($val, 'bits stem') || str_contains($val, 'bits/stem')) $bitsCol = $c;
-                    if (str_contains($val, 'dust qty')) $dustCol = $c;
-                    if (str_contains($val, 'waste qty') || str_contains($val, 'uncountable')) $wasteCol = $c;
-                    if (str_contains($val, 'total qty')) $totalQtyCol = $c;
                 }
 
                 // DETECT PACK TYPE
@@ -223,21 +217,47 @@ class ProcessingReportImporter
                     }
                 }
 
+                // DYNAMICALLY DETECT SEPARATION TABLE COLUMNS
+                if (str_contains(strtolower($c1), 'separation result') || str_contains(strtolower($c2), 'separation result')) {
+                    $prodQtyCol = $bitsCol = $dustCol = $wasteCol = $totalQtyCol = null;
+                    for ($offset = 1; $offset <= 2; $offset++) {
+                        $hRow = $r + $offset;
+                        for ($c = 1; $c <= 10; $c++) {
+                            $val = strtolower(trim((string) $sheet->getCell([$c, $hRow])->getCalculatedValue()));
+                            if (str_contains($val, 'product qty')) $prodQtyCol = $c;
+                            elseif (str_contains($val, 'bits stem') || str_contains($val, 'bits/stem')) $bitsCol = $c;
+                            elseif (str_contains($val, 'dust qty')) $dustCol = $c;
+                            elseif (str_contains($val, 'uncountable') || str_contains($val, 'waste qty')) $wasteCol = $c;
+                            elseif (str_contains($val, 'total qty')) $totalQtyCol = $c;
+                        }
+                        if ($prodQtyCol && $bitsCol) break;
+                    }
+                }
+
                 // PARSE SEPARATION SUMMARY ROW (EXACT KILOGRAM TOTAL ROW)
                 if ($currentSection && (str_contains(strtolower($c1), 'rajangan') || str_contains(strtolower($c2), 'rajangan'))) {
-                    $col5 = (float) $sheet->getCell([5, $r])->getCalculatedValue();
-                    $col6 = (float) $sheet->getCell([6, $r])->getCalculatedValue();
-                    $col7 = (float) $sheet->getCell([7, $r])->getCalculatedValue();
-                    $col8 = (float) $sheet->getCell([8, $r])->getCalculatedValue();
-                    $col9 = (float) $sheet->getCell([9, $r])->getCalculatedValue();
+                    $pCol = $prodQtyCol ?: 5;
+                    $bCol = $bitsCol ?: 6;
+                    $dCol = $dustCol ?: 7;
+                    $wCol = $wasteCol ?: 8;
+                    $tCol = $totalQtyCol ?: 9;
 
-                    if ($col5 > 10 || $col6 > 5 || $col9 > 10) {
+                    $pVal = (float) $sheet->getCell([$pCol, $r])->getCalculatedValue();
+                    $bVal = (float) $sheet->getCell([$bCol, $r])->getCalculatedValue();
+                    $dVal = (float) $sheet->getCell([$dCol, $r])->getCalculatedValue();
+                    $wVal = (float) $sheet->getCell([$wCol, $r])->getCalculatedValue();
+                    $tVal = $tCol ? (float) $sheet->getCell([$tCol, $r])->getCalculatedValue() : 0;
+
+                    if (($pVal > 10 || $bVal > 5 || $tVal > 10) && !str_contains(strtolower($c1), 'product type')) {
+                        $calcTotal = round($pVal + $bVal + $dVal + $wVal, 2);
+                        $totVal = $tVal > 0 ? round($tVal, 2) : $calcTotal;
+
                         $currentSection['separation'] = [
-                            'product_qty' => round($col5, 2),
-                            'bits_stem_qty' => round($col6, 2),
-                            'dust_qty' => round($col7, 2),
-                            'uncountable_waste_qty' => round($col8, 2),
-                            'total_qty' => round($col9, 2),
+                            'product_qty' => round($pVal, 2),
+                            'bits_stem_qty' => round($bVal, 2),
+                            'dust_qty' => round($dVal, 2),
+                            'uncountable_waste_qty' => round($wVal, 2),
+                            'total_qty' => $totVal,
                         ];
                     }
                 }

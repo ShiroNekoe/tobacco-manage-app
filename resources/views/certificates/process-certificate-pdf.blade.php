@@ -275,7 +275,7 @@
                     $bitsStemKg = $sep['bits_stem_qty'] ?? 0;
                     $dustKg = $sep['dust_qty'] ?? 0;
                     $wasteKg = $sep['uncountable_waste_qty'] ?? 0;
-                    $totSeparation = $sep['total_qty'] ?? ($prodKg + $bitsStemKg + $dustKg + $wasteKg);
+                    $totSeparation = ($sep['total_qty'] ?? 0) > 0 ? $sep['total_qty'] : ($prodKg + $bitsStemKg + $dustKg + $wasteKg);
                     if ($totSeparation == 0) { $totSeparation = $secNetto; }
 
                     $yProd = $totSeparation > 0 ? round(($prodKg / $totSeparation) * 100, 2) : 0;

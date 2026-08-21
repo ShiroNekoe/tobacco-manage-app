@@ -109,6 +109,9 @@ class ProcessingReportImporter
                 ]
             );
 
+            // ===== PARSE TOP HEADER TABLE ORIGINS (DELIVERY NOTE / MRL) =====
+            $headerOrigins = $this->parseHeaderOrigins($sheet);
+
             // Parse sections & material code mapping
             $parsedSections = [];
             $currentSection = null;
@@ -219,13 +222,13 @@ class ProcessingReportImporter
                     }
                 }
 
-                // PARSE SEPARATION RESULT ROW
-                if ($currentSection && $prodQtyCol && $bitsCol && $dustCol && $wasteCol && $totalQtyCol && str_contains(strtolower($c1), 'rajangan')) {
-                    $pVal = round((float) $sheet->getCell([$prodQtyCol, $r])->getCalculatedValue(), 2);
-                    $bVal = round((float) $sheet->getCell([$bitsCol, $r])->getCalculatedValue(), 2);
-                    $dVal = round((float) $sheet->getCell([$dustCol, $r])->getCalculatedValue(), 2);
-                    $wVal = round((float) $sheet->getCell([$wasteCol, $r])->getCalculatedValue(), 2);
-                    $totVal = round((float) $sheet->getCell([$totalQtyCol, $r])->getCalculatedValue(), 2);
+                // PARSE SEPARATION SUMMARY ROW
+                if ($currentSection && $prodQtyCol && $bitsCol && $dustCol && $wasteCol) {
+                    $pVal = (float) $sheet->getCell([$prodQtyCol, $r])->getCalculatedValue();
+                    $bVal = (float) $sheet->getCell([$bitsCol, $r])->getCalculatedValue();
+                    $dVal = (float) $sheet->getCell([$dustCol, $r])->getCalculatedValue();
+                    $wVal = (float) $sheet->getCell([$wasteCol, $r])->getCalculatedValue();
+                    $totVal = $totalQtyCol ? (float) $sheet->getCell([$totalQtyCol, $r])->getCalculatedValue() : ($pVal + $bVal + $dVal + $wVal);
 
                     if ($pVal > 0 || $bVal > 0 || $dVal > 0) {
                         $currentSection['separation'] = [
@@ -245,9 +248,15 @@ class ProcessingReportImporter
             }
 
             // ===== CREATE BATCH RECORD =====
-            $firstOrigin = !empty($parsedSections) ? $parsedSections[0]['origin'] : Origin::first();
-            $firstPackType = !empty($parsedSections) ? $parsedSections[0]['pack_type'] : 'Bale';
-            $firstMaterialCode = !empty($parsedSections) ? $parsedSections[0]['material_code'] : 'N/A';
+            if (!empty($headerOrigins)) {
+                $firstOrigin = $headerOrigins[0]['origin_obj'];
+                $firstPackType = $headerOrigins[0]['pack_type'];
+                $firstMaterialCode = $headerOrigins[0]['material_code'];
+            } else {
+                $firstOrigin = !empty($parsedSections) ? $parsedSections[0]['origin'] : Origin::first();
+                $firstPackType = !empty($parsedSections) ? $parsedSections[0]['pack_type'] : 'Bale';
+                $firstMaterialCode = !empty($parsedSections) ? $parsedSections[0]['material_code'] : 'N/A';
+            }
 
             $batch = Batch::create([
                 'batch_code' => $batchCode,
@@ -324,6 +333,20 @@ class ProcessingReportImporter
                 }
             }
 
+            // Sync BatchOrigin from Header Origins if available (accurate multi-origin per header table)
+            if (!empty($headerOrigins)) {
+                BatchOrigin::where('batch_id', $batch->id)->delete();
+                foreach ($headerOrigins as $hOrig) {
+                    BatchOrigin::create([
+                        'batch_id' => $batch->id,
+                        'origin_id' => $hOrig['origin_obj']->id,
+                        'allocated_kg' => round($hOrig['gross_kg'], 2),
+                        'remaining_kg' => 0,
+                        'status' => 'completed',
+                    ]);
+                }
+            }
+
             // ===== MATERIAL BALANCE CALCULATION (100% BALANCE) =====
             $processedInputNetto = $secNetto;
 
@@ -368,7 +391,7 @@ class ProcessingReportImporter
         }
 
         $this->importHistoricalYieldReports($spreadsheet);
-        $this->seedSampleDnShipments();
+        $this->seedSampleDnShipments($spreadsheet);
 
         echo "\n✅ Import complete!\n";
         return [
@@ -493,12 +516,79 @@ class ProcessingReportImporter
     }
 
     /**
+     * Parse exact top header table origins for a batch sheet
+     */
+    protected function parseHeaderOrigins($sheet): array
+    {
+        $inHeaderTable = false;
+        $origins = [];
+
+        for ($r = 1; $r <= $sheet->getHighestRow(); $r++) {
+            $c1 = trim((string) $sheet->getCell([1, $r])->getCalculatedValue());
+
+            if (preg_match('/(DELIVERY NOTE|MATERIAL RECEIPT LIST)/i', $c1)) {
+                $inHeaderTable = true;
+                continue;
+            }
+
+            if ($inHeaderTable) {
+                if (preg_match('/(Remark|SEPARATION RESULTS REPORT)/i', $c1)) {
+                    $inHeaderTable = false;
+                    break;
+                }
+
+                $prodType = trim((string) $sheet->getCell([1, $r])->getCalculatedValue());
+                $rawOrigin = trim((string) $sheet->getCell([2, $r])->getCalculatedValue());
+
+                if (empty($prodType) || str_contains(strtolower($prodType), 'product type') || str_contains(strtolower($rawOrigin), 'origin') || str_contains(strtolower($prodType), 'customer')) {
+                    continue;
+                }
+
+                $packs = (float) $sheet->getCell([3, $r])->getCalculatedValue();
+                $gross = (float) $sheet->getCell([5, $r])->getCalculatedValue();
+
+                $packType = trim((string) $sheet->getCell([4, $r])->getCalculatedValue());
+                if ($packs == 0 && is_numeric($packType) && (float) $packType > 0) {
+                    $packs = (float) $packType;
+                    $packType = 'Bale';
+                }
+
+                if ($gross > 0 || $packs > 0) {
+                    [$cleanRegion, $materialCode] = $this->parseOriginAndCode($rawOrigin);
+                    $originObj = Origin::firstOrCreate(['region_name' => $cleanRegion]);
+
+                    $origins[] = [
+                        'raw_origin' => $rawOrigin,
+                        'clean_region' => $cleanRegion,
+                        'material_code' => $materialCode,
+                        'origin_obj' => $originObj,
+                        'packs' => (int) $packs,
+                        'pack_type' => (!empty($packType) && !is_numeric($packType)) ? $packType : 'Bale',
+                        'gross_kg' => round($gross, 2),
+                        'tare_kg' => round((float) $sheet->getCell([6, $r])->getCalculatedValue(), 2),
+                        'netto_kg' => round((float) $sheet->getCell([7, $r])->getCalculatedValue(), 2),
+                        'dn_number' => trim((string) $sheet->getCell([9, $r])->getCalculatedValue()),
+                    ];
+                }
+            }
+        }
+
+        return $origins;
+    }
+
+    /**
      * Seed sample Outbound DN Shipments for testing/demo covering all batches 1..25
      */
-    protected function seedSampleDnShipments(): void
+    protected function seedSampleDnShipments(?\PhpOffice\PhpSpreadsheet\Spreadsheet $spreadsheet = null): void
     {
         if (DnShipment::count() > 0) {
             return;
+        }
+
+        if (! $spreadsheet) {
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($this->filePath);
+            $reader->setReadDataOnly(true);
+            $spreadsheet = $reader->load($this->filePath);
         }
 
         $customer = Customer::where('name', 'like', '%Falih%')->first() ?? Customer::first();
@@ -551,37 +641,80 @@ class ProcessingReportImporter
 
             $itemNo = 1;
             foreach ($chunk as $batch) {
-                $originName = $batch->origin->region_name ?? 'KASTURI';
-                $originCode = !empty($batch->material_code) ? $batch->material_code : '-';
-                $tarePerSack = (float) ($batch->product_tare_per_sack ?? 0.20);
-                $grossPerSack = (float) ($batch->product_kg_per_sack ?: 50.20);
+                // Find matching sheet for this batch to get exact header table origins
+                $matchingSheet = null;
+                $batchNum = (int) str_replace('BCH-2026-', '', $batch->batch_code);
+                foreach ($spreadsheet->getSheetNames() as $sheetName) {
+                    if (preg_match('/SPR\s*Batch\s*' . $batchNum . '$/i', trim($sheetName))) {
+                        $matchingSheet = $spreadsheet->getSheetByName($sheetName);
+                        break;
+                    }
+                }
 
-                $totalSacks = max(1, (int) ($batch->dn_total_pack ?: 10));
-                $totalGross = (float) ($batch->dn_gross_weight ?: ($totalSacks * $grossPerSack));
-                $totalTare = round($totalSacks * $tarePerSack, 2);
-                $totalNetto = max(0, round($totalGross - $totalTare, 2));
+                $hOrigins = $matchingSheet ? $this->parseHeaderOrigins($matchingSheet) : [];
 
-                DnShipmentItem::create([
-                    'dn_shipment_id' => $shipment->id,
-                    'batch_id' => $batch->id,
-                    'batch_code' => $batch->batch_code,
-                    'item_no' => $itemNo++,
-                    'origin' => $originName,
-                    'origin_code' => $originCode,
-                    'material_type' => 'Product',
-                    'standard_sack_count' => $totalSacks,
-                    'standard_gross_per_sack' => round($totalGross / $totalSacks, 2),
-                    'standard_tare_per_sack' => $tarePerSack,
-                    'standard_netto_per_sack' => round($totalNetto / $totalSacks, 2),
-                    'has_remnant' => false,
-                    'remnant_gross_kg' => 0.00,
-                    'remnant_tare_kg' => 0.00,
-                    'remnant_netto_kg' => 0.00,
-                    'total_sacks' => $totalSacks,
-                    'total_gross_kg' => $totalGross,
-                    'total_tare_kg' => $totalTare,
-                    'total_netto_kg' => $totalNetto,
-                ]);
+                if (!empty($hOrigins)) {
+                    foreach ($hOrigins as $hOrig) {
+                        $packs = max(1, $hOrig['packs']);
+                        $gross = $hOrig['gross_kg'] > 0 ? $hOrig['gross_kg'] : round($packs * 50.20, 2);
+                        $tare = $hOrig['tare_kg'] > 0 ? $hOrig['tare_kg'] : round($packs * 0.20, 2);
+                        $netto = max(0, round($gross - $tare, 2));
+
+                        DnShipmentItem::create([
+                            'dn_shipment_id' => $shipment->id,
+                            'batch_id' => $batch->id,
+                            'batch_code' => $batch->batch_code,
+                            'item_no' => $itemNo++,
+                            'origin' => $hOrig['clean_region'],
+                            'origin_code' => $hOrig['material_code'],
+                            'material_type' => 'Product',
+                            'standard_sack_count' => $packs,
+                            'standard_gross_per_sack' => round($gross / $packs, 2),
+                            'standard_tare_per_sack' => round($tare / $packs, 2),
+                            'standard_netto_per_sack' => round($netto / $packs, 2),
+                            'has_remnant' => false,
+                            'remnant_gross_kg' => 0.00,
+                            'remnant_tare_kg' => 0.00,
+                            'remnant_netto_kg' => 0.00,
+                            'total_sacks' => $packs,
+                            'total_gross_kg' => $gross,
+                            'total_tare_kg' => $tare,
+                            'total_netto_kg' => $netto,
+                        ]);
+                    }
+                } else {
+                    $originName = $batch->origin->region_name ?? 'KASTURI';
+                    $originCode = !empty($batch->material_code) ? $batch->material_code : '-';
+                    $tarePerSack = (float) ($batch->product_tare_per_sack ?? 0.20);
+                    $grossPerSack = (float) ($batch->product_kg_per_sack ?: 50.20);
+
+                    $totalSacks = max(1, (int) ($batch->dn_total_pack ?: 10));
+                    $totalGross = (float) ($batch->dn_gross_weight ?: ($totalSacks * $grossPerSack));
+                    $totalTare = round($totalSacks * $tarePerSack, 2);
+                    $totalNetto = max(0, round($totalGross - $totalTare, 2));
+
+                    DnShipmentItem::create([
+                        'dn_shipment_id' => $shipment->id,
+                        'batch_id' => $batch->id,
+                        'batch_code' => $batch->batch_code,
+                        'item_no' => $itemNo++,
+                        'origin' => $originName,
+                        'origin_code' => $originCode,
+                        'material_type' => 'Product',
+                        'standard_sack_count' => $totalSacks,
+                        'standard_gross_per_sack' => round($totalGross / $totalSacks, 2),
+                        'standard_tare_per_sack' => $tarePerSack,
+                        'standard_netto_per_sack' => round($totalNetto / $totalSacks, 2),
+                        'has_remnant' => false,
+                        'remnant_gross_kg' => 0.00,
+                        'remnant_tare_kg' => 0.00,
+                        'remnant_netto_kg' => 0.00,
+                        'total_sacks' => $totalSacks,
+                        'total_gross_kg' => $totalGross,
+                        'total_tare_kg' => $totalTare,
+                        'total_netto_kg' => $totalNetto,
+                    ]);
+                }
             }
 
             $shipment->recalculateTotals();

@@ -85,6 +85,7 @@ class="space-y-6">
                                 <tr>
                                     <th class="px-4 py-3">Kode</th>
                                     <th class="px-4 py-3">Nama Pelanggan</th>
+                                    <th class="px-4 py-3">Akses Portal / Email</th>
                                     <th class="px-4 py-3">Kontak Person</th>
                                     <th class="px-4 py-3">Telepon</th>
                                     <th class="px-4 py-3">Alamat</th>
@@ -96,6 +97,15 @@ class="space-y-6">
                                     <tr class="hover:bg-zinc-800/40 transition-colors">
                                         <td class="px-4 py-3 font-mono font-bold text-amber-400">{{ $c->code }}</td>
                                         <td class="px-4 py-3 font-bold text-zinc-100">{{ $c->name }}</td>
+                                        <td class="px-4 py-3">
+                                            @if($c->email || ($c->user && $c->user->email))
+                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-mono font-bold bg-amber-950/80 text-amber-300 border border-amber-800/80">
+                                                    🔑 {{ $c->email ?? $c->user->email }}
+                                                </span>
+                                            @else
+                                                <span class="text-zinc-500 italic text-[11px]">Belum diatur</span>
+                                            @endif
+                                        </td>
                                         <td class="px-4 py-3 text-zinc-300">{{ $c->contact_person ?? '-' }}</td>
                                         <td class="px-4 py-3 text-zinc-400 font-mono">{{ $c->phone ?? '-' }}</td>
                                         <td class="px-4 py-3 text-zinc-400 truncate max-w-xs">{{ $c->address ?? '-' }}</td>
@@ -110,7 +120,7 @@ class="space-y-6">
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="px-4 py-8 text-center text-zinc-500">Tidak ada data pelanggan yang cocok.</td>
+                                        <td colspan="7" class="px-4 py-8 text-center text-zinc-500">Tidak ada data pelanggan yang cocok.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -372,6 +382,28 @@ class="space-y-6">
                 <div>
                     <label class="block font-bold uppercase text-zinc-300 mb-1">Alamat</label>
                     <textarea wire:model="address" rows="2" class="w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 outline-none" placeholder="Jl. Raya Industri No. 88, Surabaya"></textarea>
+                </div>
+
+                <!-- AKSES PORTAL CUSTOMER (EMAIL & PASSWORD) -->
+                <div class="p-3.5 bg-amber-950/20 border border-amber-800/40 rounded-2xl space-y-3">
+                    <div class="flex items-center gap-2 border-b border-amber-800/30 pb-2">
+                        <span class="text-base">🔑</span>
+                        <div>
+                            <h4 class="text-xs font-black uppercase text-amber-400">Akses Portal Customer</h4>
+                            <p class="text-[10px] text-zinc-400">Buat atau perbarui akun login portal customer ini</p>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block font-bold uppercase text-zinc-300 mb-1">Email Customer (Username Login)</label>
+                        <input type="email" wire:model="email" class="w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 font-mono outline-none focus:border-amber-500" placeholder="customer@falihnur.com">
+                        @error('email') <span class="text-red-400 font-bold block mt-1">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label class="block font-bold uppercase text-zinc-300 mb-1">Password Portal Customer</label>
+                        <input type="password" wire:model="password" class="w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 outline-none focus:border-amber-500" placeholder="{{ $customer_id ? 'Kosongkan jika tidak ingin mengubah password' : 'Masukkan kata sandi portal (min. 6 karakter)' }}">
+                        <p class="text-[11px] text-zinc-400 mt-1">Gunakan password ini untuk login ke Portal Customer dan mengakses data batch milik customer ini.</p>
+                        @error('password') <span class="text-red-400 font-bold block mt-1">{{ $message }}</span> @enderror
+                    </div>
                 </div>
                 <div class="flex justify-end space-x-3 pt-3 border-t border-zinc-800">
                     <button type="button" wire:click="$set('showCustomerModal', false)" class="px-4 py-2.5 rounded-xl bg-zinc-800 text-zinc-300 font-bold">Batal</button>

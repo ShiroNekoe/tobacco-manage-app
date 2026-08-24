@@ -8,7 +8,9 @@ use App\Models\Origin;
 use App\Models\PackType;
 use App\Models\ProductType;
 use App\Models\SystemSetting;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
 
 class MasterDataManagement extends Component
@@ -29,6 +31,8 @@ class MasterDataManagement extends Component
     public string $contact_person = '';
     public string $phone = '';
     public string $address = '';
+    public string $email = '';
+    public string $password = '';
 
     // Product Type Form Fields
     public bool $showProductModal = false;
@@ -93,6 +97,10 @@ class MasterDataManagement extends Component
             $this->contact_person = $cust->contact_person ?? '';
             $this->phone = $cust->phone ?? '';
             $this->address = $cust->address ?? '';
+
+            $linkedUser = User::where('customer_id', $cust->id)->first();
+            $this->email = $cust->email ?? ($linkedUser ? $linkedUser->email : '');
+            $this->password = '';
         }
 
         $this->showCustomerModal = true;
@@ -101,15 +109,30 @@ class MasterDataManagement extends Component
     public function saveCustomer()
     {
         $this->ensureAdminAccess();
+
+        $linkedUser = $this->customer_id ? User::where('customer_id', $this->customer_id)->first() : null;
+        $linkedUserId = $linkedUser ? $linkedUser->id : null;
+
         $this->validate([
             'customer_name' => 'required|string|max:255',
             'customer_code' => 'required|string|max:100|unique:customers,code,' . $this->customer_id,
             'contact_person' => 'nullable|string|max:100',
             'phone' => 'nullable|string|max:50',
             'address' => 'nullable|string|max:500',
+            'email' => 'nullable|email|max:255|unique:users,email,' . $linkedUserId . '|unique:customers,email,' . $this->customer_id,
+            'password' => 'nullable|string|min:6',
+        ], [
+            'customer_name.required' => 'Nama pelanggan wajib diisi.',
+            'customer_code.required' => 'Kode customer wajib diisi.',
+            'customer_code.unique' => 'Kode customer sudah digunakan.',
+            'email.email' => 'Format email tidak valid.',
+            'email.unique' => 'Email ini sudah digunakan oleh akun lain.',
+            'password.min' => 'Password portal customer minimal 6 karakter.',
         ]);
 
-        Customer::updateOrCreate(
+        $cleanEmail = filled($this->email) ? trim($this->email) : null;
+
+        $customer = Customer::updateOrCreate(
             ['id' => $this->customer_id],
             [
                 'name' => $this->customer_name,
@@ -117,22 +140,58 @@ class MasterDataManagement extends Component
                 'contact_person' => $this->contact_person,
                 'phone' => $this->phone,
                 'address' => $this->address,
+                'email' => $cleanEmail,
             ]
         );
 
+        // Sync or Create Portal User Account for Customer if Email is provided
+        if ($cleanEmail) {
+            $user = User::where('customer_id', $customer->id)
+                ->orWhere('email', $cleanEmail)
+                ->first();
+
+            $userData = [
+                'name' => $this->customer_name,
+                'email' => $cleanEmail,
+                'role' => User::ROLE_CUSTOMER,
+                'customer_id' => $customer->id,
+                'shift' => 'Shift 1',
+                'group' => 'Group A',
+                'must_change_password' => false,
+            ];
+
+            if ($this->password) {
+                $userData['password'] = Hash::make($this->password);
+            }
+
+            if ($user) {
+                $user->update($userData);
+            } else {
+                if (! $this->password) {
+                    $userData['password'] = Hash::make('password123');
+                }
+                User::create($userData);
+            }
+        } elseif ($linkedUser) {
+            $linkedUser->update([
+                'name' => $this->customer_name,
+            ]);
+        }
+
         $this->showCustomerModal = false;
         $this->resetCustomerFields();
-        session()->flash('message', 'Data Pelanggan (Customer) berhasil disimpan.');
+        session()->flash('message', 'Data Pelanggan & Akses Portal Customer berhasil disimpan.');
         $this->dispatch('swal:alert', [
             'icon' => 'success',
             'title' => 'Berhasil!',
-            'text' => 'Data Pelanggan berhasil disimpan.',
+            'text' => 'Data Pelanggan & Akses Portal Customer berhasil disimpan.',
         ]);
     }
 
     public function deleteCustomer(int $id)
     {
         $this->ensureAdminAccess();
+        User::where('customer_id', $id)->delete();
         Customer::findOrFail($id)->delete();
         session()->flash('message', 'Pelanggan berhasil dihapus.');
         $this->dispatch('swal:alert', [
@@ -144,7 +203,7 @@ class MasterDataManagement extends Component
 
     protected function resetCustomerFields()
     {
-        $this->reset(['customer_id', 'customer_name', 'customer_code', 'contact_person', 'phone', 'address']);
+        $this->reset(['customer_id', 'customer_name', 'customer_code', 'contact_person', 'phone', 'address', 'email', 'password']);
     }
 
     // --- PRODUCT TYPE ACTIONS ---
@@ -424,9 +483,12 @@ class MasterDataManagement extends Component
         $search = '%' . trim($this->search) . '%';
 
         // Customers
-        $customersQuery = Customer::query();
+        $customersQuery = Customer::with('user');
         if ($this->search && $this->activeTab === 'customers') {
-            $customersQuery->where(fn ($q) => $q->where('name', 'like', $search)->orWhere('code', 'like', $search)->orWhere('contact_person', 'like', $search));
+            $customersQuery->where(fn ($q) => $q->where('name', 'like', $search)
+                ->orWhere('code', 'like', $search)
+                ->orWhere('contact_person', 'like', $search)
+                ->orWhere('email', 'like', $search));
         }
         $customers = $customersQuery->orderBy('name')->get();
         $totalCustomers = Customer::count();

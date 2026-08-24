@@ -172,4 +172,71 @@ class MasterDataManagementTest extends TestCase
             ->assertSee('Asal Tembakau')
             ->assertSee('Jenis Muatan');
     }
+
+    public function test_admin_can_create_customer_with_email_and_password_for_portal_access(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        Livewire::actingAs($admin)
+            ->test(MasterDataManagement::class)
+            ->set('customer_code', 'CUST-PORTAL')
+            ->set('customer_name', 'PT. Mitra Customer Portal')
+            ->set('contact_person', 'Pak Agus')
+            ->set('phone', '081999888777')
+            ->set('address', 'Jakarta')
+            ->set('email', 'customer.portal@example.com')
+            ->set('password', 'secret1234')
+            ->call('saveCustomer')
+            ->assertHasNoErrors();
+
+        $customer = Customer::where('code', 'CUST-PORTAL')->first();
+        $this->assertNotNull($customer);
+        $this->assertEquals('customer.portal@example.com', $customer->email);
+
+        // Verify User Account was created automatically with role = 'customer' and linked customer_id
+        $portalUser = User::where('email', 'customer.portal@example.com')->first();
+        $this->assertNotNull($portalUser);
+        $this->assertEquals('customer', $portalUser->role);
+        $this->assertEquals($customer->id, $portalUser->customer_id);
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('secret1234', $portalUser->password));
+    }
+
+    public function test_admin_can_update_customer_email_and_password(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $customer = Customer::create([
+            'code' => 'CUST-EDIT',
+            'name' => 'PT. Initial Name',
+            'email' => 'old.email@example.com',
+        ]);
+
+        $portalUser = User::create([
+            'name' => 'PT. Initial Name',
+            'email' => 'old.email@example.com',
+            'role' => 'customer',
+            'customer_id' => $customer->id,
+            'password' => \Illuminate\Support\Facades\Hash::make('oldpassword'),
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(MasterDataManagement::class)
+            ->call('openCustomerModal', $customer->id)
+            ->assertSet('email', 'old.email@example.com')
+            ->set('customer_name', 'PT. Updated Name')
+            ->set('email', 'new.email@example.com')
+            ->set('password', 'newsecret5678')
+            ->call('saveCustomer')
+            ->assertHasNoErrors();
+
+        $customer->refresh();
+        $portalUser->refresh();
+
+        $this->assertEquals('new.email@example.com', $customer->email);
+        $this->assertEquals('PT. Updated Name', $customer->name);
+        $this->assertEquals('new.email@example.com', $portalUser->email);
+        $this->assertEquals('PT. Updated Name', $portalUser->name);
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('newsecret5678', $portalUser->password));
+    }
 }
+

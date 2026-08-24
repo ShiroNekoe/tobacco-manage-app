@@ -501,15 +501,6 @@ class CustomerDashboard extends Component
         // ----------------------------------------------------
         // 1. DATA FOR BATCH OVERVIEW (HALAMAN 1)
         // ----------------------------------------------------
-        $currentBatch = null;
-        if ($this->selectedBatchId) {
-            $currentBatch = $allApprovedBatches->firstWhere('id', $this->selectedBatchId);
-        }
-        if (! $currentBatch && $allApprovedBatches->count() > 0) {
-            $currentBatch = $allApprovedBatches->last();
-            $this->selectedBatchId = $currentBatch->id;
-        }
-
         // Prepare Overview Batches (10 most recent created/approved by default, or filtered by search)
         $overviewBatches = collect();
         if (! empty($this->batchSearch)) {
@@ -522,11 +513,18 @@ class CustomerDashboard extends Component
             })->values();
         } else {
             $recentBatches = $allApprovedBatches->sortByDesc('id')->take(10)->values();
-            if ($currentBatch && ! $recentBatches->contains('id', $currentBatch->id)) {
-                $overviewBatches = $recentBatches->prepend($currentBatch);
-            } else {
-                $overviewBatches = $recentBatches;
-            }
+            $overviewBatches = $recentBatches;
+        }
+
+        $currentBatch = null;
+        if (! empty($this->batchSearch) && $overviewBatches->isEmpty()) {
+            $currentBatch = null;
+            $this->selectedBatchId = null;
+        } elseif ($this->selectedBatchId && $allApprovedBatches->contains('id', $this->selectedBatchId)) {
+            $currentBatch = $allApprovedBatches->firstWhere('id', $this->selectedBatchId);
+        } elseif ($overviewBatches->count() > 0) {
+            $currentBatch = $overviewBatches->first();
+            $this->selectedBatchId = $currentBatch->id;
         }
 
         $batchOverviewData = $this->computeBatchOverviewData($currentBatch, $allApprovedBatches);
@@ -753,7 +751,74 @@ class CustomerDashboard extends Component
     protected function computeBatchOverviewData(?Batch $batch, $allBatches): array
     {
         if (! $batch) {
-            return [];
+            return [
+                'batch' => null,
+                'customerName' => Auth::user()->customer->name ?? (Auth::user()->name ?? 'Customer'),
+                'reportingLabel' => '-',
+                'reportingFormat' => '-',
+                'batchPosition' => 'Tidak Ada Batch',
+                'totalBatchesCount' => 0,
+                'dnGross' => 0.00,
+                'mrlGross' => 0.00,
+                'diffKg' => 0.00,
+                'diffPct' => 0.00,
+                'mrlTare' => 0.00,
+                'mrlNetto' => 0.00,
+                'processedInput' => 0.00,
+                'productOutput' => 0.00,
+                'bitsStem' => 0.00,
+                'dust' => 0.00,
+                'variance' => 0.00,
+                'productYieldPct' => 0.00,
+                'weightedProductYield' => 0.00,
+                'processMaterialBalance' => 0.00,
+                'dnReceiverName' => '-',
+                'originReconciliation' => [],
+                'originSeparation' => [],
+                'totalPacks' => 0,
+                'dnReceived' => [
+                    'dn_number' => '-',
+                    'receipt_date' => '-',
+                    'packs' => 0,
+                    'gross_kg' => 0.00,
+                    'status' => 'Pending',
+                ],
+                'dnShipped' => [
+                    'has_shipment' => false,
+                    'id' => null,
+                    'dn_number' => '-',
+                    'shipment_date' => '-',
+                    'vehicle_number' => '-',
+                    'driver_name' => '-',
+                    'total_sacks' => 0,
+                    'total_netto_kg' => 0.00,
+                    'status' => 'Belum Dikirim',
+                    'is_approved' => false,
+                    'approved_at' => null,
+                    'materials' => [],
+                ],
+                'dnShippedRows' => [],
+                'stepper' => [],
+                'completedStepsCount' => 0,
+                'overallStageStatus' => [
+                    'badge' => 'Tidak Ada Data Batch',
+                    'type' => 'neutral',
+                    'description' => 'Tidak ada data batch yang cocok dengan filter atau terdaftar untuk customer ini.',
+                ],
+                'balanceItems' => [
+                    'inputKg' => 0.00,
+                    'productKg' => 0.00,
+                    'productPct' => 0.00,
+                    'stemKg' => 0.00,
+                    'stemPct' => 0.00,
+                    'dustKg' => 0.00,
+                    'dustPct' => 0.00,
+                    'varianceKg' => 0.00,
+                    'variancePct' => 0.00,
+                    'totalKg' => 0.00,
+                    'totalPct' => 0.00,
+                ],
+            ];
         }
 
         // Batch Number Index (e.g. Batch 25 of 25)
@@ -782,7 +847,7 @@ class CustomerDashboard extends Component
 
         $mrlTare = (float) $batch->mrl_tare_weight;
         $mrlNetto = (float) $batch->mrl_netto_weight;
-        $processedInput = $mrlNetto > 0 ? $mrlNetto : ($mrlGross > 0 ? $mrlGross : 3173.70);
+        $processedInput = $mrlNetto > 0 ? $mrlNetto : ($mrlGross > 0 ? $mrlGross : (float) $batch->dn_netto_weight);
 
         $productOutput = (float) $batch->separation_product_kg;
         $bitsStem = (float) $batch->separation_bits_stem_kg;

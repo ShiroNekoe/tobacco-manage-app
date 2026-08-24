@@ -153,11 +153,6 @@ class CustomerPortalRedesignTest extends TestCase
     {
         Livewire::actingAs($this->customerUser1)
             ->test(CustomerDashboard::class)
-            ->assertSee('3,247.60') // DN Gross
-            ->assertSee('3,251.90') // MRL Gross
-            ->assertSee('3,173.80') // MRL Netto
-            ->assertSee('2,442.50') // Product Output
-            ->assertSee('76.96%')   // Product Yield
             ->assertSee('DN Received')
             ->assertSee('DN Shipped')
             ->assertSee('Delivery Note Reconciliation Pipeline')
@@ -165,6 +160,22 @@ class CustomerPortalRedesignTest extends TestCase
             ->assertSee('Receiving Confirmation Status')
             ->assertSee('Separation Result by Origin')
             ->assertSee('Process Material Balance');
+    }
+
+    public function test_empty_batch_overview_state_renders_clean_zeros_without_dummy_data(): void
+    {
+        // When searching for a non-existent batch, dashboard should show clean zeros without fallback dummy figures like 3,247.60
+        Livewire::actingAs($this->customerUser1)
+            ->test(CustomerDashboard::class)
+            ->set('batchSearch', 'NON_EXISTENT_BATCH_9999')
+            ->assertSee('Tidak ada batch cocok')
+            ->assertSee('0.00')
+            ->assertSee('kg Gross')
+            ->assertSee('kg Netto')
+            ->assertDontSee('3,247.60')
+            ->assertDontSee('3,251.90')
+            ->assertDontSee('2,442.50')
+            ->assertDontSee('589.22');
     }
 
     public function test_customer_tenant_isolation_in_portal(): void

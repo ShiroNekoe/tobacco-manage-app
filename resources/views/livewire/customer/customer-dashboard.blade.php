@@ -53,11 +53,13 @@ class="space-y-6">
             <div>
                 <h2 class="text-2xl font-black text-zinc-100 tracking-wide">Batch Overview & Reconciliation</h2>
                 <div class="flex flex-wrap items-center gap-2 mt-1">
-                    <span class="text-xs text-zinc-400">Customer: <strong class="text-zinc-200 font-semibold">{{ $batchOverviewData['customerName'] ?? 'PT Falih Nur Gemilang' }}</strong></span>
+                    <span class="text-xs text-zinc-400">Customer: <strong class="text-zinc-200 font-semibold">{{ $batchOverviewData['customerName'] ?? (Auth::user()->customer->name ?? 'Customer') }}</strong></span>
+                    @if(!empty($batchOverviewData['reportingLabel']) && $batchOverviewData['reportingLabel'] !== '-')
                     <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/80 flex items-center">
                         <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        {{ $batchOverviewData['reportingLabel'] ?? 'Receiving Control Improvement • Implemented from Batch 23' }}
+                        {{ $batchOverviewData['reportingLabel'] }}
                     </span>
+                    @endif
                 </div>
             </div>
 
@@ -67,7 +69,7 @@ class="space-y-6">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                 </button>
                 <div class="px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 font-mono font-bold text-xs text-amber-400">
-                    {{ $batchOverviewData['batchPosition'] ?? 'Batch 25 of 25' }}
+                    {{ $batchOverviewData['batchPosition'] ?? 'Tidak Ada Batch' }}
                 </div>
                 <button wire:click="nextBatch" class="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-all">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
@@ -292,7 +294,7 @@ class="space-y-6">
                     <span class="text-amber-500">🛍️</span>
                 </div>
                 <div class="font-mono font-black text-base lg:text-lg text-amber-400">
-                    {{ number_format($batchOverviewData['dnGross'] ?? 3247.60, 2, '.', ',') }} <span class="text-[10px] font-semibold text-zinc-400">kg Gross</span>
+                    {{ number_format($batchOverviewData['dnGross'] ?? 0, 2, '.', ',') }} <span class="text-[10px] font-semibold text-zinc-400">kg Gross</span>
                 </div>
                 <div class="text-[9px] text-zinc-500 font-sans">Bobot kotor surat jalan</div>
             </div>
@@ -304,7 +306,7 @@ class="space-y-6">
                     <span class="text-amber-500">🛍️</span>
                 </div>
                 <div class="font-mono font-black text-base lg:text-lg text-amber-400">
-                    {{ number_format($batchOverviewData['mrlGross'] ?? 3251.90, 2, '.', ',') }} <span class="text-[10px] font-semibold text-zinc-400">kg Gross</span>
+                    {{ number_format($batchOverviewData['mrlGross'] ?? 0, 2, '.', ',') }} <span class="text-[10px] font-semibold text-zinc-400">kg Gross</span>
                 </div>
                 <div class="text-[9px] text-zinc-500 font-sans">Bobot kotor timbang fisik</div>
             </div>
@@ -316,7 +318,7 @@ class="space-y-6">
                     <span class="text-cyan-400">⚖️</span>
                 </div>
                 <div class="font-mono font-black text-base lg:text-lg text-cyan-300">
-                    {{ ($batchOverviewData['diffKg'] ?? 4.30) >= 0 ? '+' : '' }}{{ number_format($batchOverviewData['diffKg'] ?? 4.30, 2, '.', ',') }} <span class="text-[10px] font-semibold text-zinc-400">kg</span>
+                    {{ ($batchOverviewData['diffKg'] ?? 0) >= 0 ? '+' : '' }}{{ number_format($batchOverviewData['diffKg'] ?? 0, 2, '.', ',') }} <span class="text-[10px] font-semibold text-zinc-400">kg</span>
                 </div>
                 <div class="text-[9px] text-zinc-500 font-sans">Selisih MRL vs DN</div>
             </div>
@@ -328,7 +330,7 @@ class="space-y-6">
                     <span class="text-amber-500">🛍️</span>
                 </div>
                 <div class="font-mono font-black text-base lg:text-lg text-amber-300">
-                    {{ number_format($batchOverviewData['mrlNetto'] ?? 3173.80, 2, '.', ',') }} <span class="text-[10px] font-semibold text-zinc-400">kg Netto</span>
+                    {{ number_format($batchOverviewData['mrlNetto'] ?? 0, 2, '.', ',') }} <span class="text-[10px] font-semibold text-zinc-400">kg Netto</span>
                 </div>
                 <div class="text-[9px] text-zinc-500 font-sans">Bersih setelah tara kemasan</div>
             </div>
@@ -340,7 +342,7 @@ class="space-y-6">
                     <span class="text-amber-400">📥</span>
                 </div>
                 <div class="font-mono font-black text-base lg:text-lg text-amber-400">
-                    {{ number_format($batchOverviewData['processedInput'] ?? 3173.70, 2, '.', ',') }} <span class="text-[10px] font-semibold text-zinc-400">kg Netto</span>
+                    {{ number_format($batchOverviewData['processedInput'] ?? 0, 2, '.', ',') }} <span class="text-[10px] font-semibold text-zinc-400">kg Netto</span>
                 </div>
                 <div class="text-[9px] text-zinc-500 font-sans">Basis input separasi (100%)</div>
             </div>
@@ -352,7 +354,7 @@ class="space-y-6">
                     <span class="text-emerald-400">📦</span>
                 </div>
                 <div class="font-mono font-black text-base lg:text-lg text-emerald-400">
-                    {{ number_format($batchOverviewData['productOutput'] ?? 2442.50, 2, '.', ',') }} <span class="text-[10px] font-semibold text-zinc-400">kg Netto</span>
+                    {{ number_format($batchOverviewData['productOutput'] ?? 0, 2, '.', ',') }} <span class="text-[10px] font-semibold text-zinc-400">kg Netto</span>
                 </div>
                 <div class="text-[9px] text-zinc-500 font-sans">Hasil rajangan utama bersih</div>
             </div>
@@ -364,7 +366,7 @@ class="space-y-6">
                     <span class="text-emerald-400">📈</span>
                 </div>
                 <div class="font-mono font-black text-base lg:text-lg text-emerald-400">
-                    {{ number_format($batchOverviewData['weightedProductYield'] ?? 76.96, 2, '.', ',') }}%
+                    {{ number_format($batchOverviewData['weightedProductYield'] ?? 0, 2, '.', ',') }}%
                 </div>
                 <div class="text-[9px] text-zinc-500 font-sans">Rendemen produk utama</div>
             </div>
@@ -376,7 +378,7 @@ class="space-y-6">
                     <span class="text-emerald-400">🟢</span>
                 </div>
                 <div class="font-mono font-black text-base lg:text-lg text-emerald-400">
-                    {{ number_format($batchOverviewData['processMaterialBalance'] ?? 100.00, 2, '.', ',') }}%
+                    {{ number_format($batchOverviewData['processMaterialBalance'] ?? 0, 2, '.', ',') }}%
                 </div>
                 <div class="text-[9px] text-zinc-500 font-sans">Neraca massa total output</div>
             </div>
@@ -439,27 +441,18 @@ class="space-y-6">
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td class="px-3 py-2.5 font-sans font-bold text-zinc-200">PAITON P10T5</td>
-                                        <td class="px-3 py-2.5 font-sans">
-                                            <div class="font-mono font-bold text-amber-400 text-xs">DN-2026-0001</div>
-                                            <div class="text-[10px] text-zinc-400 mt-0.5">👤 Recv: Plant Intake Team</div>
-                                        </td>
-                                        <td class="px-3 py-2.5 text-center text-zinc-400">37</td>
-                                        <td class="px-3 py-2.5 text-right text-zinc-300">1,815.60</td>
-                                        <td class="px-3 py-2.5 text-right text-zinc-200 font-bold">1,818.00</td>
-                                        <td class="px-3 py-2.5 text-right font-bold text-cyan-400">+2.40</td>
-                                        <td class="px-3 py-2.5 text-center font-sans">
-                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">Confirmed</span>
+                                        <td colspan="7" class="px-4 py-6 text-center text-zinc-500 font-sans">
+                                            Tidak ada rincian data penerimaan fisik.
                                         </td>
                                     </tr>
                                 @endforelse
                                 <tr class="bg-zinc-950/90 font-bold border-t-2 border-zinc-700">
                                     <td colspan="2" class="px-3 py-2.5 font-sans uppercase text-zinc-100">TOTAL INBOUND (GROSS)</td>
-                                    <td class="px-3 py-2.5 text-center text-zinc-300">{{ $batchOverviewData['totalPacks'] ?? 65 }}</td>
-                                    <td class="px-3 py-2.5 text-right text-zinc-300">{{ number_format($batchOverviewData['dnGross'] ?? 3247.60, 2, '.', ',') }}</td>
-                                    <td class="px-3 py-2.5 text-right text-amber-400">{{ number_format($batchOverviewData['mrlGross'] ?? 3251.90, 2, '.', ',') }}</td>
+                                    <td class="px-3 py-2.5 text-center text-zinc-300">{{ $batchOverviewData['totalPacks'] ?? 0 }}</td>
+                                    <td class="px-3 py-2.5 text-right text-zinc-300">{{ number_format($batchOverviewData['dnGross'] ?? 0, 2, '.', ',') }}</td>
+                                    <td class="px-3 py-2.5 text-right text-amber-400">{{ number_format($batchOverviewData['mrlGross'] ?? 0, 2, '.', ',') }}</td>
                                     <td class="px-3 py-2.5 text-right font-bold text-cyan-400">
-                                        {{ ($batchOverviewData['diffKg'] ?? 4.30) >= 0 ? '+' : '' }}{{ number_format($batchOverviewData['diffKg'] ?? 4.30, 2, '.', ',') }}
+                                        {{ ($batchOverviewData['diffKg'] ?? 0) >= 0 ? '+' : '' }}{{ number_format($batchOverviewData['diffKg'] ?? 0, 2, '.', ',') }}
                                     </td>
                                     <td class="px-3 py-2.5 text-center font-sans">
                                         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">Confirmed</span>
@@ -830,33 +823,33 @@ class="space-y-6">
                             <tbody class="divide-y divide-zinc-800/60 font-mono">
                                 <tr>
                                     <td class="px-3 py-2.5 font-sans font-bold text-zinc-200">Processed Input (MRL Netto)</td>
-                                    <td class="px-3 py-2.5 text-right font-bold text-zinc-100">{{ number_format($batchOverviewData['balanceItems']['inputKg'] ?? 3173.70, 2, '.', ',') }} kg Netto</td>
-                                    <td class="px-3 py-2.5 text-right text-zinc-300 font-bold">100.00%</td>
+                                    <td class="px-3 py-2.5 text-right font-bold text-zinc-100">{{ number_format($batchOverviewData['balanceItems']['inputKg'] ?? 0, 2, '.', ',') }} kg Netto</td>
+                                    <td class="px-3 py-2.5 text-right text-zinc-300 font-bold">{{ number_format(($batchOverviewData['balanceItems']['inputKg'] ?? 0) > 0 ? 100 : 0, 2) }}%</td>
                                 </tr>
                                 <tr>
                                     <td class="px-3 py-2.5 font-sans text-emerald-400 font-bold">1. Product Output (Netto)</td>
-                                    <td class="px-3 py-2.5 text-right text-emerald-400 font-bold">{{ number_format($batchOverviewData['balanceItems']['productKg'] ?? 2442.50, 2, '.', ',') }} kg Netto</td>
-                                    <td class="px-3 py-2.5 text-right text-emerald-400 font-bold">{{ number_format($batchOverviewData['balanceItems']['productPct'] ?? 76.96, 2, '.', ',') }}%</td>
+                                    <td class="px-3 py-2.5 text-right text-emerald-400 font-bold">{{ number_format($batchOverviewData['balanceItems']['productKg'] ?? 0, 2, '.', ',') }} kg Netto</td>
+                                    <td class="px-3 py-2.5 text-right text-emerald-400 font-bold">{{ number_format($batchOverviewData['balanceItems']['productPct'] ?? 0, 2, '.', ',') }}%</td>
                                 </tr>
                                 <tr>
                                     <td class="px-3 py-2.5 font-sans text-amber-300">2. Bits Stem Output (Netto)</td>
-                                    <td class="px-3 py-2.5 text-right text-amber-300">{{ number_format($batchOverviewData['balanceItems']['stemKg'] ?? 589.22, 2, '.', ',') }} kg Netto</td>
-                                    <td class="px-3 py-2.5 text-right text-amber-300">{{ number_format($batchOverviewData['balanceItems']['stemPct'] ?? 18.56, 2, '.', ',') }}%</td>
+                                    <td class="px-3 py-2.5 text-right text-amber-300">{{ number_format($batchOverviewData['balanceItems']['stemKg'] ?? 0, 2, '.', ',') }} kg Netto</td>
+                                    <td class="px-3 py-2.5 text-right text-amber-300">{{ number_format($batchOverviewData['balanceItems']['stemPct'] ?? 0, 2, '.', ',') }}%</td>
                                 </tr>
                                 <tr>
                                     <td class="px-3 py-2.5 font-sans text-blue-300">3. Dust Output (Netto)</td>
-                                    <td class="px-3 py-2.5 text-right text-blue-300">{{ number_format($batchOverviewData['balanceItems']['dustKg'] ?? 58.70, 2, '.', ',') }} kg Netto</td>
-                                    <td class="px-3 py-2.5 text-right text-blue-300">{{ number_format($batchOverviewData['balanceItems']['dustPct'] ?? 1.85, 2, '.', ',') }}%</td>
+                                    <td class="px-3 py-2.5 text-right text-blue-300">{{ number_format($batchOverviewData['balanceItems']['dustKg'] ?? 0, 2, '.', ',') }} kg Netto</td>
+                                    <td class="px-3 py-2.5 text-right text-blue-300">{{ number_format($batchOverviewData['balanceItems']['dustPct'] ?? 0, 2, '.', ',') }}%</td>
                                 </tr>
                                 <tr>
                                     <td class="px-3 py-2.5 font-sans text-zinc-400">4. Uncountable Waste (Netto)</td>
-                                    <td class="px-3 py-2.5 text-right text-zinc-400">{{ number_format($batchOverviewData['balanceItems']['varianceKg'] ?? 20.28, 2, '.', ',') }} kg Netto</td>
-                                    <td class="px-3 py-2.5 text-right text-zinc-400">{{ number_format($batchOverviewData['balanceItems']['variancePct'] ?? 0.63, 2, '.', ',') }}%</td>
+                                    <td class="px-3 py-2.5 text-right text-zinc-400">{{ number_format($batchOverviewData['balanceItems']['varianceKg'] ?? 0, 2, '.', ',') }} kg Netto</td>
+                                    <td class="px-3 py-2.5 text-right text-zinc-400">{{ number_format($batchOverviewData['balanceItems']['variancePct'] ?? 0, 2, '.', ',') }}%</td>
                                 </tr>
                                 <tr class="bg-zinc-950/90 font-bold border-t-2 border-zinc-700">
                                     <td class="px-3 py-2.5 font-sans uppercase text-zinc-100">Total Balance (Netto Output)</td>
-                                    <td class="px-3 py-2.5 text-right text-amber-400 font-black">{{ number_format($batchOverviewData['balanceItems']['totalKg'] ?? 3110.70, 2, '.', ',') }} kg Netto</td>
-                                    <td class="px-3 py-2.5 text-right text-emerald-400 font-black">{{ number_format($batchOverviewData['balanceItems']['totalPct'] ?? 100.00, 2, '.', ',') }}%</td>
+                                    <td class="px-3 py-2.5 text-right text-amber-400 font-black">{{ number_format($batchOverviewData['balanceItems']['totalKg'] ?? 0, 2, '.', ',') }} kg Netto</td>
+                                    <td class="px-3 py-2.5 text-right text-emerald-400 font-black">{{ number_format($batchOverviewData['balanceItems']['totalPct'] ?? 0, 2, '.', ',') }}%</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1565,12 +1558,12 @@ class="space-y-6">
     <div x-show="activeTab === 'yield_calculator'"
          x-data="privateYieldCostCalculator({
              operational: {
-                 processedInput: {{ $batchOverviewData['processedInput'] ?? 3173.70 }},
-                 productYield: {{ $batchOverviewData['weightedProductYield'] ?? 76.96 }},
-                 productQty: {{ $batchOverviewData['productOutput'] ?? 2442.50 }},
-                 bitsStemQty: {{ $batchOverviewData['balanceItems']['stemKg'] ?? 650.80 }},
-                 dustQty: {{ $batchOverviewData['balanceItems']['dustKg'] ?? 55.50 }},
-                 processVariance: {{ $batchOverviewData['balanceItems']['varianceKg'] ?? 24.90 }}
+                 processedInput: {{ $batchOverviewData['processedInput'] ?? 0 }},
+                 productYield: {{ $batchOverviewData['weightedProductYield'] ?? 0 }},
+                 productQty: {{ $batchOverviewData['productOutput'] ?? 0 }},
+                 bitsStemQty: {{ $batchOverviewData['balanceItems']['stemKg'] ?? 0 }},
+                 dustQty: {{ $batchOverviewData['balanceItems']['dustKg'] ?? 0 }},
+                 processVariance: {{ $batchOverviewData['balanceItems']['varianceKg'] ?? 0 }}
              }
          })"
          class="space-y-6">
@@ -3528,12 +3521,12 @@ function privateYieldCostCalculator(initial) {
     return {
         calcMode: 'basic',
         op: {
-            processedInput: initial.operational.processedInput || 3173.70,
-            productYield: initial.operational.productYield || 76.96,
-            productQty: initial.operational.productQty || 2442.50,
-            bitsStemQty: initial.operational.bitsStemQty || 650.80,
-            dustQty: initial.operational.dustQty || 55.50,
-            processVariance: initial.operational.processVariance || 24.90
+            processedInput: initial.operational.processedInput || 0,
+            productYield: initial.operational.productYield || 0,
+            productQty: initial.operational.productQty || 0,
+            bitsStemQty: initial.operational.bitsStemQty || 0,
+            dustQty: initial.operational.dustQty || 0,
+            processVariance: initial.operational.processVariance || 0
         },
         costs: {
             purchasePrice: 50000,

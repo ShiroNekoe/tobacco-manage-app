@@ -29,7 +29,14 @@ class ExcelImportTest extends TestCase
         // 3. Assert historical yield summary reports imported
         $this->assertGreaterThan(0, HistoricalYieldReport::count());
 
-        // 4. Assert PDF generation for all 25 batches renders without division-by-zero or floating-point errors
+        // 4. Assert Batch 3 (BCH-2026-0003) has exactly 4 Delivery Note items (matching parsed sections)
+        $batch3 = Batch::where('batch_code', 'BCH-2026-0003')->first();
+        $this->assertNotNull($batch3);
+        $this->assertCount(4, $batch3->dn_header_details);
+        $this->assertCount(4, $batch3->mrl_header_details);
+        $this->assertEquals('13/06/2026', $batch3->date_of_receipt->format('d/m/Y'));
+
+        // 5. Assert PDF generation for all 25 batches renders without division-by-zero or floating-point errors
         $allBatches = Batch::all();
         foreach ($allBatches as $b) {
             $html = view('certificates.process-certificate-pdf', ['batch' => $b])->render();

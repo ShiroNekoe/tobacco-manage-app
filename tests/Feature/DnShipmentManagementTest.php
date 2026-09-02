@@ -504,14 +504,10 @@ class DnShipmentManagementTest extends TestCase
         $response->assertSee('NETTO (KG)');
         $response->assertSee('KETERANGAN');
 
-        // Assert removed signatures are NOT present
-        $response->assertDontSee('Diserahkan Oleh');
-        $response->assertDontSee('Pengemudi / Sopir');
-        $response->assertDontSee('Diterima Oleh');
-        $response->assertDontSee('Penerima Barang / Customer');
-
-        // Assert Dikeluarkan Oleh is present
+        // Assert signature blocks are present
         $response->assertSee('Dikeluarkan Oleh');
+        $response->assertSee('Pengemudi / Sopir');
+        $response->assertSee('Diterima Oleh');
         $response->assertSee('Bagian Pengiriman / Gudang');
     }
 

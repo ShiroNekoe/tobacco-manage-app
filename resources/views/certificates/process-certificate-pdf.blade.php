@@ -80,7 +80,7 @@
             <td class="label">Customer</td>
             <td>: {{ $batch->customer->name ?? '-' }}</td>
             <td class="label" style="text-align: right;">Issued Date :</td>
-            <td style="width: 120px; text-align: right;">{{ $batch->locked_at ? $batch->locked_at->format('d/m/Y') : date('d/m/Y') }}</td>
+            <td style="width: 120px; text-align: right;">{{ $batch->locked_at ? $batch->locked_at->format('d/m/Y') : ($batch->date_of_receipt ? $batch->date_of_receipt->format('d/m/Y') : date('d/m/Y')) }}</td>
         </tr>
     </table>
 

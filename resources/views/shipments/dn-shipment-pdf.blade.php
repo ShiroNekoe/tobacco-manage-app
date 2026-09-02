@@ -230,14 +230,28 @@
 
     <!-- 3. TANDA TANGAN / PENGESAHAN DOKUMEN -->
     <div class="sig-container">
-        <table class="sig-table" style="width: 320px;">
+        <table class="sig-table">
             <tr>
-                <td style="text-align: left;">
-                    <div>Dikeluarkan Oleh,</div>
+                <td>
+                    <div>Dikeluarkan Oleh:</div>
                     <div class="sig-title">Bagian Pengiriman / Gudang</div>
                     <div class="sig-space"></div>
-                    <div class="sig-name">( {{ $shipment->createdBy->name ?? 'Staff Gudang' }} )</div>
+                    <div class="sig-name">( {{ $shipment->createdBy->name ?? 'Staf Gudang' }} )</div>
                     <div class="sig-title">PT Falih Nur Gemilang</div>
+                </td>
+                <td>
+                    <div>Pengemudi / Sopir:</div>
+                    <div class="sig-title">Transporter / Ekspedisi</div>
+                    <div class="sig-space"></div>
+                    <div class="sig-name">( {{ $shipment->driver_name ?: 'Pengemudi / Sopir' }} )</div>
+                    <div class="sig-title">No. Pol: {{ $shipment->vehicle_number ?: '-' }}</div>
+                </td>
+                <td>
+                    <div>Diterima Oleh:</div>
+                    <div class="sig-title">Penerima / Customer</div>
+                    <div class="sig-space"></div>
+                    <div class="sig-name">( {{ $shipment->customer->contact_person ?? 'Penerima Barang' }} )</div>
+                    <div class="sig-title">{{ $shipment->customer->name ?? 'Customer' }}</div>
                 </td>
             </tr>
         </table>

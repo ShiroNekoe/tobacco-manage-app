@@ -98,7 +98,7 @@ class ProcessingReportImporter
 
             $batchCode = 'BCH-2026-' . str_pad($batchNum, 4, '0', STR_PAD_LEFT);
             $dnNumber = 'DN-2026-' . str_pad($batchNum, 4, '0', STR_PAD_LEFT);
-            $receiptDate = Carbon::now()->subDays(60 - $batchNum);
+            $receiptDate = $this->parseIssuedDate($sheet, Carbon::now()->subDays(60 - $batchNum));
 
             $dn = DeliveryNote::firstOrCreate(
                 ['dn_number' => $dnNumber],
@@ -272,48 +272,116 @@ class ProcessingReportImporter
                 $parsedSections[] = $currentSection;
             }
 
-            // ===== FILTER LEFTOVER TEMPLATE HEADER ROWS =====
+            // ===== FILTER & MATCH LEFTOVER TEMPLATE HEADER ROWS =====
             if (!empty($parsedSections)) {
                 $filteredDnRows = [];
-                foreach ($dnHeaderRows as $hRow) {
-                    $hOrigClean = strtolower(trim($hRow['clean_region'] ?? ''));
-                    $hRaw = strtolower(trim($hRow['raw_origin'] ?? ''));
-                    $matched = false;
-                    foreach ($parsedSections as $pSec) {
-                        $pClean = strtolower(trim($pSec['origin_name'] ?? ''));
-                        $pRaw = strtolower(trim($pSec['raw_origin'] ?? ''));
-                        if (str_contains($pRaw, $hRaw) || str_contains($hRaw, $pRaw) ||
-                            str_contains($pClean, $hOrigClean) || str_contains($hOrigClean, $pClean) ||
-                            explode(' ', $hOrigClean)[0] === explode(' ', $pClean)[0]) {
-                            $matched = true;
-                            break;
-                        }
-                    }
-                    if ($matched) {
-                        $filteredDnRows[] = $hRow;
-                    }
-                }
-                $dnHeaderRows = $filteredDnRows;
-
                 $filteredMrlRows = [];
-                foreach ($mrlHeaderRows as $mRow) {
-                    $mOrigClean = strtolower(trim($mRow['clean_region'] ?? ''));
-                    $mRaw = strtolower(trim($mRow['raw_origin'] ?? ''));
-                    $matched = false;
-                    foreach ($parsedSections as $pSec) {
-                        $pClean = strtolower(trim($pSec['origin_name'] ?? ''));
-                        $pRaw = strtolower(trim($pSec['raw_origin'] ?? ''));
-                        if (str_contains($pRaw, $mRaw) || str_contains($mRaw, $pRaw) ||
-                            str_contains($pClean, $mOrigClean) || str_contains($mOrigClean, $pClean) ||
-                            explode(' ', $mOrigClean)[0] === explode(' ', $pClean)[0]) {
-                            $matched = true;
+
+                foreach ($parsedSections as $sec) {
+                    $secClean = strtolower(trim($sec['origin_name'] ?? ''));
+                    $secPackType = strtolower(trim($sec['pack_type'] ?? ''));
+                    $secSackCount = count($sec['sacks'] ?? []);
+
+                    // Search best match in $dnHeaderRows
+                    $bestDnMatch = null;
+                    $bestDnMatchKey = null;
+
+                    // Pass 1: Match clean_region AND pack_type
+                    foreach ($dnHeaderRows as $hKey => $hRow) {
+                        $hClean = strtolower(trim($hRow['clean_region'] ?? ''));
+                        $hPackType = strtolower(trim($hRow['pack_type'] ?? ''));
+                        if (($hClean === $secClean || str_contains($secClean, $hClean) || str_contains($hClean, $secClean)) &&
+                            ($hPackType === $secPackType || str_contains($hPackType, $secPackType) || str_contains($secPackType, $hPackType))) {
+                            $bestDnMatch = $hRow;
+                            $bestDnMatchKey = $hKey;
                             break;
                         }
                     }
-                    if ($matched) {
-                        $filteredMrlRows[] = $mRow;
+
+                    // Pass 2: Fallback match clean_region only
+                    if (!$bestDnMatch) {
+                        foreach ($dnHeaderRows as $hKey => $hRow) {
+                            $hClean = strtolower(trim($hRow['clean_region'] ?? ''));
+                            if ($hClean === $secClean || str_contains($secClean, $hClean) || str_contains($hClean, $secClean)) {
+                                $bestDnMatch = $hRow;
+                                $bestDnMatchKey = $hKey;
+                                break;
+                            }
+                        }
+                    }
+
+                    if ($bestDnMatch) {
+                        if ($bestDnMatch['packs'] === 0) {
+                            $bestDnMatch['packs'] = $secSackCount;
+                        }
+                        $filteredDnRows[] = $bestDnMatch;
+                        unset($dnHeaderRows[$bestDnMatchKey]);
+                    } else {
+                        $filteredDnRows[] = [
+                            'product_type' => 'RAJANGAN',
+                            'raw_origin' => $sec['raw_origin'],
+                            'clean_region' => $sec['origin_name'],
+                            'material_code' => $sec['material_code'],
+                            'origin_obj' => $sec['origin'],
+                            'packs' => $secSackCount,
+                            'pack_type' => $sec['pack_type'],
+                            'gross_kg' => round(array_sum(array_column($sec['sacks'], 'gross_kg')), 2),
+                            'tare_kg' => round(array_sum(array_column($sec['sacks'], 'tare_kg')), 2),
+                            'netto_kg' => round(array_sum(array_column($sec['sacks'], 'netto_kg')), 2),
+                            'dn_number' => '-',
+                        ];
+                    }
+
+                    // Search best match in $mrlHeaderRows
+                    $bestMrlMatch = null;
+                    $bestMrlMatchKey = null;
+
+                    foreach ($mrlHeaderRows as $mKey => $mRow) {
+                        $mClean = strtolower(trim($mRow['clean_region'] ?? ''));
+                        $mPackType = strtolower(trim($mRow['pack_type'] ?? ''));
+                        if (($mClean === $secClean || str_contains($secClean, $mClean) || str_contains($mClean, $secClean)) &&
+                            ($mPackType === $secPackType || str_contains($mPackType, $secPackType) || str_contains($secPackType, $mPackType))) {
+                            $bestMrlMatch = $mRow;
+                            $bestMrlMatchKey = $mKey;
+                            break;
+                        }
+                    }
+
+                    if (!$bestMrlMatch) {
+                        foreach ($mrlHeaderRows as $mKey => $mRow) {
+                            $mClean = strtolower(trim($mRow['clean_region'] ?? ''));
+                            if ($mClean === $secClean || str_contains($secClean, $mClean) || str_contains($mClean, $secClean)) {
+                                $bestMrlMatch = $mRow;
+                                $bestMrlMatchKey = $mKey;
+                                break;
+                            }
+                        }
+                    }
+
+                    if ($bestMrlMatch) {
+                        if ($bestMrlMatch['packs'] === 0) {
+                            $bestMrlMatch['packs'] = $secSackCount;
+                        }
+                        $filteredMrlRows[] = $bestMrlMatch;
+                        unset($mrlHeaderRows[$bestMrlMatchKey]);
+                    } else {
+                        $filteredMrlRows[] = [
+                            'product_type' => 'RAJANGAN',
+                            'raw_origin' => $sec['raw_origin'],
+                            'clean_region' => $sec['origin_name'],
+                            'material_code' => $sec['material_code'],
+                            'origin_obj' => $sec['origin'],
+                            'packs' => $secSackCount,
+                            'pack_type' => $sec['pack_type'],
+                            'gross_kg' => round(array_sum(array_column($sec['sacks'], 'gross_kg')), 2),
+                            'tare_kg' => round(array_sum(array_column($sec['sacks'], 'tare_kg')), 2),
+                            'netto_kg' => round(array_sum(array_column($sec['sacks'], 'netto_kg')), 2),
+                            'discrepancy_kg' => 0,
+                        ];
                     }
                 }
+
+                $dnHeaderRows = $filteredDnRows;
                 $mrlHeaderRows = $filteredMrlRows;
             }
 
@@ -585,6 +653,30 @@ class ProcessingReportImporter
             'separations' => $importedBatchesCount,
             'shipments' => DnShipment::count(),
         ];
+    }
+
+    /**
+     * Parse Issued Date dari cell C8 / row 4 di Excel sheet jika ada
+     */
+    protected function parseIssuedDate(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, Carbon $defaultDate): Carbon
+    {
+        for ($r = 1; $r <= 10; $r++) {
+            for ($c = 1; $c <= 10; $c++) {
+                $val = trim((string) $sheet->getCell([$c, $r])->getCalculatedValue());
+                if (str_contains(strtolower($val), 'issued date')) {
+                    $nextVal = $sheet->getCell([$c + 1, $r])->getCalculatedValue();
+                    if ($nextVal === null || $nextVal === '') {
+                        $nextVal = $sheet->getCell([$c + 2, $r])->getCalculatedValue();
+                    }
+                    if (is_numeric($nextVal) && $nextVal > 40000) {
+                        return Carbon::instance(\PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($nextVal));
+                    } elseif (!empty($nextVal) && strtotime((string)$nextVal)) {
+                        return Carbon::parse((string)$nextVal);
+                    }
+                }
+            }
+        }
+        return $defaultDate;
     }
 
     /**
@@ -931,23 +1023,13 @@ class ProcessingReportImporter
 
             $itemNo = 1;
             foreach ($chunk as $batch) {
-                // Find matching sheet for this batch to get exact header table origins
-                $matchingSheet = null;
-                $batchNum = (int) str_replace('BCH-2026-', '', $batch->batch_code);
-                foreach ($spreadsheet->getSheetNames() as $sheetName) {
-                    if (preg_match('/SPR\s*Batch\s*' . $batchNum . '$/i', trim($sheetName))) {
-                        $matchingSheet = $spreadsheet->getSheetByName($sheetName);
-                        break;
-                    }
-                }
-
-                [$hOrigins, $mrlOrigins] = $matchingSheet ? $this->parseHeaderTables($matchingSheet) : [[], []];
+                $hOrigins = !empty($batch->dn_header_details) ? $batch->dn_header_details : [];
 
                 if (!empty($hOrigins)) {
                     foreach ($hOrigins as $hOrig) {
-                        $packs = max(1, $hOrig['packs']);
-                        $gross = $hOrig['gross_kg'] > 0 ? $hOrig['gross_kg'] : round($packs * 50.20, 2);
-                        $tare = $hOrig['tare_kg'] > 0 ? $hOrig['tare_kg'] : round($packs * 0.20, 2);
+                        $packs = max(1, (int)($hOrig['packs'] ?? 10));
+                        $gross = (float)($hOrig['gross_kg'] ?? 0) > 0 ? (float)$hOrig['gross_kg'] : round($packs * 50.20, 2);
+                        $tare = (float)($hOrig['tare_kg'] ?? 0) > 0 ? (float)$hOrig['tare_kg'] : round($packs * 0.20, 2);
                         $netto = max(0, round($gross - $tare, 2));
 
                         DnShipmentItem::create([
@@ -955,8 +1037,8 @@ class ProcessingReportImporter
                             'batch_id' => $batch->id,
                             'batch_code' => $batch->batch_code,
                             'item_no' => $itemNo++,
-                            'origin' => $hOrig['clean_region'],
-                            'origin_code' => $hOrig['material_code'],
+                            'origin' => $hOrig['clean_region'] ?? ($hOrig['raw_origin'] ?? 'KASTURI'),
+                            'origin_code' => $hOrig['material_code'] ?? '-',
                             'material_type' => 'Product',
                             'standard_sack_count' => $packs,
                             'standard_gross_per_sack' => round($gross / $packs, 2),
